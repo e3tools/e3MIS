@@ -1,5 +1,6 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
+
 
 class Contractor(models.Model):
     name = models.CharField(max_length=255)
@@ -11,12 +12,14 @@ class Contractor(models.Model):
     def __str__(self):
         return self.name
 
+
 class BeneficiaryGroup(models.Model):
     name = models.CharField(max_length=255, unique=True)
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
+
 
 class Subproject(models.Model):
     STATUS_CHOICES = [
@@ -45,7 +48,7 @@ class Subproject(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name="subprojects"
+        related_name="subprojects",
     )
 
     # Latest progress
@@ -58,6 +61,7 @@ class Subproject(models.Model):
     def __str__(self):
         return self.name
 
+
 class SubprojectBeneficiary(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="beneficiary_data")
     beneficiary_group = models.ForeignKey(BeneficiaryGroup, on_delete=models.CASCADE, related_name="subproject_data")
@@ -69,6 +73,7 @@ class SubprojectBeneficiary(models.Model):
     def __str__(self):
         return f"{self.beneficiary_count} from {self.beneficiary_group.name} in {self.subproject.name}"
 
+
 class ProgressUpdate(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="progress_updates")
     update_date = models.DateField(auto_now_add=True)
@@ -79,6 +84,7 @@ class ProgressUpdate(models.Model):
     def __str__(self):
         return f"Update on {self.update_date} for {self.subproject.name}"
 
+
 class SiteVisit(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="site_visits")
     visit_date = models.DateField()
@@ -88,6 +94,7 @@ class SiteVisit(models.Model):
     def __str__(self):
         return f"Visit on {self.visit_date} for {self.subproject.name}"
 
+
 class SiteVisitImage(models.Model):
     site_visit = models.ForeignKey(SiteVisit, on_delete=models.CASCADE, related_name="visit_images")
     image = models.ImageField(upload_to='site_visits/')
@@ -95,6 +102,7 @@ class SiteVisitImage(models.Model):
 
     def __str__(self):
         return f"Image for {self.site_visit.subproject.name} ({self.caption})"
+
 
 class Document(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="documents")
