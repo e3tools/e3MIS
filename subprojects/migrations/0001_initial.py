@@ -74,7 +74,7 @@ class Migration(migrations.Migration):
                 ('latest_construction_rate', models.DecimalField(decimal_places=2, default=0.0, max_digits=5)),
                 ('latest_disbursement_rate', models.DecimalField(decimal_places=2, default=0.0, max_digits=5)),
                 (
-                    'administrative_level',
+                    'administrative_levels',
                     models.ForeignKey(
                         blank=True,
                         null=True,
