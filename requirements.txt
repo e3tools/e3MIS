@@ -1,0 +1,5 @@
+pre-commit==3.5.0
+Django==5.1.7
+Pillow
+black===25.1.0
+django-bootstrap4==22.2
