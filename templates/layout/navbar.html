@@ -1,0 +1,35 @@
+{% load static i18n %}
+
+<!-- Navbar -->
+<nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+        {% if object_tile %}
+            <li class="nav-item white-shaded-nav-item">
+                <a class="nav-link font-weight-bold" href="{{ preview_page }}" 
+                role="button"><i class="fas fa-chevron-left text-primary"></i></a>
+            </li>
+            <li class="nav-item shadow-sm bg-light rounded" style="margin-left: 25px;">
+                <a class="nav-link font-weight-bold" style="color: #599cf7 !important;">
+                    {{ object_tile }}
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+
+    <!-- Right navbar links -->
+    <ul class="navbar-nav ml-auto">
+        {% if OTHER_LANGUAGES %}
+            {% include 'layout/language_dropdown.html' %}
+        {% endif %}
+        <li class="nav-item white-shaded-nav-item">
+            <form method="post" action="{% url 'authorization:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn">
+                    <i class="fa fa-sign-out align-bottom"></i>
+                </button>
+            </form>
+        </li>
+    </ul>
+</nav>
+<!-- /.navbar -->
