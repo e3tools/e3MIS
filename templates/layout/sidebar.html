@@ -12,10 +12,17 @@
             {% with request.resolver_match.url_name as url_name %}
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
                 <li class="nav-item">
-                    <a href="{% url 'administrativelevels:home' %}"
-                       class="nav-link {% if url_name == 'home' %}active{% endif %}">
+                    <a href="{% url 'administrativelevels:administrative_levels_list' %}"
+                       class="nav-link {% if url_name == 'administrative_levels_list' %}active{% endif %}">
                         <i class="nav-icon fa fa-home"></i>
                         <p>{% translate "Administrative levels" %}</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'subprojects:subproject_list' %}"
+                       class="nav-link {% if url_name == 'administrative_level_list' %}active{% endif %}">
+                        <i class="nav-icon fas fa-project-diagram"></i>
+                        <p>{% translate "Subprojects" %}</p>
                     </a>
                 </li>
             </ul>
