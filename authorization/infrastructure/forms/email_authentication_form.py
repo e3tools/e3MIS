@@ -37,10 +37,12 @@ class EmailAuthenticationForm(AuthenticationForm):
     def clean(self):
         username = self.cleaned_data.get("email")
         password = self.cleaned_data.get("password")
-
+        print(username, password)
         if username is not None and password:
+            print('here')
             self.user_cache = authenticate(
-                self.request, username=username, password=password
+                self.request,
+                **{UserModel.USERNAME_FIELD: username, 'password': password}
             )
             if self.user_cache is None:
                 raise self.get_invalid_login_error()
