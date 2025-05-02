@@ -5,10 +5,11 @@ class AdministrativeLevel(models.Model):
     """Defines hierarchical administrative levels like Country, Region, District"""
 
     name = models.CharField(max_length=100, unique=True)
-    order = models.PositiveIntegerField(help_text="Defines the level in hierarchy (e.g., 1 for Country, 2 for Region)")
+    order = models.PositiveIntegerField(help_text="Defines the level in hierarchy (e.g., 1 for Country, 2 for Region)", unique=True)
 
     class Meta:
         ordering = ['order']
+        unique_together = ('name', 'order')
 
     def __str__(self):
         return self.name

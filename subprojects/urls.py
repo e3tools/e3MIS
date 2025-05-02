@@ -7,7 +7,7 @@ app_name = 'subprojects'
 
 urlpatterns = [
     path('', SubprojectListView.as_view(), name='subproject_list'),
-    path('/create', SubprojectCreateView.as_view(), name='subproject_create'),
+    path('create', SubprojectCreateView.as_view(), name='subproject_create'),
 
 ]
 
