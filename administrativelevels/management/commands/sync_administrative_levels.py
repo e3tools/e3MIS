@@ -27,14 +27,20 @@ class Command(BaseCommand):
         created_units = 0
         level_name_to_instance = {}  # cache of created units to avoid duplicates
 
+        df = df.dropna(how='all')  # Remove empty rows
+        df = df.sort_values(by=list(df.columns))  # Top-down sorting
+
         with transaction.atomic():
             for _, row in df.iterrows():
                 parent = None
                 for idx, level in enumerate(levels):
-                    name = str(row[idx]).strip()
+                    name = row[idx]
+                    if pd.isna(name) or not str(name).strip():
+                        continue
+
+                    name = str(name).strip()
                     key = (name, level.id, parent.id if parent else None)
 
-                    # Cache check to avoid redundant DB hits
                     if key in level_name_to_instance:
                         unit = level_name_to_instance[key]
                     else:
@@ -44,10 +50,10 @@ class Command(BaseCommand):
                             parent=parent
                         )
                         level_name_to_instance[key] = unit
-                        if level == levels[-1]:  # only count lowest level created
+                        if level == levels[-1]:
                             created_units += 1
 
-                    parent = unit  # Set for next level down
+                    parent = unit
 
         self.stdout.write(self.style.SUCCESS(
             f"Administrative units created or matched successfully. {created_units} lowest-level units added."))

@@ -23,7 +23,7 @@ class AdministrativeUnit(models.Model):
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
 
     class Meta:
-        unique_together = ('name', 'level')
+        unique_together = ('name', 'level', 'parent')
 
     def __str__(self):
         return f"{self.name} ({self.level.name})"

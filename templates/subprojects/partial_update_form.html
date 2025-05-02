@@ -1,0 +1,9 @@
+{% load static i18n custom_tags %}
+<form method="post" hx-post="{% url 'subprojects:subproject_update' object.pk %}"
+      hx-target="#subprojectModalBody" hx-swap="outerHTML">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <div class="text-right mt-3">
+        <button type="submit" class="btn btn-primary">{% translate 'Save' %}</button>
+    </div>
+</form>

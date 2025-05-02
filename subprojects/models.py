@@ -29,7 +29,7 @@ class Subproject(models.Model):
         ('paused', 'Paused'),
         ('canceled', 'Canceled'),
     ]
-
+    external_id = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planned')
