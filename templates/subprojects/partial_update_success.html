@@ -1,16 +1,37 @@
 {% load static i18n %}
 <tr id="subproject-{{ subproject.pk }}" hx-swap-oob="true">
     <td>
-        <button class="btn btn-sm btn-outline-primary"
-                title="{% translate 'Edit' %}"
+        <div class="btn-group">
+        <!-- Update Info (functional) -->
+        <button type="button"
+                class="btn btn-default btn-flat"
                 hx-get="{% url 'subprojects:subproject_update' subproject.pk %}"
                 hx-target="#subprojectModalBody"
                 hx-trigger="click"
                 hx-swap="innerHTML"
                 data-toggle="modal"
                 data-target="#subprojectModal">
-            <i class="fas fa-pencil-alt"></i>
+          <i class="fas fa-pencil-alt text-primary"></i>
         </button>
+
+        <!-- Field Visit -->
+        <button type="button"
+                class="btn btn-default btn-flat">
+          <i class="fas fa-map-marker-alt text-success"></i>
+        </button>
+
+        <!-- Attach Document -->
+        <button type="button"
+                class="btn btn-default btn-flat">
+          <i class="fas fa-paperclip text-secondary"></i>
+        </button>
+
+        <!-- Progress -->
+        <button type="button"
+                class="btn btn-default btn-flat">
+          <i class="fas fa-tasks text-warning"></i>
+        </button>
+        </div>
     </td>
     <td align="left">{{ subproject.name }}</td>
     <td>{{ subproject.description }}</td>
