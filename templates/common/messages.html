@@ -1,3 +1,4 @@
+{% load static i18n %}
 {% if messages %}
     {% if messages|length > 1 %}
         {% for message in messages %}
@@ -37,3 +38,13 @@
         {% endfor %}
     {% endif %}
 {% endif %}
+<div aria-live="polite" aria-atomic="true"
+     style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1060;">
+    <div class="toast" id="updateSuccessToast" data-delay="3000">
+        <div class="toast-header bg-success text-white">
+            <strong class="mr-auto">{% translate "Success" %}</strong>
+            <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast">&times;</button>
+        </div>
+        <div class="toast-body" id="updateToastBody"></div>
+    </div>
+</div>

@@ -135,6 +135,6 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = 'administrativelevels:home'
+LOGIN_REDIRECT_URL = '/subprojects'
 
 AUTH_USER_MODEL = 'authorization.CustomUser'

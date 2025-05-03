@@ -1,5 +1,5 @@
-from django.contrib.auth.models import User
 from django.db import models
+from src.settings import AUTH_USER_MODEL
 
 
 class Contractor(models.Model):
@@ -29,7 +29,7 @@ class Subproject(models.Model):
         ('paused', 'Paused'),
         ('canceled', 'Canceled'),
     ]
-
+    external_id = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='planned')
@@ -44,7 +44,7 @@ class Subproject(models.Model):
 
     # ForeignKey to AdministrativeLevel (to be defined later)
     administrative_level = models.ForeignKey(
-        'administrativelevels.AdministrativeLevel',
+        'administrativelevels.AdministrativeUnit',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -58,6 +58,8 @@ class Subproject(models.Model):
     # Many-to-Many through SubprojectBeneficiary
     beneficiary_groups = models.ManyToManyField(BeneficiaryGroup, through='SubprojectBeneficiary')
 
+    # Custom Fields Json
+    custom_fields = models.JSONField(blank=True, null=True, default=dict)
     def __str__(self):
         return self.name
 
@@ -79,7 +81,7 @@ class ProgressUpdate(models.Model):
     update_date = models.DateField(auto_now_add=True)
     construction_rate = models.DecimalField(max_digits=5, decimal_places=2)
     disbursement_rate = models.DecimalField(max_digits=5, decimal_places=2)
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    updated_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):
         return f"Update on {self.update_date} for {self.subproject.name}"
@@ -88,7 +90,7 @@ class ProgressUpdate(models.Model):
 class SiteVisit(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="site_visits")
     visit_date = models.DateField()
-    conducted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    conducted_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     observations = models.TextField(blank=True, null=True)
 
     def __str__(self):
@@ -106,7 +108,7 @@ class SiteVisitImage(models.Model):
 
 class Document(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="documents")
-    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    uploaded_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     file = models.FileField(upload_to='subproject_documents/')
     description = models.TextField(blank=True, null=True)
     uploaded_at = models.DateTimeField(auto_now_add=True)

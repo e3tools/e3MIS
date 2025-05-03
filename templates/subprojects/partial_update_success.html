@@ -1,0 +1,40 @@
+{% load static i18n %}
+<tr id="subproject-{{ subproject.pk }}" hx-swap-oob="true">
+    <td>
+        <button class="btn btn-sm btn-outline-primary"
+                title="{% translate 'Edit' %}"
+                hx-get="{% url 'subprojects:subproject_update' subproject.pk %}"
+                hx-target="#subprojectModalBody"
+                hx-trigger="click"
+                hx-swap="innerHTML"
+                data-toggle="modal"
+                data-target="#subprojectModal">
+            <i class="fas fa-pencil-alt"></i>
+        </button>
+    </td>
+    <td align="left">{{ subproject.name }}</td>
+    <td>{{ subproject.description }}</td>
+    <td>{{ subproject.status }}</td>
+    <td>{{ subproject.start_date }}</td>
+    <td>{{ subproject.end_date }}</td>
+    <td>{{ subproject.latitude }}</td>
+    <td>{{ subproject.longitude }}</td>
+    <td>
+        {% for contractor in subproject.contractors.all %}
+            <p>{{ contractor.name }}</p>
+        {% endfor %}
+    </td>
+    <td>{{ subproject.administrative_level }}</td>
+    <td>{{ subproject.latest_construction_rate }}</td>
+    <td>{{ subproject.latest_disbursement_rate }}</td>
+    <td>
+        {% for group in subproject.beneficiary_groups.all %}
+            <p>{{ group.name }}</p>
+        {% endfor %}
+    </td>
+</tr>
+<script>
+    $('#subprojectModal').modal('hide');
+    $('#updateToastBody').text('{{ subproject.name }} {{ _("updated successfully") }}');
+    $('#updateSuccessToast').toast('show');
+</script>
