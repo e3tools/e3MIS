@@ -2,6 +2,7 @@ from django.views.generic.edit import UpdateView
 from django.template.response import TemplateResponse
 from subprojects.models import Subproject
 from subprojects.infrastructure.forms.subproject_update_form import SubprojectForm
+from django.contrib import messages
 
 class SubprojectUpdateView(UpdateView):
     model = Subproject
@@ -15,6 +16,7 @@ class SubprojectUpdateView(UpdateView):
         })
 
     def form_invalid(self, form):
+        print('here invalid')
         return TemplateResponse(self.request, self.template_name, {
             'form': form,
             'object': self.object,
