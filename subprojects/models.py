@@ -53,7 +53,7 @@ class Subproject(models.Model):
 
     # Latest progress
     latest_construction_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
-    latest_disbursement_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    latest_disbursement_rate = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)
 
     # Many-to-Many through SubprojectBeneficiary
     beneficiary_groups = models.ManyToManyField(BeneficiaryGroup, through='SubprojectBeneficiary')
@@ -80,7 +80,7 @@ class ProgressUpdate(models.Model):
     subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE, related_name="progress_updates")
     update_date = models.DateField(auto_now_add=True)
     construction_rate = models.DecimalField(max_digits=5, decimal_places=2)
-    disbursement_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    disbursed_amount = models.DecimalField(max_digits=15, decimal_places=2)
     updated_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
 
     def __str__(self):

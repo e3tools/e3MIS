@@ -34,8 +34,8 @@
                             <th>{% translate 'Longitude' %}</th>
                             <th>{% translate 'Contractors' %}</th>
                             <th>{% translate 'Administrative level' %}</th>
-                            <th>{% translate 'Latest construction rate' %}</th>
-                            <th>{% translate 'Latest disbursement rate' %}</th>
+                            <th>{% translate 'Construction rate' %}</th>
+                            <th>{% translate 'Disbursed amount' %}</th>
                             <th>{% translate 'Beneficiary groups' %}</th>
                         </tr>
                         </thead>
@@ -70,7 +70,13 @@
 
                                     <!-- Progress -->
                                     <button type="button"
-                                            class="btn btn-default btn-flat">
+                                            class="btn btn-default btn-flat"
+                                            hx-get="{% url 'subprojects:subproject_progress' subproject.pk %}"
+                                            hx-target="#subprojectModalBody"
+                                            hx-trigger="click"
+                                            hx-swap="innerHTML"
+                                            data-toggle="modal"
+                                            data-target="#subprojectModal">
                                       <i class="fas fa-tasks text-warning"></i>
                                     </button>
                                   </div>
