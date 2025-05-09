@@ -25,6 +25,13 @@
                         <p>{% translate "Subprojects" %}</p>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{% url 'subprojects:subproject_dashboard' %}"
+                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">
+                        <i class="nav-icon fas fa-map"></i>
+                        <p>{% translate "Subprojects map" %}</p>
+                    </a>
+                </li>
             </ul>
             {% endwith %}
         </nav>

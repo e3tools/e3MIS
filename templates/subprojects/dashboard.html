@@ -1,0 +1,170 @@
+{% extends 'layout/base.html' %}
+{% load static i18n bootstrap4 custom_tags %}
+
+{% block extracss %}
+    {{ block.super }}
+    <link href="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.css' %}" rel="stylesheet">
+    <style>
+        .card { margin-bottom: 10px; }
+        .pie-chart { max-width: 220px; max-height: 220px; width: 100%; height: auto; }
+        .flex-container { display: flex; justify-content: space-between; align-items: center; }
+        .legend { display: flex; flex-direction: column; align-items: flex-start; list-style: none; padding: 0; margin: 0; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; }
+        .legend-color { display: inline-block; width: 12px; height: 12px; margin-right: 5px; }
+        .card-title-container { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; width: 100%; }
+        .card-body-horizontal { display: flex; align-items: center; justify-content: space-between; }
+        .form-group { margin-bottom: 5px; }
+        .horizontal-form { display: flex; flex-wrap: nowrap; gap: 10px; align-items: center; }
+        .horizontal-form .form-group { flex: 1; min-width: 100px; }
+        .horizontal-form .btn { flex: none; }
+        .card-Administrative, .card-status { border: none; }
+        .nav-pills .nav-link { color: inherit; background-color: inherit; }
+        #map {
+  width: 100%;
+  height: 80vh;  /* taller than usual */
+  max-height: 100%;
+}
+        .marker { display: block; border: none; border-radius: 50%; cursor: pointer; width: 20px; height: 20px; transform: translate(-50%, -50%); }
+        .mapboxgl-popup-content { min-width: 200px; min-height: 100px; }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-xl-4 col-lg-5 col-sm-8 col-xs-12">
+                <div class="card rounded-0">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">{% translate 'Location of sub-projects' %}</h5>
+                        <div class="card-map">
+                            <div id="map"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block javascript %}
+    {{ block.super }}
+    <script src="{% static 'plugins/mapbox-gl-js/v2.6.1/mapbox-gl.js' %}"></script>
+    {{ subprojects|json_script:"subproject-data" }}
+    <script type="text/javascript">
+        let markers = [];
+        const sectorColors = {};
+
+        function initializeMap() {
+            mapboxgl.accessToken = '{{ access_token }}';
+            if (!mapboxgl.supported()) {
+                alert('Your browser does not support Mapbox GL');
+            }
+            const map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v11',
+                center: [9.3077, 2.3158],
+                zoom: 6,
+                collectResourceTiming: false
+            });
+
+            const bounds = [
+                [0.5, 6],  // southwest
+                [4.1, 12.5]  // northeast
+            ];
+            map.setMaxBounds(bounds);
+            map.addControl(new mapboxgl.NavigationControl());
+            map.on('load', function () {
+                  map.fitBounds([
+                    [0.7723, 6.2306], // southwest corner (minLng, minLat)
+                    [3.8433, 12.4204] // northeast corner (maxLng, maxLat)
+                  ], {
+                    padding: { top: 50, bottom: 50, left: 100, right: 100 },  // asymmetric padding to respect tall shape
+                    duration: 0
+                  });
+                map.addLayer(
+                    {
+                        'id': 'country-boundaries',
+                        'source': {
+                            'type': 'vector',
+                            'url': 'mapbox://mapbox.country-boundaries-v1',
+                        },
+                        'source-layer': 'country_boundaries',
+                        'type': 'fill',
+                        'paint': {
+                            'fill-color': '#00FFFF',
+                            'fill-opacity': 0.2,
+                        },
+                    },
+                    'country-label'
+                );
+
+                map.setFilter('country-boundaries', [
+                    "in",
+                    "iso_3166_1_alpha_3",
+                    '{{ country_iso_code }}',
+                ]);
+            });
+
+            return map;
+        }
+
+        function updateMap(map, subprojects, filterSector = null) {
+            markers.forEach(marker => marker.remove());
+            markers = [];
+
+            subprojects.forEach((subproject, index) => {
+                if ((filterSector === null || subproject.sector__category__name === filterSector) &&
+                    subproject.latitude && subproject.longitude) {
+                    const sectorColor = sectorColors[subproject.sector__category__name] || getRandomColor();
+
+                    let carousel_images_html = ""
+                    let carousel_html = ""
+
+                    const popover_html = '<h3 class="popover-header">'+
+                                '<a href=""target="_blank">' +
+                                subproject.name +
+                                '</a>' +
+                            '</h3>' +
+                            '<div class="popover-body">' +
+                               '<h6> <strong> Type of subproject</strong> : </h6>' +
+                               '<h6> <strong> Physical rate</strong> : </h6>' +
+                                carousel_html +
+                            '</div>'
+                    const offset = calculateOffset(index);
+                    const marker = new mapboxgl.Marker({
+                        color: sectorColor,
+                        draggable: false,
+                        offset: [offset.x, offset.y]
+                    })
+                    .setLngLat([subproject.longitude, subproject.latitude])
+                    .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(popover_html));
+
+                    marker.addTo(map);
+                    markers.push(marker);
+                }
+            });
+        }
+
+        function calculateOffset(index) {
+            const angle = index * 30; // Adjust the angle increment as needed
+            const radius = 10; // Adjust the radius as needed
+            return {
+                x: radius * Math.cos(angle),
+                y: radius * Math.sin(angle)
+            };
+        }
+
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        $(document).ready(function() {
+            const map = initializeMap();
+            updateMap(map, JSON.parse(document.getElementById('subproject-data').textContent));
+        });
+    </script>
+{% endblock %}
