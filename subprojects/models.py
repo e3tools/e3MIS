@@ -60,6 +60,7 @@ class Subproject(models.Model):
 
     # Custom Fields Json
     custom_fields = models.JSONField(blank=True, null=True, default=dict)
+
     def __str__(self):
         return self.name
 
