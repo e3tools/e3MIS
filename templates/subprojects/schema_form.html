@@ -1,0 +1,160 @@
+{% extends 'layout/base.html' %}
+{% block content %}
+<h2>Custom Form Schema Editor</h2>
+
+<form method="post" action="{% url 'subprojects:subproject_custom_fields' %}">
+  {% csrf_token %}
+
+  <div class="card card-primary">
+    <div class="card-header">
+      <h3 class="card-title">Custom Form Schema Editor</h3>
+    </div>
+    <div class="card-body">
+
+      <div class="form-group">
+        <label for="name">Form Name</label>
+        <input type="text" class="form-control" name="name" id="name" value="{{ instance.name }}" placeholder="Enter form name">
+      </div>
+
+      <div class="form-group">
+        <label>Fields</label><br>
+        <button type="button" class="btn btn-sm btn-success mb-2" id="add-text-field">
+          <i class="fas fa-plus"></i> Add Text Field
+        </button>
+
+        <ul id="fields-preview" class="list-group">
+          <!-- Field previews go here -->
+        </ul>
+      </div>
+
+      <!-- Hidden JSON Schema -->
+      <textarea id="config_schema" name="config_schema" hidden></textarea>
+
+    </div>
+    <div class="card-footer">
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block modals %}
+<!-- Add Field Modal -->
+<div class="modal fade" id="addFieldModal" tabindex="-1" role="dialog" aria-labelledby="addFieldModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title" id="addFieldModalLabel">Add New Field</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="field-name-input">Field Name</label>
+          <input type="text" class="form-control" id="field-name-input" placeholder="Enter field name">
+        </div>
+        <div class="form-group">
+          <label>Is this field required?</label><br>
+          <div class="btn-group btn-group-toggle" data-toggle="buttons">
+            <label class="btn btn-outline-danger" id="btn-required-no">
+              <input type="radio" name="required-options" value="no"> No
+            </label>
+            <label class="btn btn-outline-success active" id="btn-required-yes">
+              <input type="radio" name="required-options" value="yes" checked> Yes
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="save-field-btn">Add Field</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extrajs %}
+<script>
+  const formSchema = {
+    page: {
+      type: "object",
+      required: [],
+      properties: {}
+    },
+    options: {
+      fields: {}
+    }
+  };
+
+  const previewList = document.getElementById("fields-preview");
+  const configTextarea = document.getElementById("config_schema");
+
+  // Update the hidden schema textarea
+  function updateSchemaTextarea() {
+    configTextarea.value = JSON.stringify(formSchema);
+  }
+
+  // Remove field from schema and DOM
+  function removeField(fieldName, listItemElement) {
+    delete formSchema.page.properties[fieldName];
+    delete formSchema.options.fields[fieldName];
+    formSchema.page.required = formSchema.page.required.filter(f => f !== fieldName);
+    listItemElement.remove();
+    updateSchemaTextarea();
+  }
+
+  // Open the add field modal when button is clicked
+  document.getElementById("add-text-field").addEventListener("click", function () {
+    document.getElementById("field-name-input").value = "";
+    document.getElementById("btn-required-yes").classList.add("active");
+    document.getElementById("btn-required-no").classList.remove("active");
+    $('#addFieldModal').modal('show');
+  });
+
+  // Handle save field button in modal
+  document.getElementById("save-field-btn").addEventListener("click", function () {
+    const fieldName = document.getElementById("field-name-input").value.trim();
+    const isRequired = document.getElementById("btn-required-yes").classList.contains("active");
+
+    if (!fieldName) {
+      alert("Field name cannot be empty.");
+      return;
+    }
+    if (fieldName in formSchema.page.properties) {
+      alert("Field name already exists.");
+      return;
+    }
+
+    // Update schema
+    formSchema.page.properties[fieldName] = { type: "string" };
+    formSchema.options.fields[fieldName] = {
+      label: fieldName,
+      help: ""
+    };
+    if (isRequired) {
+      formSchema.page.required.push(fieldName);
+    }
+
+    // Create preview item
+    const li = document.createElement("li");
+    li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+    li.innerHTML = `
+      <span>${fieldName} <small class="text-muted">(text) ${isRequired ? '[required]' : ''}</small></span>
+      <button type="button" class="btn btn-sm btn-danger" onclick="removeField('${fieldName}', this.parentNode)">
+        <i class="fas fa-trash-alt"></i> Remove
+      </button>
+    `;
+    previewList.appendChild(li);
+
+    updateSchemaTextarea();
+    $('#addFieldModal').modal('hide');
+  });
+
+  // Expose globally for inline remove buttons
+  window.removeField = removeField;
+</script>
+{% endblock %}
