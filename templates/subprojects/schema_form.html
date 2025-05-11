@@ -1,4 +1,6 @@
 {% extends 'layout/base.html' %}
+{% load static %}
+
 {% block content %}
 <h2>Custom Form Schema Editor</h2>
 
@@ -11,23 +13,29 @@
     </div>
     <div class="card-body">
 
+      <!-- Form name input -->
       <div class="form-group">
         <label for="name">Form Name</label>
         <input type="text" class="form-control" name="name" id="name" value="{{ instance.name }}" placeholder="Enter form name">
       </div>
 
+      <!-- Page and field controls -->
       <div class="form-group">
-        <label>Fields</label><br>
-        <button type="button" class="btn btn-sm btn-success mb-2" id="add-text-field">
-          <i class="fas fa-plus"></i> Add Text Field
+        <label>Pages</label><br>
+        <button type="button" class="btn btn-sm btn-primary mb-2" id="add-page-btn">
+          <i class="fas fa-plus"></i> Add Page
+        </button>
+        <button type="button" class="btn btn-sm btn-success mb-2 ml-2" id="add-text-field">
+          <i class="fas fa-plus"></i> Add Field to Selected Page
         </button>
 
-        <ul id="fields-preview" class="list-group">
-          <!-- Field previews go here -->
-        </ul>
+        <!-- Pages rendered dynamically -->
+        <div id="pages-container" class="mt-3">
+          <!-- AdminLTE cards per page will be inserted here -->
+        </div>
       </div>
 
-      <!-- Hidden JSON Schema -->
+      <!-- Hidden JSON field -->
       <textarea id="config_schema" name="config_schema" hidden></textarea>
 
     </div>
@@ -37,6 +45,7 @@
   </div>
 </form>
 {% endblock %}
+
 {% block modals %}
 <!-- Add Field Modal -->
 <div class="modal fade" id="addFieldModal" tabindex="-1" role="dialog" aria-labelledby="addFieldModalLabel" aria-hidden="true">
@@ -54,6 +63,26 @@
         <div class="form-group">
           <label for="field-name-input">Field Name</label>
           <input type="text" class="form-control" id="field-name-input" placeholder="Enter field name">
+        </div>
+        <div class="form-group">
+          <label for="field-label-input">Label</label>
+          <input type="text" class="form-control" id="field-label-input" placeholder="Custom label for the field">
+        </div>
+        <div class="form-group">
+          <label for="field-help-input">Help Text</label>
+          <input type="text" class="form-control" id="field-help-input" placeholder="Help text shown below the field">
+        </div>
+        <div class="form-group">
+          <label for="field-type-input">Field Type</label>
+          <select class="form-control" id="field-type-input">
+            <option value="string">Text</option>
+            <option value="number">Number</option>
+            <option value="enum">Dropdown</option>
+          </select>
+        </div>
+        <div class="form-group" id="enum-options-group" style="display: none;">
+          <label for="enum-options-input">Dropdown Options (comma-separated)</label>
+          <input type="text" class="form-control" id="enum-options-input" placeholder="e.g. Option A, Option B, Option C">
         </div>
         <div class="form-group">
           <label>Is this field required?</label><br>
@@ -77,84 +106,7 @@
   </div>
 </div>
 {% endblock %}
+
 {% block extrajs %}
-<script>
-  const formSchema = {
-    page: {
-      type: "object",
-      required: [],
-      properties: {}
-    },
-    options: {
-      fields: {}
-    }
-  };
-
-  const previewList = document.getElementById("fields-preview");
-  const configTextarea = document.getElementById("config_schema");
-
-  // Update the hidden schema textarea
-  function updateSchemaTextarea() {
-    configTextarea.value = JSON.stringify(formSchema);
-  }
-
-  // Remove field from schema and DOM
-  function removeField(fieldName, listItemElement) {
-    delete formSchema.page.properties[fieldName];
-    delete formSchema.options.fields[fieldName];
-    formSchema.page.required = formSchema.page.required.filter(f => f !== fieldName);
-    listItemElement.remove();
-    updateSchemaTextarea();
-  }
-
-  // Open the add field modal when button is clicked
-  document.getElementById("add-text-field").addEventListener("click", function () {
-    document.getElementById("field-name-input").value = "";
-    document.getElementById("btn-required-yes").classList.add("active");
-    document.getElementById("btn-required-no").classList.remove("active");
-    $('#addFieldModal').modal('show');
-  });
-
-  // Handle save field button in modal
-  document.getElementById("save-field-btn").addEventListener("click", function () {
-    const fieldName = document.getElementById("field-name-input").value.trim();
-    const isRequired = document.getElementById("btn-required-yes").classList.contains("active");
-
-    if (!fieldName) {
-      alert("Field name cannot be empty.");
-      return;
-    }
-    if (fieldName in formSchema.page.properties) {
-      alert("Field name already exists.");
-      return;
-    }
-
-    // Update schema
-    formSchema.page.properties[fieldName] = { type: "string" };
-    formSchema.options.fields[fieldName] = {
-      label: fieldName,
-      help: ""
-    };
-    if (isRequired) {
-      formSchema.page.required.push(fieldName);
-    }
-
-    // Create preview item
-    const li = document.createElement("li");
-    li.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
-    li.innerHTML = `
-      <span>${fieldName} <small class="text-muted">(text) ${isRequired ? '[required]' : ''}</small></span>
-      <button type="button" class="btn btn-sm btn-danger" onclick="removeField('${fieldName}', this.parentNode)">
-        <i class="fas fa-trash-alt"></i> Remove
-      </button>
-    `;
-    previewList.appendChild(li);
-
-    updateSchemaTextarea();
-    $('#addFieldModal').modal('hide');
-  });
-
-  // Expose globally for inline remove buttons
-  window.removeField = removeField;
-</script>
+<script src="{% static 'js/custom/schema_form.js' %}"></script>
 {% endblock %}
