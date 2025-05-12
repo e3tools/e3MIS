@@ -4,7 +4,7 @@
 {% block content %}
 <h2>Custom Form Schema Editor</h2>
 
-<form method="post" action="{% url 'subprojects:subproject_custom_fields' %}">
+<form method="post" action="{% url 'subprojects:subproject_custom_fields_create' %}">
   {% csrf_token %}
 
   <div class="card card-primary">

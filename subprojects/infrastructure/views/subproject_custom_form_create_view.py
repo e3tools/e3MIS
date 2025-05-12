@@ -9,7 +9,7 @@ class SubprojectCustomFieldsCreateView(CreateView):
     model = SubprojectCustomField
     form_class = SubprojectCustomFieldsForm
     template_name = "subprojects/schema_form.html"
-    success_url = reverse_lazy("custom_form_list")
+    success_url = reverse_lazy("subprojects:subproject_custom_fields")
 
     def post(self, request, *args, **kwargs):
         print(request.POST)
