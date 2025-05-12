@@ -116,3 +116,13 @@ class Document(models.Model):
 
     def __str__(self):
         return f"Document for {self.subproject.name}"
+
+
+class SubprojectCustomField(models.Model):
+    name = models.CharField(max_length=255)
+    config_schema = models.JSONField(help_text="JSON schema + options for the form", default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
