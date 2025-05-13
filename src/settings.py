@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import environ
 import os
+from datetime import timedelta
 from pathlib import Path
 
 # https://django-environ.readthedocs.io/en/latest/
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
 
 THIRD_PARTY_APPS = [
     'bootstrap4',
+    'rest_framework',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS
@@ -70,7 +72,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'src.urls'
-TEMPLATE_DIR = os.path.join(BASE_DIR,"templates")
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -88,6 +90,18 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'src.wsgi.application'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
 
 
 # Database

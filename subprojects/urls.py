@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from subprojects.infrastructure.views.subproject_create_view import SubprojectCreateView
 from subprojects.infrastructure.views.subproject_list_view import SubprojectListView
@@ -12,6 +12,7 @@ app_name = 'subprojects'
 
 urlpatterns = [
     path('', SubprojectListView.as_view(), name='subproject_list'),
+    path('api/', include('subprojects.api.urls')),
     path('dashboard/', DashboardView.as_view(), name='subproject_dashboard'),
     path('create', SubprojectCreateView.as_view(), name='subproject_create'),
     path('<int:pk>/update/', SubprojectUpdateView.as_view(), name='subproject_update'),

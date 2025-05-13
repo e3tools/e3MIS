@@ -3,6 +3,7 @@ import random
 import string
 from datetime import datetime, timedelta
 
+from administrativelevels.models import AdministrativeUnit
 from subprojects.models import Subproject
 
 
@@ -35,12 +36,14 @@ class Command(BaseCommand):
         status = random.randint(1, 6)
         start_date, end_date = self.generate_random_date_pair()
         latitude, longitude = self.generate_random_coordinates()
+        administrative_unit = AdministrativeUnit.objects.filter(level__order=3).order_by('?').first()
 
         return Subproject(
             external_id=external_id,
             name=name,
             description=description,
             status=status,
+            administrative_level=administrative_unit,
             start_date=start_date,
             end_date=end_date,
             latitude=latitude,
