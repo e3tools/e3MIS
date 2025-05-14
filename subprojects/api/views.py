@@ -1,9 +1,11 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 
+from django.http import Http404
+
 from administrativelevels.models import AdministrativeUnit
-from subprojects.api.serializers import SubprojectSerializer
-from subprojects.models import Subproject
+from subprojects.api.serializers import SubprojectSerializer, SubprojectCustomFieldSerializer
+from subprojects.models import SubprojectCustomField, Subproject
 
 
 class AdministrativeUnitListAPIView(generics.ListAPIView):
@@ -41,3 +43,21 @@ class AdministrativeUnitListAPIView(generics.ListAPIView):
         children_ids.append(administrative_unit.id)
         return children_ids
 
+
+class LastSubprojectCustomFieldRetrieveAPIView(generics.RetrieveAPIView):
+    queryset = SubprojectCustomField.objects.all()
+    permission_classes = (IsAuthenticated,)
+    serializer_class = SubprojectCustomFieldSerializer
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        try:
+            obj = queryset.latest('created_at')
+        except SubprojectCustomField.DoesNotExist:
+            raise Http404
+
+        # May raise a permission denied
+        self.check_object_permissions(self.request, obj)
+
+        return obj
