@@ -7,6 +7,7 @@ from subprojects.infrastructure.views.record_subproject_progress import Subproje
 from subprojects.infrastructure.views.subproject_custom_form_create_view import SubprojectCustomFieldsCreateView
 from subprojects.infrastructure.views.dashboard_view import DashboardView
 from subprojects.infrastructure.views.subproject_custom_form_list import SubprojectCustomFieldListView
+from subprojects.infrastructure.views.subprojects_by_administrativeunit import AdministrativeUnitChildrenView
 
 app_name = 'subprojects'
 
@@ -19,5 +20,6 @@ urlpatterns = [
     path('<int:pk>/progress/', SubprojectProgressCreateView.as_view(), name='subproject_progress'),
     path('custom-fields/create/', SubprojectCustomFieldsCreateView.as_view(), name='subproject_custom_fields_create'),
     path('custom-fields/', SubprojectCustomFieldListView.as_view(), name='subproject_custom_fields'),
+    path('subprojects-adminunit/', AdministrativeUnitChildrenView.as_view(), name='subproject_adminunit'),
 ]
 

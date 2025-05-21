@@ -1,0 +1,27 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+  <h1>{{ title }}</h1>
+
+  {% if children %}
+    <label for="child-select">Select a child administrative unit:</label>
+    <select id="child-select" class="form-control" style="width: 100%;">
+      {% for unit in children %}
+        <option value="{{ unit.id }}">{{ unit.name }}</option>
+      {% endfor %}
+    </select>
+  {% else %}
+    <p>No child administrative units found.</p>
+  {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      $('#child-select').select2({
+        placeholder: "Select a unit",
+        allowClear: true
+      });
+    });
+  </script>
+{% endblock %}

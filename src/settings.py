@@ -163,6 +163,7 @@ LOGIN_REDIRECT_URL = '/subprojects'
 
 AUTH_USER_MODEL = 'authorization.CustomUser'
 
+LOGIN_URL = '/'
 
 # Mapbox
 MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN')

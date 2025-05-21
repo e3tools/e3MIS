@@ -1,10 +1,10 @@
 from django.views.generic import TemplateView
 from django.conf import settings
-
+from django.contrib.auth.mixins import LoginRequiredMixin
 from subprojects.models import Subproject
 
 
-class DashboardView(TemplateView):
+class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'subprojects/dashboard.html'
 
     def get_context_data(self, **kwargs):

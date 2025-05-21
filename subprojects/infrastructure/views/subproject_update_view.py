@@ -3,8 +3,9 @@ from django.template.response import TemplateResponse
 from subprojects.models import Subproject
 from subprojects.infrastructure.forms.subproject_update_form import SubprojectForm
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
 
-class SubprojectUpdateView(UpdateView):
+class SubprojectUpdateView(LoginRequiredMixin, UpdateView):
     model = Subproject
     form_class = SubprojectForm
     template_name = "subprojects/partial_update_form.html"

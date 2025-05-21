@@ -3,9 +3,10 @@ from django.views.generic.edit import CreateView, UpdateView
 from django.urls import reverse_lazy
 from subprojects.models import SubprojectCustomField
 from subprojects.infrastructure.forms.subproject_custom_form import SubprojectCustomFieldsForm
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 
-class SubprojectCustomFieldsCreateView(CreateView):
+class SubprojectCustomFieldsCreateView(LoginRequiredMixin, CreateView):
     model = SubprojectCustomField
     form_class = SubprojectCustomFieldsForm
     template_name = "subprojects/schema_form.html"

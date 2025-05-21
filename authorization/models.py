@@ -25,6 +25,13 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     username = None
     email = models.EmailField('email address', unique=True)
+    is_facilitator = models.BooleanField(default=False)
+    administrative_unit = models.ForeignKey(
+        'administrativelevels.AdministrativeUnit',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
