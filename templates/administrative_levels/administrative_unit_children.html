@@ -3,15 +3,15 @@
 {% block content %}
   <h1>{{ title }}</h1>
 
-  {% if children %}
+  {% if subprojects %}
     <label for="child-select">Select a child administrative unit:</label>
     <select id="child-select" class="form-control" style="width: 100%;">
-      {% for unit in children %}
-        <option value="{{ unit.id }}">{{ unit.name }}</option>
+      {% for subproject in subprojects %}
+        <option value="{{ subproject.id }}">{{ subproject.name }}</option>
       {% endfor %}
     </select>
   {% else %}
-    <p>No child administrative units found.</p>
+    <p>No subprojects found.</p>
   {% endif %}
 {% endblock %}
 
