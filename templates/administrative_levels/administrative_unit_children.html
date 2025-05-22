@@ -24,10 +24,12 @@
         <p>No subprojects found.</p>
     {% endfor %}
 
-    <label for="child-select">Subprojects</label>
-    <select id="child-select" class="form-control subproject-select" style="width: 100%;" disabled>
-        <option value="" selected>--------</option>
-    </select>
+<label for="child-select">Subprojects</label>
+<select id="child-select" class="form-control subproject-select" style="width: 100%;" disabled>
+    <option value="" selected>--------</option>
+</select>
+
+<div id="subproject-form"></div>
 {% endblock %}
 
 {% block extrajs %}
@@ -56,23 +58,45 @@
             })
         });
         
-        $('.au-select-last').on('change', function(){
-            let url = "{% url 'subprojects:api:administrative-unit-select' '1' %}"
-            let element = $('.subproject-select');
-            url = url.replace('1', this.value)
-            element.attr('disabled', true);
-            $.ajax({
-                url: url,
-                success: function(data){
-                    element.empty()
-                    element.append($("<option />").val("").text("--------"));
-                    $.each(data, function() {
-                        element.append($("<option />").val(this.id).text(this.name));
-                    });
-                    element.attr('disabled', false);
-                }
-            })
-        });
+        $('.au-select-last').on('change', function() {
+    let url = "{% url 'subprojects:api:administrative-unit-select' '1' %}";
+    let element = $('.subproject-select');
+    url = url.replace('1', this.value);
+    element.attr('disabled', true);
+
+    $.ajax({
+        url: url,
+        success: function(data) {
+            element.empty();
+            element.append($("<option />").val("").text("--------"));
+            $.each(data, function() {
+                element.append($("<option />").val(this.id).text(this.name));
+            });
+            element.attr('disabled', false);
+        }
+    });
+});
+
+// When subproject is selected, fetch its update form via HTMX
+$(document).on('change', '.subproject-select', function() {
+    const selectedId = $(this).val();
+    if (!selectedId) return;
+
+    // Construct URL using selected value
+    const htmxUrl = `/subprojects/${selectedId}/update/`;
+
+    // Create a hidden HTMX element and trigger it
+    const tempTrigger = document.createElement('div');
+    tempTrigger.setAttribute('hx-get', htmxUrl);
+    tempTrigger.setAttribute('hx-target', '#subproject-form');
+    tempTrigger.setAttribute('hx-swap', 'innerHTML');
+    document.body.appendChild(tempTrigger);
+
+    // Trigger the request
+    htmx.process(tempTrigger);
+    tempTrigger.click(); // optional, in case htmx expects user-like event
+    document.body.removeChild(tempTrigger);
+});
     });
     
   </script>
