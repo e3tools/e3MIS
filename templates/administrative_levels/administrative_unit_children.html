@@ -33,6 +33,13 @@
 {% endblock %}
 
 {% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var language = '{{ LANGUAGE_CODE }}'
+            $("select").select2({ language });
+        });
+    </script>
+    <script src="{% static 'js/vendor/select2/i18n/fr.js' %}"></script>
   <script>
   
   function init_select(){}
