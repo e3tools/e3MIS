@@ -1,5 +1,5 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from django.http import Http404
 
@@ -42,6 +42,11 @@ class AdministrativeUnitListAPIView(generics.ListAPIView):
             children_ids += self.get_administrative_unit_children(child)
         children_ids.append(administrative_unit.id)
         return children_ids
+
+
+class AdministrativeUnitListForSelectAPIView(AdministrativeUnitListAPIView):
+    permission_classes = (AllowAny,)
+    pagination_class = None
 
 
 class LastSubprojectCustomFieldRetrieveAPIView(generics.RetrieveAPIView):

@@ -1,27 +1,110 @@
 {% extends 'layout/base.html' %}
+{% load static i18n bootstrap4 %}
 
 {% block content %}
   <h1>{{ title }}</h1>
+        <label for="root-select">{{ selects.0.name }}</label>
+        <select id="root-select" class="form-control" style="width: 100%;" data-order="{{ view.request.user.administrative_unit.level.order }}" disabled>
+            <option value="{{ view.request.user.administrative_unit.id }}">{{ view.request.user.administrative_unit.name }}</option>
+        </select>
+    
+    {% for select in selects|slice:"1:" %}
+        <label for="{{ select.name }}-select">{{ select.name }}</label>
+        <select id="{{ select.name }}-select" class="form-control {% if forloop.last %}au-select-last{% else %}au-select{% endif %} au-select-order-{{ select.order }}" style="width: 100%;" data-order="{{ select.order }}" {% if not forloop.first %}disabled{% endif %}>
+        {% if forloop.first %}
+                <option value="" selected>--------</option>
+            {% for au_val in initial_select_values %}
+                <option value="{{ au_val.id }}">{{ au_val.name }}</option>
+            {% endfor %}
+        {% else %}
+                <option value="" selected>--------</option>
+        {% endif %}
+        </select>
+    {% empty %}
+        <p>No subprojects found.</p>
+    {% endfor %}
 
-  {% if children %}
-    <label for="child-select">Select a child administrative unit:</label>
-    <select id="child-select" class="form-control" style="width: 100%;">
-      {% for unit in children %}
-        <option value="{{ unit.id }}">{{ unit.name }}</option>
-      {% endfor %}
-    </select>
-  {% else %}
-    <p>No child administrative units found.</p>
-  {% endif %}
+<label for="child-select">Subprojects</label>
+<select id="child-select" class="form-control subproject-select" style="width: 100%;" disabled>
+    <option value="" selected>--------</option>
+</select>
+
+<div id="subproject-form"></div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var language = '{{ LANGUAGE_CODE }}'
+            $("select").select2({ language });
+        });
+    </script>
+    <script src="{% static 'js/vendor/select2/i18n/fr.js' %}"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      $('#child-select').select2({
-        placeholder: "Select a unit",
-        allowClear: true
-      });
+  
+  function init_select(){}
+    
+    $(document).ready(function (){
+        
+        $('.au-select').on('change', function(){
+            let url = "{% url 'administrativelevels:api:administrative-level-children' '1' %}"
+            url = url.replace('1', this.value)
+            let next_order = parseInt($(this).data('order')) + 1
+            let next_select = $('.au-select-order-' + next_order);
+            next_select.attr('disabled', true);
+            $.ajax({
+                url: url,
+                success: function(data){
+                    next_select.empty()
+                    next_select.append($("<option />").val("").text("--------"));
+                    $.each(data, function() {
+                        next_select.append($("<option />").val(this.id).text(this.name));
+                    });
+                    next_select.attr('disabled', false);
+                }
+            })
+        });
+        
+        $('.au-select-last').on('change', function() {
+    let url = "{% url 'subprojects:api:administrative-unit-select' '1' %}";
+    let element = $('.subproject-select');
+    url = url.replace('1', this.value);
+    element.attr('disabled', true);
+
+    $.ajax({
+        url: url,
+        success: function(data) {
+            element.empty();
+            element.append($("<option />").val("").text("--------"));
+            $.each(data, function() {
+                element.append($("<option />").val(this.id).text(this.name));
+            });
+            element.attr('disabled', false);
+        }
     });
+});
+
+// When subproject is selected, fetch its update form via HTMX
+$(document).on('change', '.subproject-select', function() {
+    const selectedId = $(this).val();
+    if (!selectedId) return;
+
+    // Construct URL using selected value
+    const htmxUrl = `/subprojects/${selectedId}/update/`;
+
+    // Create a hidden HTMX element and trigger it
+    const tempTrigger = document.createElement('div');
+    tempTrigger.setAttribute('hx-get', htmxUrl);
+    tempTrigger.setAttribute('hx-target', '#subproject-form');
+    tempTrigger.setAttribute('hx-swap', 'innerHTML');
+    document.body.appendChild(tempTrigger);
+
+    // Trigger the request
+    htmx.process(tempTrigger);
+    tempTrigger.click(); // optional, in case htmx expects user-like event
+    document.body.removeChild(tempTrigger);
+});
+    });
+    
   </script>
 {% endblock %}
