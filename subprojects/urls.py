@@ -1,5 +1,6 @@
 from django.urls import path, include
 
+from django.views.generic import TemplateView
 from subprojects.infrastructure.views.subproject_create_view import SubprojectCreateView
 from subprojects.infrastructure.views.subproject_list_view import SubprojectListView
 from subprojects.infrastructure.views.subproject_update_view import SubprojectUpdateView
@@ -12,6 +13,7 @@ from subprojects.infrastructure.views.subprojects_by_administrativeunit import A
 app_name = 'subprojects'
 
 urlpatterns = [
+    path('', TemplateView.as_view(template_name='subprojects/index.html'), name='index'),
     path('', SubprojectListView.as_view(), name='subproject_list'),
     path('api/', include('subprojects.api.urls')),
     path('dashboard/', DashboardView.as_view(), name='subproject_dashboard'),
