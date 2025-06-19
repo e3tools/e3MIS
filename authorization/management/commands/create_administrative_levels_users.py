@@ -78,7 +78,7 @@ class Command(BaseCommand):
                 email=email,
                 password=make_password(password),
                 administrative_unit=administrative_unit,
-                is_facilitator=True,
+                is_field_agent=True,
             )
             user.save()
             print(f"Created user: {user.email} for administrative level: {administrative_level.name} with password: {password}")
