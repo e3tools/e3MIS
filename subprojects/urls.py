@@ -10,10 +10,9 @@ from subprojects.infrastructure.views.dashboard_view import DashboardView
 from subprojects.infrastructure.views.subproject_custom_form_list import SubprojectCustomFieldListView
 from subprojects.infrastructure.views.subprojects_by_administrativeunit import AdministrativeUnitSubprojectsView
 
-app_name = 'subprojects'
 
+app_name = 'subprojects'
 urlpatterns = [
-    path('', TemplateView.as_view(template_name='subprojects/index.html'), name='index'),
     path('', SubprojectListView.as_view(), name='subproject_list'),
     path('api/', include('subprojects.api.urls')),
     path('dashboard/', DashboardView.as_view(), name='subproject_dashboard'),
@@ -23,5 +22,9 @@ urlpatterns = [
     path('custom-fields/create/', SubprojectCustomFieldsCreateView.as_view(), name='subproject_custom_fields_create'),
     path('custom-fields/', SubprojectCustomFieldListView.as_view(), name='subproject_custom_fields'),
     path('subprojects-adminunit/', AdministrativeUnitSubprojectsView.as_view(), name='subproject_adminunit'),
+    path('mobile/', include(([
+        path('', TemplateView.as_view(template_name='subprojects/mobile/index.html'), name='index'),
+        path('register/', TemplateView.as_view(template_name='subprojects/mobile/register_menu.html'), name='register-menu'),
+    ], 'mobile'))),
 ]
 

@@ -170,7 +170,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = '/subprojects'
+LOGIN_REDIRECT_URL = '/subprojects/mobile'
 
 AUTH_USER_MODEL = 'authorization.CustomUser'
 
