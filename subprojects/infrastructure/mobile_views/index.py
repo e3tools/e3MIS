@@ -1,6 +1,14 @@
 from django.views.generic import TemplateView
-from src.permissions import IsFieldAgentUserMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
 
 
-class IndexTemplateView(IsFieldAgentUserMixin, TemplateView):
+class IndexTemplateView(LoginRequiredMixin, TemplateView):
     template_name = 'subprojects/mobile/index.html'
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.is_staff:
+            return HttpResponseRedirect(reverse_lazy('subprojects:subproject_list'))
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context)

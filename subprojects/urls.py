@@ -1,6 +1,5 @@
 from django.urls import path, include
 
-from django.views.generic import TemplateView
 from subprojects.infrastructure.views.subproject_create_view import SubprojectCreateView
 from subprojects.infrastructure.views.subproject_list_view import SubprojectListView
 from subprojects.infrastructure.views.subproject_update_view import SubprojectUpdateView
