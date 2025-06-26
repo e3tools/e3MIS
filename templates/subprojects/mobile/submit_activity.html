@@ -22,27 +22,29 @@
         
         .custom-button {
             margin-top: 15px;
-            min-height: 350px;
+            min-height: 200px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: left;
             padding: 0;
             border-radius: 1.5rem;
         }
 
         .button-content {
             display: flex;
-            flex-direction: column;
             align-items: center;
             color: white;
         }
 
         .custom-button i {
-            font-size: 8em; /* Adjust as needed */
+            font-size: 8em; 
+            margin-right: 10px;
+            margin-left: 10px;
         }
         
         .button-content span {
-            font-size: 2.25em; /* Adjust text size as needed */
+            font-size: 2em; /* Adjust text size as needed */
+            text-align: left;
         }
     </style>
 </head>
@@ -56,29 +58,21 @@
             <div class="container-fluid">
                 <div class="row">
                     <div class="col-12">
-                        <p class="text-center">{% translate 'Collection Tool' %}</p>
+                        <p class="text-center">{% translate 'Submit Activity' %}</p>
                     </div>
                 </div>
+                {% for custom_field in custom_fields %}
                 <div class="row">
                     <div class="col-12">
-                        <a href="{% url 'subprojects:mobile:register-menu' %}" class="btn btn-block btn-warning custom-button">
+                        <a class="btn btn-block btn-warning custom-button">
                             <div class="button-content">
-                                <i class="fas fa-file-contract"></i>
-                                <span>{% translate 'Registration' %}</span>
+                                <i class="fas fa-briefcase"></i>
+                                <span>{{ custom_field.name }}</span>
                             </div>
                         </a>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-12">
-                        <a href="{% url 'subprojects:mobile:submit-activity' %}" class="btn btn-block btn-danger custom-button">
-                            <div class="button-content">
-                                <i class="fas fa-file-alt"></i>
-                                <span>{% translate 'Submit Activity' %}</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
+                {% endfor %}
             </div>
             <!-- /.container-fluid -->
         </section>
