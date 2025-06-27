@@ -1,0 +1,127 @@
+{% extends 'layout/base.html' %}
+{% load static i18n custom_tags bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="input-group mb-3 search-bar">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                </div>
+                <input class="form-control" id="search" placeholder="{% translate 'Search' %}...">
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        <div class="btn-group pull-right">
+                            <a class="btn btn-primary" href="{% url 'subprojects:subproject_create' %}">{% translate 'Create' %} {% translate 'Field agent' %}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-field-agents" class="table table-striped" style="width: 100%;">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Email' %}</th>
+                            <th>{% translate 'Administrative level' %}</th>
+                            <th>{% translate 'Actions' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for field_angent in field_angent_list %}
+                            <tr id="subproject-{{ subproject.pk }}">
+                                <td>{{ field_angent.get_full_name }}</td>
+                                <td>{{ field_angent.email }}</td>
+                                <td>{{ field_angent.administrative_unit }}</td>
+                                <td>
+                                  <div class="btn-group">
+                                    <button type="button"
+                                            data-toggle="modal"
+                                            data-target="#fieldAgentModal"
+                                            class="btn btn-default btn-flat">
+                                      <i class="fas fa-pencil-alt text-primary"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="fieldAgentModal" tabindex="-1" role="dialog" aria-labelledby="subprojectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">{% translate 'Edit Field Agent' %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="fieldAgentModalBody">
+                <form action="" id="fieldAgentForm" method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 col-sm-12">
+                            {% bootstrap_field field_angent_form.first_name %}
+                        </div>
+                        <div class="col-md-6 col-sm-12">
+                            {% bootstrap_field field_angent_form.last_name %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 col-sm-12">
+                            {% bootstrap_field field_angent_form.email %}
+                        </div>
+                        <div class="col-md-6 col-sm-12">
+                            {% bootstrap_field field_angent_form.administrative_unit %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <a href="" class="btn btn-primary pull-right">Submit</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+
+            let table = $('#table-field-agents').DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: "ltipr",
+                columnDefs: [
+                    {
+                        targets: 1,
+                        orderable: false,
+                        searchable: false,
+                    }
+                ],
+                lengthMenu: [10, 50, 100],
+                pageLength: 10,
+                order: [[0, 'desc']]
+            });
+            $('#search').on('keyup', function () {
+                table.search($(this).val()).draw();
+            });
+        });
+        
+        
+    </script>
+{% endblock %}
+
+
+    

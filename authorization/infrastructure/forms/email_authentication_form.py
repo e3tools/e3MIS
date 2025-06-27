@@ -5,6 +5,7 @@ from django.utils.translation import gettext as _
 
 UserModel = get_user_model()
 
+
 class EmailAuthenticationForm(AuthenticationForm):
     """
     Base class for authenticating users. Extend this to get a form that accepts

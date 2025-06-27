@@ -25,7 +25,7 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     username = None
     email = models.EmailField('email address', unique=True)
-    is_facilitator = models.BooleanField(default=False)
+    is_field_agent = models.BooleanField(default=False)
     administrative_unit = models.ForeignKey(
         'administrativelevels.AdministrativeUnit',
         on_delete=models.CASCADE,

@@ -64,6 +64,7 @@ INSTALLED_APPS += THIRD_PARTY_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -84,6 +85,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'src.services.overall_variables',
             ],
         },
     },
@@ -135,9 +137,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
+# https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr'
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('fr', 'French'),
+]
+
+LOCALE_PATHS = [
+    BASE_DIR / 'locale',  # or os.path.join(BASE_DIR, 'locale')
+]
 
 TIME_ZONE = 'UTC'
 
@@ -159,7 +170,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = '/subprojects'
+LOGIN_REDIRECT_URL = '/subprojects/mobile'
 
 AUTH_USER_MODEL = 'authorization.CustomUser'
 

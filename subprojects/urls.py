@@ -1,5 +1,6 @@
 from django.urls import path, include
 
+from subprojects.infrastructure.views.contractor_list import ContractorListView
 from subprojects.infrastructure.views.subproject_create_view import SubprojectCreateView
 from subprojects.infrastructure.views.subproject_list_view import SubprojectListView
 from subprojects.infrastructure.views.subproject_update_view import SubprojectUpdateView
@@ -8,9 +9,12 @@ from subprojects.infrastructure.views.subproject_custom_form_create_view import 
 from subprojects.infrastructure.views.dashboard_view import DashboardView
 from subprojects.infrastructure.views.subproject_custom_form_list import SubprojectCustomFieldListView
 from subprojects.infrastructure.views.subprojects_by_administrativeunit import AdministrativeUnitSubprojectsView
+from subprojects.infrastructure.mobile_views.index import IndexTemplateView
+from subprojects.infrastructure.mobile_views.register_menu import RegisterMenuTemplateView
+from subprojects.infrastructure.mobile_views.submit_activity import SubmitActivityView
+
 
 app_name = 'subprojects'
-
 urlpatterns = [
     path('', SubprojectListView.as_view(), name='subproject_list'),
     path('api/', include('subprojects.api.urls')),
@@ -21,5 +25,11 @@ urlpatterns = [
     path('custom-fields/create/', SubprojectCustomFieldsCreateView.as_view(), name='subproject_custom_fields_create'),
     path('custom-fields/', SubprojectCustomFieldListView.as_view(), name='subproject_custom_fields'),
     path('subprojects-adminunit/', AdministrativeUnitSubprojectsView.as_view(), name='subproject_adminunit'),
+    path('contractors/', ContractorListView.as_view(), name='contractor_list'),
+    path('mobile/', include(([
+        path('', IndexTemplateView.as_view(), name='index'),
+        path('register/', RegisterMenuTemplateView.as_view(), name='register-menu'),
+        path('submit-activity/', SubmitActivityView.as_view(), name='submit-activity'),
+    ], 'mobile'))),
 ]
 

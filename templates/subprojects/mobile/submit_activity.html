@@ -1,0 +1,89 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    {% include 'layout/head.html' %}
+    <style>
+        .content {
+            background: #30b0b0;
+        }
+        
+        .content-wrapper {
+            background: #30b0b0;
+        }
+        
+        p.text-center {
+            font-size: 2em;
+            margin-top: 15px;
+            color: white;
+        }
+        
+        .custom-button {
+            margin-top: 15px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: left;
+            padding: 0;
+            border-radius: 1.5rem;
+        }
+
+        .button-content {
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+
+        .custom-button i {
+            font-size: 8em; 
+            margin-right: 10px;
+            margin-left: 10px;
+        }
+        
+        .button-content span {
+            font-size: 2em; /* Adjust text size as needed */
+            text-align: left;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper" style="margin-left: 0;">
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <p class="text-center">{% translate 'Submit Activity' %}</p>
+                    </div>
+                </div>
+                {% for custom_field in custom_fields %}
+                <div class="row">
+                    <div class="col-12">
+                        <a class="btn btn-block btn-warning custom-button">
+                            <div class="button-content">
+                                <i class="fas fa-briefcase"></i>
+                                <span>{{ custom_field.name }}</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+</div>
+<!-- ./wrapper -->
+
+{% include 'layout/foot.html' %}
+<script src="https://unpkg.com/htmx.org@1.9.2"></script>
+</body>
+
+</html>
