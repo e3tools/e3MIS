@@ -2,21 +2,21 @@
 {% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 {% block content %}
-                <div class="row">
-                    <div class="col-12">
-                        <p class="text-center">{% translate 'Submit Activity' %}</p>
+        <div class="row">
+            <div class="col-12">
+                <p class="text-center">{% translate 'Submit Activity' %}</p>
+            </div>
+        </div>
+        {% for custom_field in custom_fields %}
+        <div class="row">
+            <div class="col-12">
+                <a class="btn btn-block btn-warning custom-button">
+                    <div class="button-content">
+                        <i class="fas fa-briefcase"></i>
+                        <span>{{ custom_field.name }}</span>
                     </div>
-                </div>
-                {% for custom_field in custom_fields %}
-                <div class="row">
-                    <div class="col-12">
-                        <a class="btn btn-block btn-warning custom-button">
-                            <div class="button-content">
-                                <i class="fas fa-briefcase"></i>
-                                <span>{{ custom_field.name }}</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                {% endfor %}
+                </a>
+            </div>
+        </div>
+        {% endfor %}
 {% endblock %}
