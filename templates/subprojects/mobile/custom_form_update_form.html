@@ -1,0 +1,11 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n custom_tags bootstrap4 %}
+{% block content %}
+<form method="post" hx-post="">
+    {% csrf_token %}
+    {% bootstrap_form custom_form %}
+    <div class="text-right mt-3">
+        <button type="submit" class="btn btn-primary">{% translate 'Save' %}</button>
+    </div>
+</form>
+{% endblock %}

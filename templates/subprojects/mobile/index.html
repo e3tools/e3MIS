@@ -1,59 +1,7 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
 {% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
-
-<!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}">
-<head>
-    {% include 'layout/head.html' %}
-    <style>
-        .content {
-            background: #30b0b0;
-        }
-        
-        .content-wrapper {
-            background: #30b0b0;
-        }
-        
-        p.text-center {
-            font-size: 2em;
-            margin-top: 15px;
-            color: white;
-        }
-        
-        .custom-button {
-            margin-top: 15px;
-            min-height: 350px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            border-radius: 1.5rem;
-        }
-
-        .button-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: white;
-        }
-
-        .custom-button i {
-            font-size: 8em; /* Adjust as needed */
-        }
-        
-        .button-content span {
-            font-size: 2.25em; /* Adjust text size as needed */
-        }
-    </style>
-</head>
-<body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
-    <!-- Content Wrapper. Contains page content -->
-    <div class="content-wrapper" style="margin-left: 0;">
-
-        <!-- Main content -->
-        <section class="content">
-            <div class="container-fluid">
+{% block content %}
                 <div class="row">
                     <div class="col-12">
                         <p class="text-center">{% translate 'Collection Tool' %}</p>
@@ -79,17 +27,4 @@
                         </a>
                     </div>
                 </div>
-            </div>
-            <!-- /.container-fluid -->
-        </section>
-        <!-- /.content -->
-    </div>
-    <!-- /.content-wrapper -->
-</div>
-<!-- ./wrapper -->
-
-{% include 'layout/foot.html' %}
-<script src="https://unpkg.com/htmx.org@1.9.2"></script>
-</body>
-
-</html>
+{% endblock %}

@@ -12,6 +12,7 @@ from subprojects.infrastructure.views.subprojects_by_administrativeunit import A
 from subprojects.infrastructure.mobile_views.index import IndexTemplateView
 from subprojects.infrastructure.mobile_views.register_menu import RegisterMenuTemplateView
 from subprojects.infrastructure.mobile_views.submit_activity import SubmitActivityView
+from subprojects.infrastructure.mobile_views.custom_form_create_view import CustomFormUpdateView
 
 
 app_name = 'subprojects'
@@ -30,6 +31,7 @@ urlpatterns = [
         path('', IndexTemplateView.as_view(), name='index'),
         path('register/', RegisterMenuTemplateView.as_view(), name='register-menu'),
         path('submit-activity/', SubmitActivityView.as_view(), name='submit-activity'),
+        path('custom-form-update/<int:pk>', CustomFormUpdateView.as_view(), name='custom-form-update'),
     ], 'mobile'))),
 ]
 
