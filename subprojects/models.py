@@ -126,3 +126,11 @@ class SubprojectCustomField(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class SubprojectFormResponse(models.Model):
+    custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
+    subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE)
+    filled_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
