@@ -12,10 +12,10 @@
             </div>
             <div class="card">
                 <div class="card-header">
-                    <div class="col-md-12">
-                        <div class="btn-group pull-right">
-                            <a class="btn btn-primary" href="{% url 'subprojects:subproject_create' %}">{% translate 'Create' %} {% translate 'Field agent' %}</a>
-                        </div>
+                    <div class="col-12">
+                        <a class="btn btn-primary pull-right field-agent-modal-show" data-first-name="" 
+                           data-last-name="" data-email="" data-administrative-unit="" data-id=""
+                        >{% translate 'Create' %} {% translate 'Field agent' %}</a>
                     </div>
                 </div>
                 <div class="card-body table-responsive">
@@ -29,7 +29,7 @@
                         </tr>
                         </thead>
                         <tbody>
-                        {% for field_angent in field_angent_list %}
+                        {% for field_angent in object_list %}
                             <tr id="subproject-{{ subproject.pk }}">
                                 <td>{{ field_angent.get_full_name }}</td>
                                 <td>{{ field_angent.email }}</td>
@@ -37,9 +37,12 @@
                                 <td>
                                   <div class="btn-group">
                                     <button type="button"
-                                            data-toggle="modal"
-                                            data-target="#fieldAgentModal"
-                                            class="btn btn-default btn-flat">
+                                            data-first-name="{{ field_angent.first_name }}"
+                                            data-last-name="{{ field_angent.last_name }}"
+                                            data-email="{{ field_angent.email }}"
+                                            data-administrative-unit="{{ field_angent.administrative_unit.id }}"
+                                            data-id="{{ field_angent.id }}"
+                                            class="btn btn-default btn-flat field-agent-modal-show">
                                       <i class="fas fa-pencil-alt text-primary"></i>
                                     </button>
                                   </div>
@@ -58,36 +61,37 @@
 <div class="modal fade" id="fieldAgentModal" tabindex="-1" role="dialog" aria-labelledby="subprojectModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">{% translate 'Edit Field Agent' %}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="fieldAgentModalBody">
-                <form action="" id="fieldAgentForm" method="post">
-                    {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-6 col-sm-12">
-                            {% bootstrap_field field_angent_form.first_name %}
+            <form action="." id="fieldAgentForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">{% translate 'Edit Field Agent' %}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="fieldAgentModalBody">
+                        {% csrf_token %}
+                        <input type="hidden" name="field_agent" id="id_field_agent" value="">
+                        <div class="row">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.first_name %}
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.last_name %}
+                            </div>
                         </div>
-                        <div class="col-md-6 col-sm-12">
-                            {% bootstrap_field field_angent_form.last_name %}
+                        <div class="row">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.email %}
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.administrative_unit %}
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 col-sm-12">
-                            {% bootstrap_field field_angent_form.email %}
-                        </div>
-                        <div class="col-md-6 col-sm-12">
-                            {% bootstrap_field field_angent_form.administrative_unit %}
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <a href="" class="btn btn-primary pull-right">Submit</a>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="submit" class="btn btn-primary pull-right" value="{% translate 'Submit' %}">
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -117,9 +121,17 @@
             $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();
             });
+            
+            $(".field-agent-modal-show").on("click", function () {
+                $("#id_field_agent").val($(this).data("id"));
+                $("#id_first_name").val($(this).data("first-name"));
+                $("#id_last_name").val($(this).data("last-name"));
+                $("#id_email").val($(this).data("email"));
+                $("#id_administrative_unit").val($(this).data("administrative-unit")).change();
+                $('#fieldAgentModal').modal('show');
+            });
+            
         });
-        
-        
     </script>
 {% endblock %}
 
