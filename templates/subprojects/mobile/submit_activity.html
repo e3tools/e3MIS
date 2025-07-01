@@ -10,7 +10,7 @@
         {% for custom_field in custom_fields %}
         <div class="row">
             <div class="col-12">
-                <a class="btn btn-block btn-warning custom-button">
+                <a href="{% url 'subprojects:mobile:custom-form-update' custom_field.pk %}" class="btn btn-block btn-warning custom-button">
                     <div class="button-content">
                         <i class="fas fa-briefcase"></i>
                         <span>{{ custom_field.name }}</span>
