@@ -5,7 +5,7 @@ from django.http import Http404
 
 from administrativelevels.models import AdministrativeUnit
 from subprojects.api.serializers import SubprojectSerializer, SubprojectCustomFieldSerializer
-from subprojects.models import SubprojectCustomField, Subproject
+from subprojects.models import SubprojectCustomField, Subproject, SubprojectFormResponse
 
 
 class AdministrativeUnitListAPIView(generics.ListAPIView):
@@ -66,3 +66,18 @@ class LastSubprojectCustomFieldRetrieveAPIView(generics.RetrieveAPIView):
         self.check_object_permissions(self.request, obj)
 
         return obj
+
+
+class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
+    pagination_class = None
+    queryset = SubprojectCustomField.objects.all()
+    serializer_class = SubprojectCustomFieldSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+        subproject = self.request.query_params.get('subproject', None)
+
+        if subproject:
+            queryset = queryset.filter(subproject__administrative_level__id=subproject)
+
+        return queryset

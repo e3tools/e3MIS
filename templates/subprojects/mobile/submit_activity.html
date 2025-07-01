@@ -2,21 +2,77 @@
 {% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 {% block content %}
-        <div class="row">
-            <div class="col-12">
-                <p class="text-center">{% translate 'Submit Activity' %}</p>
+    <div class="row">
+        <div class="col-12">
+            <p class="text-center">{% translate 'Submit Activity' %}</p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="form-group">
+                <label for="subproject-input">{% translate 'Select subproject' %}</label>
+                <select name="subproject" id="subproject-input" class="form-control">
+                    {% for subproject in subprojects %}
+                        <option value="{{ subproject.id }}">{{ subproject.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
         </div>
-        {% for custom_field in custom_fields %}
+    </div>
+    <div id="id-btn-wrapper"></div>
+    
+    <template id="btn-template">
         <div class="row">
             <div class="col-12">
-                <a href="{% url 'subprojects:mobile:custom-form-update' custom_field.pk %}" class="btn btn-block btn-warning custom-button">
+                <a href="" class="btn btn-block btn-warning custom-button btn-link">
                     <div class="button-content">
                         <i class="fas fa-briefcase"></i>
-                        <span>{{ custom_field.name }}</span>
+                        <span class="btn-label">{{ custom_field.name }}</span>
                     </div>
                 </a>
             </div>
         </div>
-        {% endfor %}
+    </template>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript">
+    
+        function fill_btn_wrapper(subproject_id){
+            
+            let url = "{% url 'subprojects:api:custom-fields' %}?subproject=" + subproject_id;
+            let wrapper = $('#id-btn-wrapper');
+            wrapper.html('');
+        
+            $.ajax({
+                url: url,
+                success: function(data) {
+                    console.log(data);
+                    data.forEach(function (activity) {
+                        const rendered_button = render_activity_button(activity);
+                        wrapper.append(rendered_button);
+                    });
+                }
+            });
+        }
+        
+        function render_activity_button(activity) {
+            let post_template = $($('#btn-template')[0].content).clone();
+            let href = "{% url 'subprojects:mobile:custom-form-update' '1' %}"
+            href = href.replace('1', activity.id)
+        
+            post_template.find('.btn-link').attr('href', href);
+            post_template.find('.btn-label').text(activity.name);
+        
+            return post_template;
+        }
+    
+        $( document ).ready( function () {
+            let subproject_input = $( '#subproject-input' );
+            fill_btn_wrapper(subproject_input.val());
+            subproject_input.change(function () {
+                fill_btn_wrapper($(this).val());
+            });
+        });
+    </script>
 {% endblock %}

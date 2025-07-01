@@ -162,6 +162,7 @@ class Document(models.Model):
 
 class SubprojectCustomField(models.Model):
     name = models.CharField(max_length=255)
+    subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE)
     config_schema = models.JSONField(help_text="JSON schema + options for the form", default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -172,7 +173,6 @@ class SubprojectCustomField(models.Model):
 
 class SubprojectFormResponse(models.Model):
     custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
-    subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE)
     filled_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
