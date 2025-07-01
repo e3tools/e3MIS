@@ -1,6 +1,7 @@
 from django import forms
 from subprojects.models import Subproject
 
+
 class SubprojectForm(forms.ModelForm):
     class Meta:
         model = Subproject
