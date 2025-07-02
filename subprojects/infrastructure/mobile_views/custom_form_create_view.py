@@ -5,40 +5,44 @@ from subprojects.models import SubprojectCustomField, SubprojectFormResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
+
 class CustomFormUpdateView(LoginRequiredMixin, CreateView):
     model = SubprojectFormResponse
+    queryset = SubprojectCustomField.objects.all()
     fields = '__all__'
     template_name = "subprojects/mobile/custom_form_update_form.html"
 
-    def form_valid(self, form):
-        # Bind and validate the custom form from POST data
-        custom_form = self.get_custom_form(bind_from_post=True)
-
-        if custom_form.is_valid():
-            # Save main form and get updated object
-            self.object = form.save()
-
-            # Get custom field names from the schema to ensure only those are stored
-            custom_field_names = self.get_custom_field_names()
-
-            # Extract cleaned custom fields only
-            custom_data = {
-                key: value
-                for key, value in custom_form.cleaned_data.items()
-                if key in custom_field_names
-            }
-
-            self.object.custom_fields = json.dumps(custom_data)
-            self.object.save()
-
-            return TemplateResponse(self.request, "subprojects/partial_update_success.html", {
-                'subproject': self.object,
-            })
+    def post(self, request, *args, **kwargs):
+        """
+        Handle POST requests: instantiate a form instance with the passed
+        POST variables and then check if it's valid.
+        """
+        self.object = self.get_object()
+        form = self.get_custom_form()
+        if form.is_valid():
+            return self.form_valid(form)
         else:
             return self.form_invalid(form)
 
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return self.render_to_response(self.get_context_data())
+
+    def form_valid(self, form):
+
+        instance = self.model(
+            custom_form=self.object,
+            filled_by=self.request.user,
+            subproject=self.object.subprojects.get(pk=self.kwargs['subproject']),
+            response_schema=form.cleaned_data
+        )
+        instance.save()
+
+        return TemplateResponse(self.request, "subprojects/partial_update_success.html", {
+            'subproject': instance.subproject,
+        })
+
     def form_invalid(self, form):
-        print('here invalid')
         return TemplateResponse(self.request, self.template_name, {
             'form': form,
             'custom_form': self.get_custom_form(),  # ensure custom form is re-included on error
@@ -50,9 +54,9 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
         context['custom_form'] = self.get_custom_form()
         return context
 
-    def get_custom_form(self, bind_from_post=False):
+    def get_custom_form(self):
         try:
-            custom_form_config = SubprojectCustomField.objects.last()
+            custom_form_config = self.object
             schema_json = custom_form_config.config_schema if custom_form_config else {
                 "form": [
                     {
@@ -77,23 +81,23 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
 
         form_class = parse_custom_jsonschema(schema_json, page_index=0)
 
-        if bind_from_post and self.request.method in ["POST"]:
-            return form_class(data=self.request.POST)
+        return form_class(**self.get_form_kwargs())
 
-        if self.object and self.object.custom_fields:
-            try:
-                custom_fields = (
-                    json.loads(self.object.custom_fields)
-                    if isinstance(self.object.custom_fields, (str, bytes, bytearray))
-                    else self.object.custom_fields
-                )
-                post_data = {k: str(v) for k, v in custom_fields.items()}
-                return form_class(data=post_data)
-            except (json.JSONDecodeError, AttributeError):
-                pass
+    def get_form_kwargs(self):
+        """Return the keyword arguments for instantiating the form."""
+        kwargs = {
+            "initial": self.get_initial(),
+            "prefix": self.get_prefix(),
+        }
 
-        return form_class()
-
+        if self.request.method in ("POST", "PUT"):
+            kwargs.update(
+                {
+                    "data": self.request.POST,
+                    "files": self.request.FILES,
+                }
+            )
+        return kwargs
 
     def get_custom_field_names(self):
         try:
@@ -102,3 +106,35 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
             return list(schema_json['form'][0]['page']['properties'].keys())
         except Exception:
             return []
+
+
+omk = {
+    "form": [
+        {
+            "page": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "last_name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "options": {
+                "fields": {
+                    "name": {
+                        "label": "What's your name",
+                        "help": "This is your name"
+                    },
+                    "last_name": {
+                        "label": "Your last name",
+                        "help": "Here goes your lat name"
+                    }
+                }
+            }
+        }
+    ]
+}

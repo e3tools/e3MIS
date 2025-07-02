@@ -33,7 +33,7 @@ urlpatterns = [
         path('register/', RegisterMenuTemplateView.as_view(), name='register-menu'),
         path('register/sub-project/', RegisterSubprojectView.as_view(), name='register-subproject'),
         path('submit-activity/', SubmitActivityView.as_view(), name='submit-activity'),
-        path('custom-form-update/<int:pk>', CustomFormUpdateView.as_view(), name='custom-form-update'),
+        path('custom-form-update/<int:pk>/subproject/<int:subproject>/', CustomFormUpdateView.as_view(), name='custom-form-update'),
     ], 'mobile'))),
 ]
 

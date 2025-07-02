@@ -10,7 +10,7 @@
     <div class="row">
         <div class="col-12">
             <div class="form-group">
-                <label for="subproject-input">{% translate 'Select subproject' %}</label>
+                <label for="subproject-input">{% translate 'Select administrative unit' %}</label>
                 <select name="subproject" id="subproject-input" class="form-control">
                     {% for subproject in subprojects %}
                         <option value="{{ subproject.id }}">{{ subproject.name }}</option>
@@ -40,14 +40,13 @@
     
         function fill_btn_wrapper(subproject_id){
             
-            let url = "{% url 'subprojects:api:custom-fields' %}?subproject=" + subproject_id;
+            let url = "{% url 'subprojects:api:custom-fields' %}?administrative-unit=" + subproject_id;
             let wrapper = $('#id-btn-wrapper');
             wrapper.html('');
         
             $.ajax({
                 url: url,
                 success: function(data) {
-                    console.log(data);
                     data.forEach(function (activity) {
                         const rendered_button = render_activity_button(activity);
                         wrapper.append(rendered_button);
@@ -58,11 +57,14 @@
         
         function render_activity_button(activity) {
             let post_template = $($('#btn-template')[0].content).clone();
-            let href = "{% url 'subprojects:mobile:custom-form-update' '1' %}"
+            let href = "{% url 'subprojects:mobile:custom-form-update' '1' '0' %}"
             href = href.replace('1', activity.id)
+            href = href.replace('0', activity.subprojects__id)
         
             post_template.find('.btn-link').attr('href', href);
-            post_template.find('.btn-label').text(activity.name);
+            post_template.find('.btn-label').text(
+                activity.name + ' - ' + activity.subprojects__name + ' (' + activity.subprojects__administrative_level__name + ')'
+            );
         
             return post_template;
         }

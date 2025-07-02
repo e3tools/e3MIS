@@ -100,9 +100,6 @@ class Subproject(models.Model):
     # Many-to-Many through SubprojectBeneficiary
     beneficiary_groups = models.ManyToManyField(BeneficiaryGroup, through='SubprojectBeneficiary')
 
-    # Custom Fields Json
-    custom_fields = models.JSONField(blank=True, null=True, default=dict)
-
     def __str__(self):
         return self.name
 
@@ -162,7 +159,7 @@ class Document(models.Model):
 
 class SubprojectCustomField(models.Model):
     name = models.CharField(max_length=255)
-    subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE)
+    subprojects = models.ManyToManyField(Subproject, related_name="custom_fields")
     config_schema = models.JSONField(help_text="JSON schema + options for the form", default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -173,6 +170,8 @@ class SubprojectCustomField(models.Model):
 
 class SubprojectFormResponse(models.Model):
     custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
+    subproject = models.ForeignKey(Subproject, related_name="custom_fields_responses", on_delete=models.CASCADE, null=True, blank=True)
     filled_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    response_schema = models.JSONField(help_text="JSON response schema", default=list)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
