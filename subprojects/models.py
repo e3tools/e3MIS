@@ -159,7 +159,6 @@ class Document(models.Model):
 
 class SubprojectCustomField(models.Model):
     name = models.CharField(max_length=255)
-    subprojects = models.ManyToManyField(Subproject, related_name="custom_fields")
     config_schema = models.JSONField(help_text="JSON schema + options for the form", default=list)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

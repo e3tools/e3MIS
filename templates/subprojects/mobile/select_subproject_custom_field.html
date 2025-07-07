@@ -1,0 +1,24 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <p class="text-center">{% translate 'Select Subproject Custom fields' %}</p>
+        </div>
+    </div>
+    {% for subproject_custom_field in subproject_custom_fields %}
+    <div class="row">
+        <div class="col-12">
+            <a href="{% url 'subprojects:mobile:custom-form-update' subproject_custom_field.id subproject.id %}" 
+               class="btn btn-block btn-warning custom-button btn-link">
+                <div class="button-content">
+                    <i class="fas fa-briefcase"></i>
+                    <span class="btn-label">{{ subproject_custom_field.name }}</span>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    {% endfor %}
+{% endblock %}

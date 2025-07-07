@@ -81,9 +81,8 @@ class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
         administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
         all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
-            subprojects = Subproject.objects.filter(administrative_level=child)
-            resp_list += list(SubprojectCustomField.objects.filter(subprojects__in=subprojects).values(
-                'name', 'id', 'subprojects__name', 'subprojects__id', 'subprojects__administrative_level__name'))
+            resp_list += list(Subproject.objects.filter(administrative_level=child).values(
+                'name', 'id'))
 
         return Response(resp_list)
 

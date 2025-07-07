@@ -11,7 +11,8 @@ from subprojects.infrastructure.views.subproject_custom_form_list import Subproj
 from subprojects.infrastructure.views.subprojects_by_administrativeunit import AdministrativeUnitSubprojectsView
 from subprojects.infrastructure.mobile_views.index import IndexTemplateView
 from subprojects.infrastructure.mobile_views.register_menu import RegisterMenuTemplateView
-from subprojects.infrastructure.mobile_views.submit_activity import SubmitActivityView
+from subprojects.infrastructure.mobile_views.select_subproject_for_activity import SelectSubprojectForActivityView
+from subprojects.infrastructure.mobile_views.select_subproject_custom_field import SelectSubprojectCustomFieldView
 from subprojects.infrastructure.mobile_views.custom_form_create_view import CustomFormUpdateView
 from subprojects.infrastructure.mobile_views.register_subproject import RegisterSubprojectView
 
@@ -32,7 +33,8 @@ urlpatterns = [
         path('', IndexTemplateView.as_view(), name='index'),
         path('register/', RegisterMenuTemplateView.as_view(), name='register-menu'),
         path('register/sub-project/', RegisterSubprojectView.as_view(), name='register-subproject'),
-        path('submit-activity/', SubmitActivityView.as_view(), name='submit-activity'),
+        path('submit-activity/', SelectSubprojectForActivityView.as_view(), name='select-subproject-for-activity'),
+        path('select-custom-fields/<int:subproject>/', SelectSubprojectCustomFieldView.as_view(), name='select-subproject-custom-fields'),
         path('custom-form-update/<int:pk>/subproject/<int:subproject>/', CustomFormUpdateView.as_view(), name='custom-form-update'),
     ], 'mobile'))),
 ]

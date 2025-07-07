@@ -1,7 +1,7 @@
 import json
 from django.views.generic.edit import CreateView
 from django.template.response import TemplateResponse
-from subprojects.models import SubprojectCustomField, SubprojectFormResponse
+from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
 from django.contrib.auth.mixins import LoginRequiredMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
@@ -29,17 +29,22 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
-
-        instance = self.model(
-            custom_form=self.object,
-            filled_by=self.request.user,
-            subproject=self.object.subprojects.get(pk=self.kwargs['subproject']),
-            response_schema=form.cleaned_data
-        )
+        subproject = Subproject.objects.get(pk=self.kwargs['subproject'])
+        instance = self.model.objects.filter(custom_form=self.object, subproject=subproject).first()
+        if instance is None:
+            instance = self.model(
+                custom_form=self.object,
+                filled_by=self.request.user,
+                subproject=subproject,
+                response_schema=form.cleaned_data
+            )
+        else:
+            instance.filled_by = self.request.user
+            instance.response_schema = form.cleaned_data
         instance.save()
 
         return TemplateResponse(self.request, "subprojects/partial_update_success.html", {
-            'subproject': instance.subproject,
+            'subproject': subproject,
         })
 
     def form_invalid(self, form):
@@ -106,35 +111,3 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
             return list(schema_json['form'][0]['page']['properties'].keys())
         except Exception:
             return []
-
-
-omk = {
-    "form": [
-        {
-            "page": {
-                "type": "object",
-                "required": ["name"],
-                "properties": {
-                    "name": {
-                        "type": "string"
-                    },
-                    "last_name": {
-                        "type": "string"
-                    }
-                }
-            },
-            "options": {
-                "fields": {
-                    "name": {
-                        "label": "What's your name",
-                        "help": "This is your name"
-                    },
-                    "last_name": {
-                        "label": "Your last name",
-                        "help": "Here goes your lat name"
-                    }
-                }
-            }
-        }
-    ]
-}
