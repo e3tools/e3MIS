@@ -18,6 +18,7 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
         POST variables and then check if it's valid.
         """
         self.object = self.get_object()
+        self.project = Subproject.objects.get(pk=self.kwargs['subproject'])
         form = self.get_custom_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -26,6 +27,7 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
+        self.project = Subproject.objects.get(pk=self.kwargs['subproject'])
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
@@ -59,8 +61,15 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-        context['subproject'] = Subproject.objects.get(pk=self.kwargs['subproject'])
+        context['subproject'] = self.project
         return context
+
+    def get_initial(self):
+        """Return the initial data to use for forms on this view."""
+        form_response = SubprojectFormResponse.objects.filter(subproject=self.project, custom_form=self.object).first()
+        if form_response is not None:
+            return form_response.response_schema
+        return self.initial.copy()
 
     def get_custom_form(self):
         try:
