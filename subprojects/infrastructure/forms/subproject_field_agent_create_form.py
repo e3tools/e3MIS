@@ -23,13 +23,29 @@ class SubprojectFieldAgentCreateForm(forms.ModelForm):
         fields = [
             'administrative_level', 'other_administrative_levels', 'is_for_multiple_communities', 'name', 'objective',
             'description', 'activity_sector', 'estimate_cost', 'community_grant_agreement_reference', 'sub_component',
-            'type', 'project_management',
+            'type', 'project_management', 'beneficiary_groups', 'external_id'
         ]
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        if user:
-            self.fields['administrative_level'].queryset = AdministrativeUnit.objects.all()
+        qs = AdministrativeUnit.objects.filter(
+            id__in=self.get_descendants(user.administrative_unit))
+        self.fields['administrative_level'].queryset = qs
+        self.fields['other_administrative_levels'].queryset = qs
+        if user and qs.filter(id=user.administrative_unit.id).exists():
             self.fields['administrative_level'].initial = user.administrative_unit
+
+    def get_descendants(self, administrative_unit):
+        descendants = list()
+
+        def recurse(node):
+            if node.children.exists():
+                for child in node.children.all():
+                    recurse(child)
+            else:
+                descendants.append(node.id)
+
+        recurse(administrative_unit)
+        return descendants
 
