@@ -1,30 +1,31 @@
 {% extends 'subprojects/mobile/layout/mobile_base.html' %}
 {% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
+
 {% block content %}
-                <div class="row">
-                    <div class="col-12">
-                        <p class="text-center">{% translate 'Collection Tool' %}</p>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <a href="{% url 'subprojects:mobile:register-menu' %}" class="btn btn-block btn-warning custom-button">
-                            <div class="button-content">
-                                <i class="fas fa-file-contract"></i>
-                                <span>{% translate 'Registration' %}</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}" class="btn btn-block btn-danger custom-button">
-                            <div class="button-content">
-                                <i class="fas fa-file-alt"></i>
-                                <span>{% translate 'Submit Activity' %}</span>
-                            </div>
-                        </a>
-                    </div>
-                </div>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="text-center mt-4 mb-3">
+            <h4 class="font-weight-bold">{% translate 'Collection Tool' %}</h4>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <a href="{% url 'subprojects:mobile:register-menu' %}"
+           class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-3 shadow-sm">
+            <i class="fas fa-file-contract mr-2"></i>
+            <span>{% translate 'Registration' %}</span>
+            <i class="fas fa-chevron-right ml-2"></i>
+        </a>
+    </div>
+
+    <div class="col-12">
+        <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
+           class="btn btn-danger btn-block btn-lg d-flex align-items-center justify-content-center shadow-sm">
+            <i class="fas fa-file-alt mr-2"></i>
+            <span>{% translate 'Submit Activity' %}</span>
+            <i class="fas fa-chevron-right ml-2"></i>
+        </a>
+    </div>
+</div>
 {% endblock %}

@@ -2,19 +2,19 @@
 {% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 {% block content %}
-    <div class="row">
-        <div class="col-12">
-            <p class="text-center">{% translate 'Register' %}</p>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="text-center mt-4 mb-3">
+            <h4 class="font-weight-bold">{% translate 'Register' %}</h4>
         </div>
     </div>
-    <div class="row">
-        <div class="col-12">
-            <a href="{% url 'subprojects:mobile:register-subproject' %}" class="btn btn-block btn-warning custom-button">
-                <div class="button-content">
-                    <i class="fas fa-briefcase"></i>
-                    <span>{% translate 'Create subproject' %}</span>
-                </div>
-            </a>
-        </div>
+    <div class="col-12">
+        <a href="{% url 'subprojects:mobile:register-subproject' %}"
+           class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-4 shadow-sm">
+            <i class="fas fa-briefcase mr-2"></i>
+            <span>{% translate 'Create subproject' %}</span>
+            <i class="fas fa-chevron-right ml-2"></i>
+        </a>
     </div>
+</div>
 {% endblock %}

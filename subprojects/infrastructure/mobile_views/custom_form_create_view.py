@@ -43,8 +43,10 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
             instance.response_schema = form.cleaned_data
         instance.save()
 
-        return TemplateResponse(self.request, "subprojects/partial_update_success.html", {
+        return TemplateResponse(self.request, "subprojects/mobile/custom_form_update_form.html", {
             'subproject': subproject,
+            'custom_form': self.get_custom_form(),
+            'success': True,  # <<<<<<<<<<<<<<<<
         })
 
     def form_invalid(self, form):
@@ -57,6 +59,7 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
+        context['subproject'] = Subproject.objects.get(pk=self.kwargs['subproject'])
         return context
 
     def get_custom_form(self):
