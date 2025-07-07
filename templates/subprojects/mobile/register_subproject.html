@@ -48,8 +48,15 @@
                     <div class="form-group">
                         {% bootstrap_field form.type show_label=True %}
                     </div>
-                    <div class="form-group mb-0">
-                        <input type="submit" class="btn btn-primary btn-block" value="{% translate 'Create Subproject' %}">
+                    <div class="form-group mb-0 d-flex justify-content-between">
+                        <a href="{% url 'subprojects:mobile:index' %}" class="btn btn-outline-secondary btn-lg mr-2" style="flex:1;">
+                            <i class="fas fa-times mr-1"></i>
+                            {% translate 'Cancel' %}
+                        </a>
+                        <a href="{% url 'subprojects:mobile:register-menu' %}" class="btn btn-primary btn-lg" style="flex:1;">
+                            <i class="fas fa-save mr-1"></i>
+                            {% translate 'Save' %}
+                        </a>
                     </div>
                 </div>
             </form>
