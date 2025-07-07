@@ -3,119 +3,95 @@
 {% get_current_language as LANGUAGE_CODE %}
 
 {% block content %}
-    <div class="row">
-        <div class="col-12">
-            <p class="text-center">{% translate 'Register' %}</p>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0">{% translate 'Register Subproject' %}</h4>
+            </div>
+            <form action="" method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                    <div class="form-group">
+                        {% bootstrap_field form.administrative_level show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.is_for_multiple_communities show_label=True %}
+                    </div>
+                    <div class="form-group" id="idOtherAdministrativeLevelsRow" style="display: none;">
+                        {% bootstrap_field form.other_administrative_levels show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.name show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.objective show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.description show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.activity_sector show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.estimate_cost show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.community_grant_agreement_reference show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.sub_component show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.project_management show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.type show_label=True %}
+                    </div>
+                    <div class="form-group mb-0">
+                        <input type="submit" class="btn btn-primary btn-block" value="{% translate 'Create Subproject' %}">
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-    <form action="" method="post">
-        {% csrf_token %}
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.administrative_level %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.is_for_multiple_communities %}
-            </div>
-        </div>
-        <div class="row" id="idOtherAdministrativeLevelsRow" style="display: none;">
-            <div class="col-12">
-                {% bootstrap_field form.other_administrative_levels %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.name %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.objective %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.description %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.activity_sector %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.estimate_cost %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.community_grant_agreement_reference %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.sub_component %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.project_management %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                {% bootstrap_field form.type %}
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-12">
-                <input type="submit" class="btn btn-warning btn-block" value="{% translate 'Create Subproject' %}">
-            </div>
-        </div>
-    </form>
+</div>
 {% endblock %}
 
 {% block extrajs %}
-    <script type="text/javascript">
-    
-        function initialize_select(administrative_unit_id){
-            
-            let url = "{% url 'administrativelevels:api:administrative-level-children' '1' %}";
-            let element = $('#id_other_administrative_levels');
-            url = url.replace('1', administrative_unit_id);
-            element.attr('disabled', true);
-        
-            $.ajax({
-                url: url,
-                success: function(data) {
-                    element.empty();
-                    $.each(data, function() {
-                        element.append($("<option />").val(this.id).text(this.name));
-                    });
-                    element.attr('disabled', false);
-                }
-            });
-        }
-    
-        $( document ).ready(function() {
-            $( '#id_is_for_multiple_communities' ).change(function () {
-                const multiple_administrative_units_input = $('#idOtherAdministrativeLevelsRow')
-                if( $( this ).is(':checked') ) {
-                    initialize_select($('#id_administrative_level').val());
-                    multiple_administrative_units_input.fadeIn()
-                }else{
-                    multiple_administrative_units_input.fadeOut()
-                }
-            });
-            
-            $( '#id_administrative_level' ).change( function () {
-                initialize_select($( this ).val());
-            });
-            
+<script type="text/javascript">
+    function initialize_select(administrative_unit_id){
+        let url = "{% url 'administrativelevels:api:administrative-level-children' '1' %}";
+        let element = $('#id_other_administrative_levels');
+        url = url.replace('1', administrative_unit_id);
+        element.attr('disabled', true);
+
+        $.ajax({
+            url: url,
+            success: function(data) {
+                element.empty();
+                $.each(data, function() {
+                    element.append($("<option />").val(this.id).text(this.name));
+                });
+                element.attr('disabled', false);
+            }
         });
-        
-    </script>
+    }
+
+    $( document ).ready(function() {
+        $('#id_is_for_multiple_communities').change(function () {
+            const multiple_administrative_units_input = $('#idOtherAdministrativeLevelsRow')
+            if ($(this).is(':checked')) {
+                initialize_select($('#id_administrative_level').val());
+                multiple_administrative_units_input.fadeIn();
+            } else {
+                multiple_administrative_units_input.fadeOut();
+            }
+        });
+
+        $('#id_administrative_level').change(function () {
+            initialize_select($(this).val());
+        });
+    });
+</script>
 {% endblock %}

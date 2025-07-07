@@ -1,11 +1,12 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
 
 from django.http import Http404
 
 from administrativelevels.models import AdministrativeUnit
 from subprojects.api.serializers import SubprojectSerializer, SubprojectCustomFieldSerializer
-from subprojects.models import SubprojectCustomField, Subproject
+from subprojects.models import SubprojectCustomField, Subproject, SubprojectFormResponse
 
 
 class AdministrativeUnitListAPIView(generics.ListAPIView):
@@ -66,3 +67,37 @@ class LastSubprojectCustomFieldRetrieveAPIView(generics.RetrieveAPIView):
         self.check_object_permissions(self.request, obj)
 
         return obj
+
+
+class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
+    pagination_class = None
+    queryset = SubprojectCustomField.objects.all()
+    serializer_class = SubprojectCustomFieldSerializer
+
+    def list(self, request, *args, **kwargs):
+        resp_list = list()
+        administrative_unit_id = self.request.query_params.get('administrative-unit', None)
+
+        administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
+        all_lower_children = self.get_lower_children(administrative_unit)
+        for child in all_lower_children:
+            resp_list += list(Subproject.objects.filter(administrative_level=child).values(
+                'name', 'id'))
+
+        return Response(resp_list)
+
+    def get_lower_children(self, administrative_unit):
+        administrative_units = list()
+
+        def get_children(node):
+            if node.children.all():
+                for children in node.children.all():
+                    get_children(children)
+            else:
+                administrative_units.append(node)
+
+        get_children(administrative_unit)
+
+        return administrative_units
+
+
