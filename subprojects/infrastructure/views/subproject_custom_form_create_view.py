@@ -12,6 +12,10 @@ class SubprojectCustomFieldsCreateView(LoginRequiredMixin, CreateView):
     template_name = "subprojects/schema_form.html"
     success_url = reverse_lazy("subprojects:subproject_custom_fields")
 
+    def get_context_data(self, **kwargs):
+        kwargs.update({'custom_forms': self.model.objects.all()})
+        return super().get_context_data(**kwargs)
+
     def post(self, request, *args, **kwargs):
         print(request.POST)
         form = self.get_form()

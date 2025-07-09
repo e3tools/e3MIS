@@ -19,6 +19,16 @@
         <input type="text" class="form-control" name="name" id="name" value="{{ instance.name }}" placeholder="Enter form name">
       </div>
 
+      <!-- Form dependencies input -->
+      <div class="form-group">
+        <label for="dependencies">Form Dependencies</label>
+          <select class="form-control" name="dependencies" id="dependencies" multiple>
+              {% for custom_form in custom_forms %}
+              <option value="{{ custom_form.id }}">{{ custom_form.name }}</option>
+              {% endfor %}
+          </select>
+      </div>
+
       <!-- Page and field controls -->
       <div class="form-group">
         <!-- TODO add page is dissabled for now must enable it once we are ready with the form parser -->

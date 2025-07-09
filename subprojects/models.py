@@ -167,6 +167,11 @@ class SubprojectCustomField(models.Model):
         return self.name
 
 
+class SubprojectCustomFieldDependency(models.Model):
+    parent = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE, related_name="dependencies_parents")
+    child = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE, related_name="dependencies_children")
+
+
 class SubprojectFormResponse(models.Model):
     custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
     subproject = models.ForeignKey(Subproject, related_name="custom_fields_responses", on_delete=models.CASCADE, null=True, blank=True)
