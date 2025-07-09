@@ -22,11 +22,7 @@ class RegisterSubprojectView(CreateView):
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        print('form valid')
         self.object = form.save()
-        print('----')
-        print(self.object)
-        print('----')
         return HttpResponseRedirect(self.get_success_url())
 
     def get_form_kwargs(self):

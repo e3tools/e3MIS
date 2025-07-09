@@ -22,6 +22,15 @@ class BeneficiaryGroup(models.Model):
         return self.name
 
 
+class VillageDevelopmentCommittee(models.Model):
+    village_neighborhood = models.CharField(max_length=255)
+    name_of_the_sales_representative = models.CharField(max_length=255)
+    number_of_male_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    number_of_female_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    number_of_young_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    adv_account_number = models.CharField(max_length=255)
+
+
 class Subproject(models.Model):
     STATUS_CHOICES = [
         ('planned', 'Planned'),

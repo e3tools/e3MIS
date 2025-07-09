@@ -1,0 +1,48 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n bootstrap4 %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header text-center">
+                <h4 class="card-title mb-0">{% translate 'Register Subproject' %}</h4>
+            </div>
+            <form action="." method="post">
+                {% csrf_token %}
+                <div class="card-body">
+                    <div class="form-group">
+                        {% bootstrap_field form.village_neighborhood show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.name_of_the_sales_representative show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.number_of_male_members_in_the_b_adv_adq_and_its_organs show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.number_of_female_members_in_the_b_adv_adq_and_its_organs show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.number_of_young_members_in_the_b_adv_adq_and_its_organs show_label=True %}
+                    </div>
+                    <div class="form-group">
+                        {% bootstrap_field form.adv_account_number show_label=True %}
+                    </div>
+                    <div class="form-group mb-0 d-flex justify-content-between">
+                        <a href="{% url 'subprojects:mobile:index' %}" class="btn btn-outline-secondary btn-lg mr-2" style="flex:1;">
+                            <i class="fas fa-times mr-1"></i>
+                            {% translate 'Cancel' %}
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save mr-1"></i>
+                            {% translate 'Create' %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

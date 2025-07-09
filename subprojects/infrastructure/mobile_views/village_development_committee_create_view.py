@@ -1,0 +1,14 @@
+from django.views.generic.edit import CreateView
+from django.urls import reverse_lazy
+
+from subprojects.models import VillageDevelopmentCommittee
+from subprojects.infrastructure.forms.village_development_committee_create_form import (
+    VillageDevelopmentCommitteeCreateForm
+)
+
+
+class VillageDevelopmentCommitteeCreateView(CreateView):
+    template_name = 'subprojects/mobile/register_village_development_committee.html'
+    model = VillageDevelopmentCommittee
+    form_class = VillageDevelopmentCommitteeCreateForm
+    success_url = reverse_lazy('subprojects:mobile:index')
