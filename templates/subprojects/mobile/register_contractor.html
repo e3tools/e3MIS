@@ -7,28 +7,25 @@
     <div class="col-12">
         <div class="card card-primary mt-3 mb-4 shadow">
             <div class="card-header text-center">
-                <h4 class="card-title mb-0">{% translate 'Register Village Development Committee' %}</h4>
+                <h4 class="card-title mb-0">{% translate 'Register Contractor' %}</h4>
             </div>
             <form action="." method="post">
                 {% csrf_token %}
                 <div class="card-body">
                     <div class="form-group">
-                        {% bootstrap_field form.village_neighborhood show_label=True %}
+                        {% bootstrap_field form.name show_label=True %}
                     </div>
                     <div class="form-group">
-                        {% bootstrap_field form.name_of_the_sales_representative show_label=True %}
+                        {% bootstrap_field form.contact_person show_label=True %}
                     </div>
                     <div class="form-group">
-                        {% bootstrap_field form.number_of_male_members_in_the_b_adv_adq_and_its_organs show_label=True %}
+                        {% bootstrap_field form.phone show_label=True %}
                     </div>
                     <div class="form-group">
-                        {% bootstrap_field form.number_of_female_members_in_the_b_adv_adq_and_its_organs show_label=True %}
+                        {% bootstrap_field form.email show_label=True %}
                     </div>
                     <div class="form-group">
-                        {% bootstrap_field form.number_of_young_members_in_the_b_adv_adq_and_its_organs show_label=True %}
-                    </div>
-                    <div class="form-group">
-                        {% bootstrap_field form.adv_account_number show_label=True %}
+                        {% bootstrap_field form.address show_label=True %}
                     </div>
                     <div class="form-group mb-0 d-flex justify-content-between">
                         <a href="{% url 'subprojects:mobile:index' %}" class="btn btn-outline-secondary btn-lg mr-2" style="flex:1;">

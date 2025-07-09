@@ -3,7 +3,7 @@ from subprojects.models import (
     SubprojectCustomField, Subproject,
     SubprojectFormResponse, BeneficiaryGroup,
     SubprojectCustomFieldDependency,
-    VillageDevelopmentCommittee,
+    VillageDevelopmentCommittee, Contractor,
 )
 
 
@@ -13,3 +13,4 @@ admin.site.register(Subproject)
 admin.site.register(BeneficiaryGroup)
 admin.site.register(SubprojectCustomFieldDependency)
 admin.site.register(VillageDevelopmentCommittee)
+admin.site.register(Contractor)
