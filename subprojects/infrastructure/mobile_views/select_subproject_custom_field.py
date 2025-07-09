@@ -1,9 +1,10 @@
 from django.views.generic import TemplateView
 from django.db.models import Q, Exists, OuterRef
+from src.permissions import IsFieldAgentUserMixin
 from subprojects.models import Subproject, SubprojectCustomField, SubprojectFormResponse
 
 
-class SelectSubprojectCustomFieldView(TemplateView):
+class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
     template_name = 'subprojects/mobile/select_subproject_custom_field.html'
 
     def get_context_data(self, **kwargs):

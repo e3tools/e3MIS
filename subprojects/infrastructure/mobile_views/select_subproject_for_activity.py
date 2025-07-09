@@ -1,7 +1,8 @@
 from django.views.generic import TemplateView
+from src.permissions import IsFieldAgentUserMixin
 
 
-class SelectSubprojectForActivityView(TemplateView):
+class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
     template_name = 'subprojects/mobile/select_subproject_for_activity.html'
 
     def get_context_data(self, **kwargs):

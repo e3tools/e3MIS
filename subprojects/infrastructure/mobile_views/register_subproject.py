@@ -3,11 +3,12 @@ from django.urls import reverse_lazy
 
 from django.http import HttpResponseRedirect
 
+from src.permissions import IsFieldAgentUserMixin
 from subprojects.infrastructure.forms.subproject_field_agent_create_form import SubprojectFieldAgentCreateForm
 from subprojects.models import Subproject
 
 
-class RegisterSubprojectView(CreateView):
+class RegisterSubprojectView(IsFieldAgentUserMixin,CreateView):
     template_name = 'subprojects/mobile/register_subproject.html'
     model = Subproject
     form_class = SubprojectFieldAgentCreateForm
