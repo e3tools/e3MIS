@@ -1,5 +1,8 @@
 from django.views.generic import TemplateView
+from django.db.models import Subquery
+
 from src.permissions import IsFieldAgentUserMixin
+from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
 
 
 class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
@@ -11,13 +14,22 @@ class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
 
     def get_descendants(self, administrative_unit):
         descendants = list()
+        subproject_custom_field_count = SubprojectCustomField.objects.count()
 
         def recurse(node):
             if node.children.exists():
                 for child in node.children.all():
                     recurse(child)
             else:
-                descendants.append(node)
+                subprojects_qs = Subproject.objects.filter(administrative_level=node)
+                subprojects_count = 0
+                for subproject in subprojects_qs:
+                    if subproject_custom_field_count - SubprojectFormResponse.objects.filter(subproject__id=subproject.id).count() > 0:
+                        subprojects_count += 1
+                descendants.append({
+                    'id': node.id, 'name': node.name,
+                    'pending_responses': subprojects_count if subprojects_count > 0 else '',
+                })
 
         recurse(administrative_unit)
         return descendants

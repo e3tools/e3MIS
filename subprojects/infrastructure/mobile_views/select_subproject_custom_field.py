@@ -18,7 +18,17 @@ class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
                     subproject=subproject
                 )
             )
-        ).distinct()
+        ).distinct().values('id', 'name')
         kwargs.update({'subproject_custom_fields': subproject_custom_fields})
         kwargs.update({'subproject': subproject})
+
+        for subproject_custom_field in kwargs['subproject_custom_fields']:
+            if not SubprojectFormResponse.objects.filter(
+                custom_form__id=subproject_custom_field['id'],
+                subproject=subproject
+            ).exists():
+                subproject_custom_field.update({'has_no_response': True})
+            else:
+                subproject_custom_field.update({'has_no_response': False})
+
         return super().get_context_data(**kwargs)

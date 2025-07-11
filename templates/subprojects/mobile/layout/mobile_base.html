@@ -5,48 +5,7 @@
 <html lang="{{ LANGUAGE_CODE }}">
 <head>
     {% include 'layout/head.html' %}
-{#    <style>#}
-{#        .content {#}
-{#            background: #30b0b0;#}
-{#        }#}
-{##}
-{#        .content-wrapper {#}
-{#            background: #30b0b0;#}
-{#            padding-bottom: 15px;#}
-{#        }#}
-{##}
-{#        p.text-center {#}
-{#            font-size: 2em;#}
-{#            margin-top: 15px;#}
-{#            color: white;#}
-{#        }#}
-{##}
-{#        .custom-button {#}
-{#            margin-top: 15px;#}
-{#            min-height: 200px;#}
-{#            display: flex;#}
-{#            align-items: center;#}
-{#            justify-content: center;#}
-{#            padding: 0;#}
-{#            border-radius: 1.5rem;#}
-{#        }#}
-{##}
-{#        .button-content {#}
-{#            display: flex;#}
-{#            align-items: center;#}
-{#            color: white;#}
-{#        }#}
-{##}
-{#        .custom-button i {#}
-{#            font-size: 8em;#}
-{#            margin-right: 10px;#}
-{#            margin-left: 10px;#}
-{#        }#}
-{##}
-{#        .button-content span {#}
-{#            font-size: 2em; /* Adjust text size as needed */#}
-{#        }#}
-{#    </style>#}
+    {% block extracss %}{% endblock %}
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -69,6 +28,11 @@
 
 {% include 'layout/foot.html' %}
 <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('select').select2();
+    });
+</script>
 {% block extrajs %}
 {% endblock extrajs %}
 </body>

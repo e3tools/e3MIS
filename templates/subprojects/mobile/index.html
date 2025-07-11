@@ -23,7 +23,9 @@
         <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
            class="btn btn-danger btn-block btn-lg d-flex align-items-center justify-content-center shadow-sm">
             <i class="fas fa-file-alt mr-2"></i>
-            <span>{% translate 'Submit Activity' %}</span>
+            <span>
+                {% translate 'Submit Activity' %} <span class="badge badge-light">{{ pending_activities }}</span>
+            </span>
             <i class="fas fa-chevron-right ml-2"></i>
         </a>
     </div>

@@ -40,7 +40,7 @@ class Subproject(models.Model):
         ('canceled', 'Canceled'),
     ]
 
-    ACTIVITY_CHOICES =[
+    ACTIVITY_CHOICES = [
         ('agropastoralism', _('Agropastoralism')),
         ('local_economy', _('Local economy')),
         ('sports_and_leisure', _('Sports and leisure')),
