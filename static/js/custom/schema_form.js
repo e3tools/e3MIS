@@ -121,14 +121,19 @@ document.addEventListener("DOMContentLoaded", function () {
           type: "string",
           enum: enumOptions
         };
+      } else if (fieldType === "date") {
+        page.page.properties[fieldName] = {
+          type: "string",
+          format: "date" // ✅ JSON Schema convention for date
+        };
       } else {
         page.page.properties[fieldName] = { type: fieldType };
       }
 
       // Add to options
       page.options.fields[fieldName] = {
-          label: document.getElementById("field-label-input").value.trim() || fieldName,
-          help: document.getElementById("field-help-input").value.trim()
+        label: document.getElementById("field-label-input").value.trim() || fieldName,
+        help: document.getElementById("field-help-input").value.trim()
       };
 
       // Add to required
