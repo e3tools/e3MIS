@@ -13,3 +13,9 @@ class VillageDevelopmentCommitteeCreateView(IsFieldAgentUserMixin, CreateView):
     model = VillageDevelopmentCommittee
     form_class = VillageDevelopmentCommitteeCreateForm
     success_url = reverse_lazy('subprojects:mobile:index')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.user.administrative_unit is not None:
+            kwargs.update({"user": self.request.user})
+        return kwargs
