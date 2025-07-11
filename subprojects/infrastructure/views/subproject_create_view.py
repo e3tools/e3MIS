@@ -1,10 +1,11 @@
 from django.urls import reverse
-from django.views.generic import  CreateView
+from django.views.generic import CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from src.permissions import IsStaffMemberMixin
 from subprojects.models import Subproject
 
 
-class SubprojectCreateView(LoginRequiredMixin, CreateView):
+class SubprojectCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView):
     template_name = 'subprojects/create.html'
     model = Subproject
     fields = [

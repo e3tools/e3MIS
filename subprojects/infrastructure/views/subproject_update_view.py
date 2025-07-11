@@ -3,11 +3,12 @@ from django.views.generic.edit import UpdateView
 from django.template.response import TemplateResponse
 from subprojects.models import Subproject, SubprojectCustomField
 from subprojects.infrastructure.forms.subproject_update_form import SubprojectForm
-from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from src.permissions import IsStaffMemberMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
-class SubprojectUpdateView(LoginRequiredMixin, UpdateView):
+
+class SubprojectUpdateView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView):
     model = Subproject
     form_class = SubprojectForm
     template_name = "subprojects/partial_update_form.html"
