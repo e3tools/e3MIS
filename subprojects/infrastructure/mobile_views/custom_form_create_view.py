@@ -4,6 +4,19 @@ from django.template.response import TemplateResponse
 from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
 from django.contrib.auth.mixins import LoginRequiredMixin
 from utils.json_form_parser import parse_custom_jsonschema
+import datetime
+
+def serialize_for_json(data):
+    """
+    Recursively converts all datetime.date and datetime.datetime objects to ISO strings.
+    """
+    if isinstance(data, dict):
+        return {k: serialize_for_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [serialize_for_json(item) for item in data]
+    elif isinstance(data, (datetime.date, datetime.datetime)):
+        return data.isoformat()
+    return data
 
 
 class CustomFormUpdateView(LoginRequiredMixin, CreateView):
@@ -33,16 +46,18 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         subproject = Subproject.objects.get(pk=self.kwargs['subproject'])
         instance = self.model.objects.filter(custom_form=self.object, subproject=subproject).first()
+        cleaned_data = serialize_for_json(form.cleaned_data)
+
         if instance is None:
             instance = self.model(
                 custom_form=self.object,
                 filled_by=self.request.user,
                 subproject=subproject,
-                response_schema=form.cleaned_data
+                response_schema=cleaned_data
             )
         else:
             instance.filled_by = self.request.user
-            instance.response_schema = form.cleaned_data
+            instance.response_schema = cleaned_data
         instance.save()
 
         return TemplateResponse(self.request, "subprojects/mobile/custom_form_update_form.html", {
