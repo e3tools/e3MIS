@@ -188,3 +188,8 @@ class SubprojectFormResponse(models.Model):
     response_schema = models.JSONField(help_text="JSON response schema", default=list)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+
+
+class DisplayFieldSetting(models.Model):
+    field_name = models.CharField(max_length=100, unique=True)
+    enabled = models.BooleanField(default=False)
