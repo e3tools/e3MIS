@@ -1,10 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends 'layout/base.html' %}
+{% load static i18n custom_tags %}
 
-</body>
-</html>
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="input-group mb-3 search-bar">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                </div>
+                <input class="form-control" id="search" placeholder="{% translate 'Search' %}...">
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        {% if user.is_superuser or user|has_group:"Admin" %}
+                        <div class="btn-group pull-right">
+                            <a class="btn btn-primary" href="{% url 'subprojects:subproject_custom_fields_create' %}">{% translate 'Create' %} {% translate 'Custom Fields' %}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-subprojects" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Actions' %}</th>
+                            <th>{% translate 'Name' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for custom_field in object_list %}
+                            <tr id="subproject-{{ subproject.pk }}">
+                                <td>
+                                  <div class="btn-group">
+                                    <!-- Update Info (functional) -->
+                                    <button type="button"
+                                            class="btn btn-default btn-flat">
+                                      <i class="fas fa-pencil-alt text-primary"></i>
+                                    </button>
+
+                                    <!-- Field Visit -->
+                                    <button type="button"
+                                            class="btn btn-default btn-flat">
+                                      <i class="fas fa-map-marker-alt text-success"></i>
+                                    </button>
+
+                                    <!-- Attach Document -->
+                                    <button type="button"
+                                            class="btn btn-default btn-flat">
+                                      <i class="fas fa-paperclip text-secondary"></i>
+                                    </button>
+
+                                    <!-- Progress -->
+                                    <button type="button"
+                                            class="btn btn-default btn-flat">
+                                      <i class="fas fa-tasks text-warning"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                                <td>{{ custom_field.name }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+
+            let table = $('#table-subprojects').DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: "ltipr",
+                columnDefs: [
+                    {
+                        targets: 1,
+                        orderable: false,
+                        searchable: true,
+                    }
+                ],
+                lengthMenu: [10, 50, 100],
+                pageLength: 10,
+                order: [[0, 'desc']]
+            });
+            $('#search').on('keyup', function () {
+                table.search($(this).val()).draw();
+            });
+        });
+    </script>
+{% endblock %}
+
+
+    
