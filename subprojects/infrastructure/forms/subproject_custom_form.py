@@ -14,6 +14,8 @@ class SubprojectCustomFieldsForm(forms.ModelForm):
         dependencies = list()
         dependency_objs = self.cleaned_data.pop('dependencies')
         instance = super().save(commit)
+        old_dependencies = SubprojectCustomFieldDependency.objects.filter(child=instance)
+        old_dependencies.delete()
         if commit:
             for dependency_obj in dependency_objs:
                 dependencies.append(SubprojectCustomFieldDependency(

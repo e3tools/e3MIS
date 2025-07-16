@@ -4,7 +4,7 @@
 {% block content %}
 <h2>Custom Form Schema Editor</h2>
 
-<form method="post" action="{% url 'subprojects:subproject_custom_fields_create' %}">
+<form method="post" action=".">
   {% csrf_token %}
 
   <div class="card card-primary">
@@ -16,7 +16,7 @@
       <!-- Form name input -->
       <div class="form-group">
         <label for="name">Form Name</label>
-        <input type="text" class="form-control" name="name" id="name" value="{{ instance.name }}" placeholder="Enter form name">
+        <input type="text" class="form-control" name="name" id="name" value="{{ object.name }}" placeholder="Enter form name">
       </div>
 
       <!-- Form dependencies input -->
@@ -24,7 +24,11 @@
         <label for="dependencies">Form Dependencies</label>
           <select class="form-control" name="dependencies" id="dependencies" multiple>
               {% for custom_form in custom_forms %}
-              <option value="{{ custom_form.id }}">{{ custom_form.name }}</option>
+                  {% if custom_form.id in custom_form_dependencies %}
+                    <option value="{{ custom_form.id }}" selected>{{ custom_form.name }}</option>
+                  {% else %}
+                    <option value="{{ custom_form.id }}">{{ custom_form.name }}</option>
+                  {% endif %}
               {% endfor %}
           </select>
       </div>
@@ -47,7 +51,7 @@
       </div>
 
       <!-- Hidden JSON field -->
-      <textarea id="config_schema" name="config_schema" hidden></textarea>
+      <textarea id="config_schema" name="config_schema" hidden>{{ object.config_schema|safe }}</textarea>
 
     </div>
     <div class="card-footer">

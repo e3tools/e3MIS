@@ -20,6 +20,9 @@ document.addEventListener("DOMContentLoaded", function () {
       this.pageContainer = document.getElementById("pages-container");
       this.configTextarea = document.getElementById("config_schema");
 
+      // Load existing schema if available
+      this.loadExistingSchema();
+
       // Initial render
       this.renderAllPages();
 
@@ -75,6 +78,110 @@ document.addEventListener("DOMContentLoaded", function () {
           console.log("Submitting schema:", this.formSchema);
           this.updateSchemaTextarea();
         });
+      }
+    },
+
+    loadExistingSchema() {
+      // Check if there's existing schema data in the textarea
+      const existingSchemaValue = this.configTextarea.value.trim();
+
+      if (existingSchemaValue) {
+        try {
+          const parsedSchema = JSON.parse(existingSchemaValue);
+
+          // Validate the schema structure
+          if (this.isValidSchema(parsedSchema)) {
+            this.formSchema = parsedSchema;
+            console.log("✅ Successfully loaded existing schema:", this.formSchema);
+            console.log("Number of pages:", this.formSchema.form.length);
+          } else {
+            console.warn("❌ Invalid schema structure, using default schema");
+            console.log("Schema validation failed for:", parsedSchema);
+          }
+        } catch (error) {
+          console.error("❌ Error parsing existing schema:", error);
+          console.warn("Using default schema instead");
+        }
+      } else {
+        console.log("No existing schema found in textarea");
+      }
+
+      // Also check for schema data in a global variable (useful for Django templates)
+      if (typeof window.existingSchema !== 'undefined' && window.existingSchema) {
+        try {
+          if (this.isValidSchema(window.existingSchema)) {
+            this.formSchema = window.existingSchema;
+            console.log("✅ Loaded schema from window.existingSchema:", this.formSchema);
+          }
+        } catch (error) {
+          console.error("❌ Error loading schema from window.existingSchema:", error);
+        }
+      }
+    },
+
+    isValidSchema(schema) {
+      // Basic validation to ensure the schema has the expected structure
+      console.log("🔍 Validating schema:", schema);
+
+      if (!schema || typeof schema !== 'object') {
+        console.log("❌ Schema is not an object");
+        return false;
+      }
+
+      if (!Array.isArray(schema.form)) {
+        console.log("❌ schema.form is not an array");
+        return false;
+      }
+
+      if (schema.form.length === 0) {
+        console.log("❌ schema.form is empty");
+        return false;
+      }
+
+      // Check each page in the form
+      for (let i = 0; i < schema.form.length; i++) {
+        const page = schema.form[i];
+        console.log(`🔍 Validating page ${i}:`, page);
+
+        if (!page.page || typeof page.page !== 'object') {
+          console.log(`❌ Page ${i} missing or invalid 'page' property`);
+          return false;
+        }
+
+        if (!page.options || typeof page.options !== 'object') {
+          console.log(`❌ Page ${i} missing or invalid 'options' property`);
+          return false;
+        }
+
+        if (!page.page.properties || typeof page.page.properties !== 'object') {
+          console.log(`❌ Page ${i} missing or invalid 'page.properties'`);
+          return false;
+        }
+
+        if (!Array.isArray(page.page.required)) {
+          console.log(`❌ Page ${i} missing or invalid 'page.required' array`);
+          return false;
+        }
+
+        if (!page.options.fields || typeof page.options.fields !== 'object') {
+          console.log(`❌ Page ${i} missing or invalid 'options.fields'`);
+          return false;
+        }
+      }
+
+      console.log("✅ Schema validation passed");
+      return true;
+    },
+
+    setSchema(schema) {
+      // Method to programmatically set the schema
+      if (this.isValidSchema(schema)) {
+        this.formSchema = schema;
+        this.currentPageIndex = 0; // Reset to first page
+        this.renderAllPages();
+        console.log("Schema set successfully:", this.formSchema);
+      } else {
+        console.error("Invalid schema provided to setSchema");
       }
     },
 
@@ -183,7 +290,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
           for (const [fieldName, fieldSchema] of Object.entries(properties)) {
             const isRequired = page.page.required.includes(fieldName);
-            const type = fieldSchema.type || 'string';
+            const type = this.getFieldTypeDisplay(fieldSchema);
             const enumValues = fieldSchema.enum ? ` [${fieldSchema.enum.join(", ")}]` : '';
             const label = page.options.fields[fieldName]?.label || fieldName;
             const help = page.options.fields[fieldName]?.help || "";
@@ -217,6 +324,17 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       this.updateSchemaTextarea();
+    },
+
+    getFieldTypeDisplay(fieldSchema) {
+      // Helper method to get display name for field type
+      if (fieldSchema.enum) {
+        return "dropdown";
+      } else if (fieldSchema.format === "date") {
+        return "date";
+      } else {
+        return fieldSchema.type || "string";
+      }
     }
   };
 
