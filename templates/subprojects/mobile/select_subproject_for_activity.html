@@ -2,6 +2,21 @@
 {% load static i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 
+{% block extracss %}
+    <style>
+        .notification-dot {
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            z-index: 10;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-12">
@@ -22,7 +37,7 @@
                     </label>
                     <select name="subproject" id="subproject-input" class="form-control">
                         {% for administrative_unit in administrative_units %}
-                            <option value="{{ administrative_unit.id }}">{{ administrative_unit.name }}</option>
+                            <option value="{{ administrative_unit.id }}" data-badge="{{ administrative_unit.pending_responses }}">{{ administrative_unit.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -43,6 +58,7 @@
                     <i class="fas fa-chevron-right ml-2"></i>
                 </a>
             </div>
+            <span class="notification-dot"></span>
         </div>
     </div>
 </template>
@@ -61,7 +77,7 @@
                     wrapper.html(
                         `<div class="text-center text-muted py-3">
                             <i class="fas fa-info-circle fa-2x mb-2"></i><br>
-                            {% translate 'No activities available.' %}
+                            <span>{% translate 'No activities available.' %}</span>
                         </div>`
                     );
                     return;
@@ -82,13 +98,32 @@
         post_template.find('.btn-label').text(subproject.name);
         return post_template;
     }
+    
+    function formatOption(option) {
+    if (!option.id) {
+      return option.text;  // For placeholder etc.
+    }
+
+    const badge = $(option.element).data('badge');
+    const name = option.text;
+
+    return $(`<span>${name} <span class="badge badge-danger">${badge}</span></span>`);
+  }
 
     $(document).ready(function () {
+        
         let subproject_input = $('#subproject-input');
         fill_btn_wrapper(subproject_input.val());
         subproject_input.change(function () {
             fill_btn_wrapper($(this).val());
         });
+        
+        subproject_input.select2({
+          templateResult: formatOption,
+          templateSelection: formatOption,
+          escapeMarkup: function(markup) { return markup; }  // Allow HTML
+        });
+        
     });
 </script>
 {% endblock %}

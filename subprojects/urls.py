@@ -8,6 +8,7 @@ from subprojects.infrastructure.views.record_subproject_progress import Subproje
 from subprojects.infrastructure.views.subproject_custom_form_create_view import SubprojectCustomFieldsCreateView
 from subprojects.infrastructure.views.dashboard_view import DashboardView
 from subprojects.infrastructure.views.subproject_custom_form_list import SubprojectCustomFieldListView
+from subprojects.infrastructure.views.subproject_custom_form_update import SubprojectCustomFieldsUpdateView
 from subprojects.infrastructure.views.subprojects_by_administrativeunit import AdministrativeUnitSubprojectsView
 from subprojects.infrastructure.mobile_views.index import IndexTemplateView
 from subprojects.infrastructure.mobile_views.register_menu import RegisterMenuTemplateView
@@ -15,6 +16,8 @@ from subprojects.infrastructure.mobile_views.select_subproject_for_activity impo
 from subprojects.infrastructure.mobile_views.select_subproject_custom_field import SelectSubprojectCustomFieldView
 from subprojects.infrastructure.mobile_views.custom_form_create_view import CustomFormUpdateView
 from subprojects.infrastructure.mobile_views.register_subproject import RegisterSubprojectView
+from subprojects.infrastructure.mobile_views.contractor_create_view import ContractorCreateView
+from subprojects.infrastructure.mobile_views.village_development_committee_create_view import VillageDevelopmentCommitteeCreateView
 
 
 app_name = 'subprojects'
@@ -26,6 +29,7 @@ urlpatterns = [
     path('<int:pk>/update/', SubprojectUpdateView.as_view(), name='subproject_update'),
     path('<int:pk>/progress/', SubprojectProgressCreateView.as_view(), name='subproject_progress'),
     path('custom-fields/create/', SubprojectCustomFieldsCreateView.as_view(), name='subproject_custom_fields_create'),
+    path('custom-fields/<int:pk>/', SubprojectCustomFieldsUpdateView.as_view(), name='subproject_custom_fields_update'),
     path('custom-fields/', SubprojectCustomFieldListView.as_view(), name='subproject_custom_fields'),
     path('subprojects-adminunit/', AdministrativeUnitSubprojectsView.as_view(), name='subproject_adminunit'),
     path('contractors/', ContractorListView.as_view(), name='contractor_list'),
@@ -33,6 +37,8 @@ urlpatterns = [
         path('', IndexTemplateView.as_view(), name='index'),
         path('register/', RegisterMenuTemplateView.as_view(), name='register-menu'),
         path('register/sub-project/', RegisterSubprojectView.as_view(), name='register-subproject'),
+        path('register/contractor/', ContractorCreateView.as_view(), name='register-contractor'),
+        path('register/village-development-committee/', VillageDevelopmentCommitteeCreateView.as_view(), name='register-village-development-committee'),
         path('submit-activity/', SelectSubprojectForActivityView.as_view(), name='select-subproject-for-activity'),
         path('select-custom-fields/<int:subproject>/', SelectSubprojectCustomFieldView.as_view(), name='select-subproject-custom-fields'),
         path('custom-form-update/<int:pk>/subproject/<int:subproject>/', CustomFormUpdateView.as_view(), name='custom-form-update'),

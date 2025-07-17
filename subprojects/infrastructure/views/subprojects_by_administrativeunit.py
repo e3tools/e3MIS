@@ -1,9 +1,10 @@
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from src.permissions import IsStaffMemberMixin
 from subprojects.models import Subproject
 
 
-class AdministrativeUnitSubprojectsView(LoginRequiredMixin, ListView):
+class AdministrativeUnitSubprojectsView(LoginRequiredMixin, IsStaffMemberMixin, ListView):
     model = Subproject
     template_name = 'administrative_levels/administrative_unit_children.html'
     context_object_name = 'subprojects'

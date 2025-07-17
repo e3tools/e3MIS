@@ -47,6 +47,13 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a href="{% url 'subprojects:subproject_custom_fields' %}"
+                       class="nav-link {% if url_name == 'subproject_custom_fields' %}active{% endif %}">
+                        <i class="nav-icon fas fa-file-alt"></i>
+                        <p>{% translate "Custom fields" %}</p>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a href="{% url 'authorization:field_angent_list' %}"
                        class="nav-link {% if url_name == 'field_angent_list' %}active{% endif %}">
                         <i class="nav-icon fas fa-user-ninja"></i>

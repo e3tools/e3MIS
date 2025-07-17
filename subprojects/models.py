@@ -22,6 +22,15 @@ class BeneficiaryGroup(models.Model):
         return self.name
 
 
+class VillageDevelopmentCommittee(models.Model):
+    village_neighborhood = models.CharField(max_length=255)
+    name_of_the_sales_representative = models.CharField(max_length=255)
+    number_of_male_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    number_of_female_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    number_of_young_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    adv_account_number = models.CharField(max_length=255)
+
+
 class Subproject(models.Model):
     STATUS_CHOICES = [
         ('planned', 'Planned'),
@@ -31,7 +40,7 @@ class Subproject(models.Model):
         ('canceled', 'Canceled'),
     ]
 
-    ACTIVITY_CHOICES =[
+    ACTIVITY_CHOICES = [
         ('agropastoralism', _('Agropastoralism')),
         ('local_economy', _('Local economy')),
         ('sports_and_leisure', _('Sports and leisure')),
@@ -167,6 +176,11 @@ class SubprojectCustomField(models.Model):
         return self.name
 
 
+class SubprojectCustomFieldDependency(models.Model):
+    parent = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE, related_name="dependencies_parents")
+    child = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE, related_name="dependencies_children")
+
+
 class SubprojectFormResponse(models.Model):
     custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
     subproject = models.ForeignKey(Subproject, related_name="custom_fields_responses", on_delete=models.CASCADE, null=True, blank=True)
@@ -174,3 +188,8 @@ class SubprojectFormResponse(models.Model):
     response_schema = models.JSONField(help_text="JSON response schema", default=list)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+
+
+class DisplayFieldSetting(models.Model):
+    field_name = models.CharField(max_length=100, unique=True)
+    enabled = models.BooleanField(default=False)
