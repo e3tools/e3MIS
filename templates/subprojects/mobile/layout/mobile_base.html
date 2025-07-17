@@ -1,0 +1,40 @@
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    {% include 'layout/head.html' %}
+    {% block extracss %}{% endblock %}
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+    <!-- Content Wrapper. Contains page content -->
+    <div class="content-wrapper" style="margin-left: 0;">
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                {% block content %}
+                {% endblock %}
+            </div>
+            <!-- /.container-fluid -->
+        </section>
+        <!-- /.content -->
+    </div>
+    <!-- /.content-wrapper -->
+</div>
+<!-- ./wrapper -->
+
+{% include 'layout/foot.html' %}
+<script src="https://unpkg.com/htmx.org@1.9.2"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('select').select2();
+    });
+</script>
+{% block extrajs %}
+{% endblock extrajs %}
+</body>
+
+</html>

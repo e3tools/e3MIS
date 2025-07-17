@@ -1,0 +1,50 @@
+{% load static i18n %}
+{% if messages %}
+    {% if messages|length > 1 %}
+        {% for message in messages %}
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <div class="alert alert-{{ message.extra_tags }}">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+                            ×
+                        </button>
+                        {{ message | safe }}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        {% for message in messages %}
+            {% if message.extra_tags == 'danger' %}
+                <div class="row">
+                    <div class="col-md-12 text-center">
+                        <div class="alert alert-{{ message.extra_tags }}">{{ message | safe }}</div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="modal modal-{{ message.extra_tags }} messageModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-body alert-{{ message.extra_tags }}">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                                {{ message | safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endif %}
+<div aria-live="polite" aria-atomic="true"
+     style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1060;">
+    <div class="toast" id="updateSuccessToast" data-delay="3000">
+        <div class="toast-header bg-success text-white">
+            <strong class="mr-auto">{% translate "Success" %}</strong>
+            <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast">&times;</button>
+        </div>
+        <div class="toast-body" id="updateToastBody"></div>
+    </div>
+</div>

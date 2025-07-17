@@ -1,0 +1,205 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-06-18 16:17+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+#: authorization/infrastructure/forms/email_authentication_form.py:16
+#: authorization/infrastructure/forms/email_authentication_form.py:35
+msgid "Email"
+msgstr "E-mail"
+
+#: authorization/infrastructure/forms/email_authentication_form.py:20
+#: authorization/infrastructure/forms/email_authentication_form.py:34
+msgid "Password"
+msgstr "Mot de passe"
+
+#: templates/auth/login.html:13 templates/auth/login.html:67
+msgid "Log in"
+msgstr "Se connecter"
+
+#: templates/auth/login.html:55
+msgid "Log in to start your session"
+msgstr "Connectez-vous pour démarrer votre session"
+
+#: templates/auth/login.html:58
+msgid "Email or password are not correct"
+msgstr "L'e-mail ou le mot de passe ne sont pas corrects"
+
+#: templates/common/400.html:10
+msgid "BAD REQUEST"
+msgstr "MAUVAISE DEMANDE"
+
+#: templates/common/400.html:13
+msgid "The server could not understand the request due to invalid syntax."
+msgstr "Le serveur n'a pas pu comprendre la requête en raison d'une syntaxe non valide."
+
+#: templates/common/403.html:10
+msgid "Access Denied"
+msgstr "Accès refusé"
+
+#: templates/common/403.html:13
+msgid "Full authentication is required to access this resource."
+msgstr "Une authentification complète est requise pour accéder à cette ressource."
+
+#: templates/common/404.html:10
+msgid "Sorry but we couldn't find this page"
+msgstr "Désolé, mais nous n'avons pas pu trouver cette page"
+
+#: templates/common/404.html:13
+msgid "This page you are looking for does not exist."
+msgstr "Cette page que vous recherchez n'existe pas."
+
+#: templates/common/500.html:10
+msgid "Internal Server Error"
+msgstr "Erreur interne du serveur"
+
+#: templates/common/500.html:13
+msgid ""
+"We track these errors automatically, but if the problem persists feel free "
+"to contact us. In the meantime, try refreshing."
+msgstr ""
+"Nous suivons ces erreurs automatiquement, mais si le problème persiste, "
+"n'hésitez pas à nous contacter. En attendant, essayez d'actualiser votre page."
+
+#: templates/common/messages.html:45
+msgid "Success"
+msgstr "Succès"
+
+#: templates/layout/head.html:84
+msgid "Close this tab?"
+msgstr "Fermer cet onglet ?"
+
+#: templates/layout/sidebar.html:18
+msgid "Administrative levels"
+msgstr "Niveaux administratifs"
+
+#: templates/layout/sidebar.html:25
+msgid "Subprojects"
+msgstr "Sous-projets"
+
+#: templates/layout/sidebar.html:32
+msgid "Subprojects map"
+msgstr "Carte des sous-projets"
+
+#: templates/layout/sidebar.html:43
+msgid "Toggle Sidebar"
+msgstr "Basculer la barre latérale"
+
+#: templates/subprojects/create.html:10
+msgid "Please correct the error below."
+msgstr "Veuillez corriger l'erreur ci-dessous."
+
+#: templates/subprojects/create.html:11
+msgid "Please correct the errors below."
+msgstr "Veuillez corriger les erreurs ci-dessous."
+
+#: templates/subprojects/dashboard.html:38
+msgid "Location of sub-projects"
+msgstr "Localisation des sous-projets"
+
+#: templates/subprojects/index.html:59
+msgid "Collection Tool"
+msgstr "Outil de collecte"
+
+#: templates/subprojects/index.html:67
+msgid "Registration"
+msgstr "Enregistrement"
+
+#: templates/subprojects/index.html:77
+msgid "Activity Tracking"
+msgstr "Suivi d'activité"
+
+#: templates/subprojects/list.html:11
+msgid "Search"
+msgstr "Recherche"
+
+#: templates/subprojects/list.html:18
+msgid "Create"
+msgstr "Créer"
+
+#: templates/subprojects/list.html:18
+msgid "Subproject"
+msgstr "Sous-projet"
+
+#: templates/subprojects/list.html:27
+msgid "Actions"
+msgstr "Actes"
+
+#: templates/subprojects/list.html:28
+msgid "Name"
+msgstr "Nom"
+
+#: templates/subprojects/list.html:29
+msgid "Description"
+msgstr "Description"
+
+#: templates/subprojects/list.html:30
+msgid "Status"
+msgstr "Statut"
+
+#: templates/subprojects/list.html:31
+msgid "Start date"
+msgstr "Date de début"
+
+#: templates/subprojects/list.html:32
+msgid "End date"
+msgstr "Date de fin"
+
+#: templates/subprojects/list.html:33
+msgid "Latitude"
+msgstr "Latitude"
+
+#: templates/subprojects/list.html:34
+msgid "Longitude"
+msgstr "Longitude"
+
+#: templates/subprojects/list.html:35
+msgid "Contractors"
+msgstr "Entrepreneurs"
+
+#: templates/subprojects/list.html:36
+msgid "Administrative level"
+msgstr "Niveau administratif"
+
+#: templates/subprojects/list.html:37
+msgid "Construction rate"
+msgstr "Taux de construction"
+
+#: templates/subprojects/list.html:38
+msgid "Disbursed amount"
+msgstr "Montant déboursé"
+
+#: templates/subprojects/list.html:39
+msgid "Beneficiary groups"
+msgstr "Groupes bénéficiaires"
+
+#: templates/subprojects/list.html:118
+msgid "Edit Subproject"
+msgstr "Modifier le sous-projet"
+
+#: templates/subprojects/list.html:119
+msgid "Close"
+msgstr "Fermer"
+
+#: templates/subprojects/partial_progress_form.html:6
+#: templates/subprojects/partial_update_form.html:7
+msgid "Save"
+msgstr "Sauvegarder"
+
+#: templates/subprojects/partial_update_success.html:65
+msgid "updated successfully"
+msgstr "mis à jour avec succès"

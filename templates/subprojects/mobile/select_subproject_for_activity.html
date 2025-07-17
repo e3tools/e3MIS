@@ -1,0 +1,129 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block extracss %}
+    <style>
+        .notification-dot {
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            z-index: 10;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-3 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <a href="{% url 'subprojects:mobile:index' %}"
+                   class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {% translate 'Submit Activity' %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group mb-0">
+                    <label for="subproject-input" class="font-weight-bold">
+                        {% translate 'Select administrative unit' %}
+                    </label>
+                    <select name="subproject" id="subproject-input" class="form-control">
+                        {% for administrative_unit in administrative_units %}
+                            <option value="{{ administrative_unit.id }}" data-badge="{{ administrative_unit.pending_responses }}">{{ administrative_unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="id-btn-wrapper"></div>
+
+<template id="btn-template">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card card-outline card-primary mb-3">
+                <a href="" class="btn btn-block btn-default text-left d-flex align-items-center" style="font-size: 1.15rem;">
+                    <i class="fas fa-briefcase mr-3"></i>
+                    <span class="btn-label flex-grow-1"></span>
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+            </div>
+            <span class="notification-dot"></span>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extrajs %}
+<script type="text/javascript">
+    function fill_btn_wrapper(subproject_id){
+        let url = "{% url 'subprojects:api:custom-fields' %}?administrative-unit=" + subproject_id;
+        let wrapper = $('#id-btn-wrapper');
+        wrapper.html('');
+        $.ajax({
+            url: url,
+            success: function(data) {
+                if (data.length === 0) {
+                    wrapper.html(
+                        `<div class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                            <span>{% translate 'No activities available.' %}</span>
+                        </div>`
+                    );
+                    return;
+                }
+                data.forEach(function (activity) {
+                    const rendered_button = render_subproject_button(activity);
+                    wrapper.append(rendered_button);
+                });
+            }
+        });
+    }
+
+    function render_subproject_button(subproject) {
+        let post_template = $($('#btn-template')[0].content).clone();
+        let href = "{% url 'subprojects:mobile:select-subproject-custom-fields' '1' %}";
+        href = href.replace('1', subproject.id);
+        post_template.find('a').attr('href', href);
+        post_template.find('.btn-label').text(subproject.name);
+        return post_template;
+    }
+    
+    function formatOption(option) {
+    if (!option.id) {
+      return option.text;  // For placeholder etc.
+    }
+
+    const badge = $(option.element).data('badge');
+    const name = option.text;
+
+    return $(`<span>${name} <span class="badge badge-danger">${badge}</span></span>`);
+  }
+
+    $(document).ready(function () {
+        
+        let subproject_input = $('#subproject-input');
+        fill_btn_wrapper(subproject_input.val());
+        subproject_input.change(function () {
+            fill_btn_wrapper($(this).val());
+        });
+        
+        subproject_input.select2({
+          templateResult: formatOption,
+          templateSelection: formatOption,
+          escapeMarkup: function(markup) { return markup; }  // Allow HTML
+        });
+        
+    });
+</script>
+{% endblock %}

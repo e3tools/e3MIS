@@ -1,0 +1,85 @@
+{% load bootstrap4 static i18n %}
+
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="description" content=""/>
+    <meta name="author" content=""/>
+    <meta name="msapplication-TileColor" content="#da532c">
+    <title>{% translate 'Log in' %}</title>
+
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback"/>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{% static 'AdminLTE/plugins/fontawesome-free/css/all.min.css' %}"/>
+    <!-- icheck bootstrap -->
+    <link rel="stylesheet" href="{% static 'AdminLTE/plugins/icheck-bootstrap/icheck-bootstrap.min.css' %}"/>
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{% static 'AdminLTE/dist/css/adminlte.css' %}"/>
+    <link href="{% static 'css/fonts.css' %}" rel="stylesheet">
+</head>
+<style>
+    .structure_name {
+        font-size: 22px; /* Taille de police plus grande */
+        font-weight: 500;
+        color: #196A62;
+        margin-bottom: 0px; /* Espace en dessous */
+        line-height: 1.2; /* Pour espacer les lignes */
+    }
+
+</style>
+
+<div class="structure_name">
+    <small>Programme d’urgence de renforcement</small><br>
+    <small>de la résilience et de la sécurité</small><br>
+    <small>des communautés</small>
+</div>
+<body class="hold-transition login-page">
+{% if OTHER_LANGUAGES %}
+    <nav class="main-header navbar navbar-expand">
+        <ul class="navbar-nav ml-auto">
+            {% include 'layout/language_dropdown.html' %}
+        </ul>
+    </nav>
+{% endif %}
+
+<div class="login-box">
+    <div class="card">
+        <div class="card-body login-card-body">
+            <p class="login-box-msg">
+                {% translate "Log in to start your session" %}
+            </p>
+            {% if form.errors %}
+                <p class="text-danger">{% translate "Email or password are not correct" %}</p>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_field form.email %}
+                {% bootstrap_field form.password %}
+                <div class="row">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary btn-block">
+                            {% translate "Log in" %}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery -->
+<script src="{% static 'AdminLTE/plugins/jquery/jquery.min.js' %}"></script>
+<!-- Bootstrap 4 -->
+<script src="{% static 'AdminLTE/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<!-- AdminLTE App -->
+<script src="{% static 'AdminLTE/dist/js/adminlte.js' %}"></script>
+<!-- Django Translation -->
+<script src="{% static 'js/setLanguajeDjangoTranslation.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="text-center mt-4 mb-3">
+            <h4 class="font-weight-bold">{% translate 'Collection Tool' %}</h4>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <a href="{% url 'subprojects:mobile:register-menu' %}"
+           class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-3 shadow-sm">
+            <i class="fas fa-file-contract mr-2"></i>
+            <span>{% translate 'Registration' %}</span>
+            <i class="fas fa-chevron-right ml-2"></i>
+        </a>
+    </div>
+
+    <div class="col-12">
+        <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
+           class="btn btn-danger btn-block btn-lg d-flex align-items-center justify-content-center shadow-sm">
+            <i class="fas fa-file-alt mr-2"></i>
+            <span>
+                {% translate 'Submit Activity' %} <span class="badge badge-light">{{ pending_activities }}</span>
+            </span>
+            <i class="fas fa-chevron-right ml-2"></i>
+        </a>
+    </div>
+</div>
+{% endblock %}
