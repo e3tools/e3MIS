@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
+from django.contrib.auth.models import Group
+
 from src.settings import AUTH_USER_MODEL
 
 
@@ -169,6 +171,8 @@ class Document(models.Model):
 class SubprojectCustomField(models.Model):
     name = models.CharField(max_length=255)
     config_schema = models.JSONField(help_text="JSON schema + options for the form", default=list)
+    groups = models.ManyToManyField(Group, verbose_name=_('Custom Fields'), related_name="subproject_custom_fields",
+                                    blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -183,7 +187,8 @@ class SubprojectCustomFieldDependency(models.Model):
 
 class SubprojectFormResponse(models.Model):
     custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
-    subproject = models.ForeignKey(Subproject, related_name="custom_fields_responses", on_delete=models.CASCADE, null=True, blank=True)
+    subproject = models.ForeignKey(Subproject, related_name="custom_fields_responses", on_delete=models.CASCADE,
+                                   null=True, blank=True)
     filled_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     response_schema = models.JSONField(help_text="JSON response schema", default=list)
     created_date = models.DateTimeField(auto_now_add=True)

@@ -6,6 +6,7 @@ from django.utils.translation import gettext as _
 from subprojects.models import SubprojectCustomField
 from subprojects.infrastructure.forms.subproject_custom_form import SubprojectCustomFieldsForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import Group
 from src.permissions import IsStaffMemberMixin
 
 
@@ -17,6 +18,7 @@ class SubprojectCustomFieldsCreateView(LoginRequiredMixin, IsStaffMemberMixin, C
 
     def get_context_data(self, **kwargs):
         kwargs.update({'custom_forms': self.model.objects.all()})
+        kwargs.update({'groups': Group.objects.all()})
         return super().get_context_data(**kwargs)
 
     def form_valid(self, form):

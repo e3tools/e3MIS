@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from subprojects.models import SubprojectCustomField
 from subprojects.infrastructure.forms.subproject_custom_form import SubprojectCustomFieldsForm
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import Group
 from src.permissions import IsStaffMemberMixin
 
 
@@ -19,5 +20,10 @@ class SubprojectCustomFieldsUpdateView(LoginRequiredMixin, IsStaffMemberMixin, U
         context.update({'custom_forms': self.model.objects.exclude(id=self.object.id)})
         context.update({'custom_form_dependencies': list(self.object.dependencies_children.all().values_list(
             'parent__id', flat=True))})
+
+        context.update({'groups': Group.objects.all()})
+        context.update({'custom_form_groups': list(self.object.groups.all().values_list(
+            'id', flat=True))})
+
         context['object'].config_schema = json.dumps(context['object'].config_schema)
         return context
