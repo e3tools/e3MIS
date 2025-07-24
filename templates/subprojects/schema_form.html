@@ -1,5 +1,5 @@
 {% extends 'layout/base.html' %}
-{% load static %}
+{% load static i18n %}
 
 {% block content %}
 <h2>Custom Form Schema Editor</h2>
@@ -12,26 +12,45 @@
       <h3 class="card-title">Custom Form Schema Editor</h3>
     </div>
     <div class="card-body">
-
-      <!-- Form name input -->
-      <div class="form-group">
-        <label for="name">Form Name</label>
-        <input type="text" class="form-control" name="name" id="name" value="{{ object.name }}" placeholder="Enter form name">
-      </div>
-
-      <!-- Form dependencies input -->
-      <div class="form-group">
-        <label for="dependencies">Form Dependencies</label>
-          <select class="form-control" name="dependencies" id="dependencies" multiple>
-              {% for custom_form in custom_forms %}
-                  {% if custom_form.id in custom_form_dependencies %}
-                    <option value="{{ custom_form.id }}" selected>{{ custom_form.name }}</option>
-                  {% else %}
-                    <option value="{{ custom_form.id }}">{{ custom_form.name }}</option>
-                  {% endif %}
-              {% endfor %}
-          </select>
-      </div>
+    
+    <div class="row">
+    
+          <!-- Form name input -->
+          <div class="form-group col-md-6 col-12">
+            <label for="name">{% translate 'Form Name' %}</label>
+            <input type="text" class="form-control" name="name" id="name" value="{{ object.name }}" placeholder="Enter form name">
+          </div>
+    </div>
+    <div class="row">
+    
+          <!-- Form dependencies input -->
+          <div class="form-group col-md-6 col-12">
+            <label for="groups">{% translate 'Associated group' %}</label>
+              <select class="form-control" name="groups" id="groups" multiple>
+                  {% for group in groups %}
+                      {% if group.id in custom_form_groups %}
+                        <option value="{{ group.id }}" selected>{{ group.name }}</option>
+                      {% else %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                      {% endif %}
+                  {% endfor %}
+              </select>
+          </div>
+    
+          <!-- Form dependencies input -->
+          <div class="form-group col-md-6 col-12">
+            <label for="dependencies">{% translate 'Form Dependencies' %}</label>
+              <select class="form-control" name="dependencies" id="dependencies" multiple>
+                  {% for custom_form in custom_forms %}
+                      {% if custom_form.id in custom_form_dependencies %}
+                        <option value="{{ custom_form.id }}" selected>{{ custom_form.name }}</option>
+                      {% else %}
+                        <option value="{{ custom_form.id }}">{{ custom_form.name }}</option>
+                      {% endif %}
+                  {% endfor %}
+              </select>
+          </div>
+    </div>
 
       <!-- Page and field controls -->
       <div class="form-group">

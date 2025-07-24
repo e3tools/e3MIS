@@ -11,3 +11,4 @@ class ContractorCreateView(IsFieldAgentUserMixin, CreateView):
     model = Contractor
     form_class = ContractorMobileCreateForm
     success_url = reverse_lazy('subprojects:mobile:index')
+    groups_required = ['Technical facilitator']
