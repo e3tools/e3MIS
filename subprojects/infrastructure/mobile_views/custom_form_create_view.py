@@ -1,10 +1,11 @@
 import json
+import datetime
 from django.views.generic.edit import CreateView
 from django.template.response import TemplateResponse
 from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
 from django.contrib.auth.mixins import LoginRequiredMixin
 from utils.json_form_parser import parse_custom_jsonschema
-import datetime
+
 
 def serialize_for_json(data):
     """
@@ -32,6 +33,8 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
         """
         self.object = self.get_object()
         self.project = Subproject.objects.get(pk=self.kwargs['subproject'])
+        if not self.has_object_permission_groups():
+            return self.handle_no_permission()
         form = self.get_custom_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -41,6 +44,8 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         self.project = Subproject.objects.get(pk=self.kwargs['subproject'])
+        if not self.has_object_permission_groups():
+            return self.handle_no_permission()
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
@@ -138,3 +143,10 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
             return list(schema_json['form'][0]['page']['properties'].keys())
         except Exception:
             return []
+
+    def has_object_permission_groups(self):
+        groups = self.object.groups.all()
+        for group in groups:
+            if not self.request.user.groups.filter(id=group.id).exists():
+                return False
+        return True

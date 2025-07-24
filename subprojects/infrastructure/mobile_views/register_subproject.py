@@ -8,11 +8,12 @@ from subprojects.infrastructure.forms.subproject_field_agent_create_form import 
 from subprojects.models import Subproject
 
 
-class RegisterSubprojectView(IsFieldAgentUserMixin,CreateView):
+class RegisterSubprojectView(IsFieldAgentUserMixin, CreateView):
     template_name = 'subprojects/mobile/register_subproject.html'
     model = Subproject
     form_class = SubprojectFieldAgentCreateForm
     success_url = reverse_lazy('subprojects:mobile:index')
+    groups_required = ['Community facilitator']
 
     def post(self, request, *args, **kwargs):
         self.object = None
@@ -30,4 +31,3 @@ class RegisterSubprojectView(IsFieldAgentUserMixin,CreateView):
         kwargs = super().get_form_kwargs()
         kwargs.update({"user": self.request.user})
         return kwargs
-
