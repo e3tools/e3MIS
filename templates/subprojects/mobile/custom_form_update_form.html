@@ -18,9 +18,15 @@
         {% else %}
             <div class="card card-primary mt-4 mb-4 shadow">
                 <div class="card-body">
-                    <form method="post" hx-post="">
+                    <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        {% bootstrap_form custom_form %}
+                        {% for field in custom_form %}
+                            {% if field.field.widget.input_type == "file" %}
+                                {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}
+                            {% else %}
+                                {% bootstrap_field field %}
+                            {% endif %}
+                        {% endfor %}
                         <div class="d-flex justify-content-end mt-3">
                             <a href="{% url 'subprojects:mobile:select-subproject-custom-fields' subproject.id %}"
                                class="btn btn-outline-secondary btn-lg mr-2">
@@ -38,4 +44,13 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="{% static 'AdminLTE/plugins/bs-custom-file-input/bs-custom-file-input.js' %}"></script>
+<script type="text/javascript">
+    $( Document ).ready(function(){
+        bsCustomFileInput.init()
+    });
+</script>
 {% endblock %}

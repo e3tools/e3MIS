@@ -195,6 +195,12 @@ class SubprojectFormResponse(models.Model):
     updated_date = models.DateTimeField(auto_now=True)
 
 
+class Attachment(models.Model):
+    subproject_form_response = models.ForeignKey(SubprojectFormResponse, on_delete=models.CASCADE, related_name="attachments")
+    field_name = models.CharField(max_length=255, blank=True, null=True)
+    file = models.FileField(upload_to='media/subproject_custom_field_attachments/')
+
+
 class DisplayFieldSetting(models.Model):
     field_name = models.CharField(max_length=100, unique=True)
     enabled = models.BooleanField(default=False)
