@@ -72,6 +72,9 @@
         wrapper.html('');
         $.ajax({
             url: url,
+            headers: {
+                user: "{{ user.id }}"
+            },
             success: function(data) {
                 if (data.length === 0) {
                     wrapper.html(
@@ -96,19 +99,22 @@
         href = href.replace('1', subproject.id);
         post_template.find('a').attr('href', href);
         post_template.find('.btn-label').text(subproject.name);
+        if ( !subproject.has_badge ) {
+            post_template.find('.notification-dot').toggleClass('notification-dot');
+        }
         return post_template;
     }
     
     function formatOption(option) {
-    if (!option.id) {
-      return option.text;  // For placeholder etc.
+        if (!option.id) {
+            return option.text;  // For placeholder etc.
+        }
+
+        const badge = $(option.element).data('badge');
+        const name = option.text;
+
+        return $(`<span>${name} <span class="badge badge-danger">${badge}</span></span>`);
     }
-
-    const badge = $(option.element).data('badge');
-    const name = option.text;
-
-    return $(`<span>${name} <span class="badge badge-danger">${badge}</span></span>`);
-  }
 
     $(document).ready(function () {
         

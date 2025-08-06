@@ -2,6 +2,7 @@ from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
+from django.db.models import Q, OuterRef, Count, Subquery, IntegerField, F
 from django.http import Http404
 
 from administrativelevels.models import AdministrativeUnit
@@ -78,11 +79,20 @@ class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
         resp_list = list()
         administrative_unit_id = self.request.query_params.get('administrative-unit', None)
 
+        custom_field_ids = self.get_subproject_custom_field_ids()
+
         administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
         all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
-            resp_list += list(Subproject.objects.filter(administrative_level=child).values(
+            node_list = list(Subproject.objects.filter(administrative_level=child).values(
                 'name', 'id'))
+            for node in node_list:
+                if SubprojectFormResponse.objects.filter(
+                        custom_form__id__in=custom_field_ids, subproject__id=node['id']).count() != len(custom_field_ids):
+                    node['has_badge'] = True
+                else:
+                    node['has_badge'] = False
+            resp_list += node_list
 
         return Response(resp_list)
 
@@ -100,4 +110,19 @@ class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
 
         return administrative_units
 
+    def get_subproject_custom_field_ids(self):
+        user_group_ids = list(self.request.user.groups.all().values_list('id', flat=True))
 
+        matching_group_count = SubprojectCustomField.groups.through.objects.filter(
+            subprojectcustomfield_id=OuterRef('pk'),
+            group_id__in=user_group_ids
+        ).values('subprojectcustomfield_id').annotate(
+            count=Count('group_id')
+        ).values('count')
+
+        return SubprojectCustomField.objects.annotate(
+            total_groups=Count('groups', distinct=True),
+            matched_groups=Subquery(matching_group_count, output_field=IntegerField()),
+        ).filter(
+            Q(total_groups=0) | Q(total_groups=F('matched_groups'))
+        ).values('id')

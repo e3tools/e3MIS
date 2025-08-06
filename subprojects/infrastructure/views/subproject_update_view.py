@@ -41,7 +41,6 @@ class SubprojectUpdateView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView):
             return self.form_invalid(form)
 
     def form_invalid(self, form):
-        print('here invalid')
         return TemplateResponse(self.request, self.template_name, {
             'form': form,
             'custom_form': self.get_custom_form(),  # ensure custom form is re-included on error
