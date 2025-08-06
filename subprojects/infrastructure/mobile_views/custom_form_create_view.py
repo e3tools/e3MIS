@@ -1,8 +1,7 @@
-import json
 import datetime
 from django.views.generic.edit import CreateView
 from django.template.response import TemplateResponse
-from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
+from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject, Attachment
 from django.contrib.auth.mixins import LoginRequiredMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
@@ -25,6 +24,7 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
     queryset = SubprojectCustomField.objects.all()
     fields = '__all__'
     template_name = "subprojects/mobile/custom_form_update_form.html"
+    # template_name = 'bs-custom-file-input.html'
 
     def post(self, request, *args, **kwargs):
         """
@@ -53,6 +53,10 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
         instance = self.model.objects.filter(custom_form=self.object, subproject=subproject).first()
         cleaned_data = serialize_for_json(form.cleaned_data)
 
+        for key in cleaned_data.keys():
+            if key in form.files.keys():
+                cleaned_data[key] = 'Attachment'
+
         if instance is None:
             instance = self.model(
                 custom_form=self.object,
@@ -64,6 +68,14 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
             instance.filled_by = self.request.user
             instance.response_schema = cleaned_data
         instance.save()
+
+        if form.files is not None:
+            for key, value in form.files.items():
+                Attachment.objects.create(
+                    subproject_form_response=instance,
+                    field_name=key,
+                    file=value,
+                )
 
         return TemplateResponse(self.request, "subprojects/mobile/custom_form_update_form.html", {
             'subproject': subproject,
@@ -88,7 +100,11 @@ class CustomFormUpdateView(LoginRequiredMixin, CreateView):
         """Return the initial data to use for forms on this view."""
         form_response = SubprojectFormResponse.objects.filter(subproject=self.project, custom_form=self.object).first()
         if form_response is not None:
-            return form_response.response_schema
+            initial = form_response.response_schema
+            attachment_initial = Attachment.objects.filter(subproject_form_response=form_response).all()
+            for attachment in attachment_initial:
+                initial.update({attachment.field_name: attachment.file})
+            return initial
         return self.initial.copy()
 
     def get_custom_form(self):

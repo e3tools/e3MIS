@@ -10,6 +10,7 @@ def parse_custom_jsonschema(schema_json, page_index=0):
         'number': forms.FloatField,
         'integer': forms.IntegerField,
         'boolean': forms.BooleanField,
+        'file': forms.FileField,
     }
 
     fields = {}
@@ -37,6 +38,11 @@ def parse_custom_jsonschema(schema_json, page_index=0):
                 **common_args
             )
 
+        elif field_schema.get('type') == 'file':
+            fields[field_name] = forms.FileField(
+                widget=forms.FileInput(attrs={'type': 'file', 'class': 'custom-file-input'}),
+                **common_args
+            )
         else:
             field_type = field_schema.get('type', 'string')
             field_class = field_map.get(field_type, forms.CharField)
