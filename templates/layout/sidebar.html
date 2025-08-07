@@ -67,6 +67,13 @@
                         <p>{% translate "Contractors" %}</p>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{% url 'trackableobjects:trackable_object_list' %}"
+                       class="nav-link {% if url_name == 'trackable_object_list' %}active{% endif %}">
+                        <i class="nav-icon fas fa-tags"></i>
+                        <p>{% translate "Trackable objects" %}</p>
+                    </a>
+                </li>
             </ul>
             {% endwith %}
         </nav>

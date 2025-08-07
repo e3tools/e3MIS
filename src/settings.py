@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'subprojects',
     'administrativelevels',
     'authorization',
+    'trackableobjects',
 ]
 
 

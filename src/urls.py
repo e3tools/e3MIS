@@ -31,7 +31,8 @@ urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
     path('', include('authorization.urls')),
     path('administrative-levels/', include('administrativelevels.urls')),
-    path('subprojects/', include('subprojects.urls'))
+    path('subprojects/', include('subprojects.urls')),
+    path('trackable-objects/', include('trackableobjects.urls'))
 
 )
 
