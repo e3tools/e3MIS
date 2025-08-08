@@ -22,17 +22,11 @@
             <div class="container-fluid">
                 <div class="row mb-2">
 
-                    {% block custom_title %}
-                        {% if administrativelevel_village %}
-                        <div class="col-sm-12">
-                            <div class="m-0 main-title" style="color: #707070 !important;"><h2>{{ title | safe }}</h2></div>
-                        </div>
-                        {% else %}
-                        <div class="col-sm-6">
-                            <div class="m-0 main-title">{{ title | safe }}</div>
-                        </div>
-                        {% endif %}
-                    {% endblock %}
+                {% block custom_title %}
+                    <div class="col-sm-12">
+                        <div class="m-0 main-title" style="color: #707070 !important;"><h2>{{ title | safe }}</h2></div>
+                    </div>
+                {% endblock %}
 
                 </div>
                 <!-- /.row -->

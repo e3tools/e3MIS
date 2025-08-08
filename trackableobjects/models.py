@@ -29,7 +29,7 @@ class TrackableObjectResponse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
-    trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE)
+    trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE, related_name="responses",)
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
 
 

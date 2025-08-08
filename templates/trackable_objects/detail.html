@@ -1,0 +1,116 @@
+{% extends 'layout/base.html' %}
+{% load static i18n bootstrap4 %}
+
+{% block content %}
+    <section class="content">
+
+        <!-- Default box -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 col-md-12 col-lg-8 order-2 order-md-1">
+                        <div class="row">
+                            <div class="col-12 col-sm-4">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_by.get_full_name|default:object.created_by.email }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-center text-muted">{% translate 'Created' %}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_at|date:"d M, Y - P" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-center text-muted">{% translate 'Updated' %}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{{ object.updated_at|date:"d M, Y - P" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <h4>{% translate 'Description' %}</h4>
+                                <p class="text-muted">
+                                    <b class="d-block">{{ object.description }}</b>
+                                </p>
+                            </div>
+                            <div class="col-12">
+                                <h4>{% translate 'Responses' %}</h4>
+                                
+                                <table id="table-subprojects" class="table table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>{% translate 'Actions' %}</th>
+                                        <th>{% translate 'Created by' %}</th>
+                                        <th>{% translate 'Date' %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for response in responses %}
+                                        <tr>
+                                            <td>
+                                              <div class="btn-group">
+                                                <!-- Update Info (functional) -->
+                                                <button type="button"
+                                                        class="btn btn-default btn-flat">
+                                                  <i class="fas fa-pencil-alt text-primary"></i>
+                                                </button>
+            
+                                                <!-- Field Visit -->
+                                                <button type="button"
+                                                        class="btn btn-default btn-flat">
+                                                  <i class="fas fa-map-marker-alt text-success"></i>
+                                                </button>
+            
+                                                <!-- Attach Document -->
+                                                <button type="button"
+                                                        class="btn btn-default btn-flat">
+                                                  <i class="fas fa-paperclip text-secondary"></i>
+                                                </button>
+            
+                                                <!-- Progress -->
+                                                <button type="button"
+                                                        class="btn btn-default btn-flat">
+                                                  <i class="fas fa-tasks text-warning"></i>
+                                                </button>
+                                              </div>
+                                            </td>
+                                            <td>{{ response.created_by.get_full_name|default:object.created_by.email }}</td>
+                                            <td>{{ response.updated_at|date:"d M, Y - P" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-12 col-lg-4 order-1 order-md-2">
+                        <div class="info-box bg-light">
+                            <div class="info-box-content">
+                                <h4>{% translate 'Form Preview' %}</h4>
+                                    {% for field in form %}
+                                        {% if field.field.widget.input_type == "file" %}
+                                            {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}
+                                        {% else %}
+                                            {% bootstrap_field field %}
+                                        {% endif %}
+                                    {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.card-body -->
+        </div>
+        <!-- /.card -->
+
+    </section>
+{% endblock %}
