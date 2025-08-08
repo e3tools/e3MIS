@@ -33,13 +33,19 @@
                         {% for trackable_object in object_list %}
                             <tr>
                                 <td>
-                                  <div class="btn-group">
-                                    <!-- Update Info (functional) -->
-                                    <a href="{% url 'trackableobjects:trackable_object_edit' trackable_object.pk %}"
-                                            class="btn btn-default btn-flat">
-                                      <i class="fas fa-pencil-alt text-primary"></i>
-                                    </a>
-                                  </div>
+                                    <div class="btn-group">
+                                        <!-- Update Info (functional) -->
+                                        <a href="{% url 'trackableobjects:trackable_object_edit' trackable_object.pk %}"
+                                           class="btn btn-default btn-flat">
+                                            <i class="fas fa-pencil-alt text-primary"></i>
+                                        </a>
+                                        
+                                        <!-- Detail Info (functional) -->
+                                        <a href="{% url 'trackableobjects:trackable_object_detail' trackable_object.pk %}"
+                                           class="btn btn-default btn-flat">
+                                            <i class="fas fa-info"></i>
+                                        </a>
+                                    </div>
                                 </td>
                                 <td>{{ trackable_object.name }}</td>
                                 <td>{{ trackable_object.description }}</td>
