@@ -40,6 +40,12 @@
                     <i class="fas fa-chevron-right ml-2"></i>
                 </a>
                 {% endif %}
+                <a href="{% url 'trackableobjects:mobile:select-trackable-object' %}"
+                   class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-2 shadow-sm">
+                    <i class="fas fa-map mr-2"></i>
+                    <span>{% translate 'Followup trackable object' %}</span>
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
             </div>
         </div>
     </div>
