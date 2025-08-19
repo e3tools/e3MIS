@@ -19,10 +19,16 @@ class TrackableObject(models.Model):
 class FollowUpEvent(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
+    trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE, related_name="follow_up_events",)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
+
+
+class FollowUpEventDependency(models.Model):
+    parent = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="dependencies_parents")
+    child = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="dependencies_children")
 
 
 class TrackableObjectResponse(models.Model):
