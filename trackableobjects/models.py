@@ -44,4 +44,3 @@ class FollowUpEventResponse(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
     follow_up_event = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE)
-    trackable_object_response = models.ForeignKey(TrackableObjectResponse, on_delete=models.CASCADE)

@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 from django.contrib.auth.models import Group
+from trackableobjects.models import TrackableObjectResponse, FollowUpEventResponse
 
 from src.settings import AUTH_USER_MODEL
 
@@ -196,9 +197,14 @@ class SubprojectFormResponse(models.Model):
 
 
 class Attachment(models.Model):
-    subproject_form_response = models.ForeignKey(SubprojectFormResponse, on_delete=models.CASCADE, related_name="attachments")
+    subproject_form_response = models.ForeignKey(SubprojectFormResponse, blank=True, null=True,
+                                                 on_delete=models.CASCADE, related_name="attachments")
+    trackable_object_response = models.ForeignKey(TrackableObjectResponse, blank=True, null=True,
+                                                  on_delete=models.CASCADE, related_name="attachments")
+    follow_up_event_response = models.ForeignKey(FollowUpEventResponse, blank=True, null=True,
+                                                 on_delete=models.CASCADE, related_name="attachments")
     field_name = models.CharField(max_length=255, blank=True, null=True)
-    file = models.FileField(upload_to='media/subproject_custom_field_attachments/')
+    file = models.FileField(upload_to='media/attachments/')
 
 
 class DisplayFieldSetting(models.Model):

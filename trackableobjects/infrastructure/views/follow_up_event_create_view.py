@@ -5,7 +5,6 @@ from django.utils.translation import gettext as _
 from trackableobjects.models import FollowUpEvent
 from trackableobjects.infrastructure.forms.follow_up_event_create_form import FollowUpEventForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import Group
 from src.permissions import IsStaffMemberMixin
 
 
@@ -13,7 +12,6 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
     model = FollowUpEvent
     form_class = FollowUpEventForm
     template_name = "trackable_objects/follow_up_event_create_edit.html"
-    success_url = reverse_lazy("trackableobjects:trackable_object_list")
 
     def get_context_data(self, **kwargs):
         kwargs.update({'follow_up_event_objects': self.model.objects.all()})
@@ -31,3 +29,6 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
             "trackable_object": self.kwargs['trackable_object_pk'],
         })
         return kwargs
+
+    def get_success_url(self):
+        return reverse_lazy("trackableobjects:trackable_object_detail", args=[self.kwargs['trackable_object_pk']])

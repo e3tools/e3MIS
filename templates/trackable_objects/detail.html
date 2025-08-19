@@ -62,31 +62,12 @@
                                     {% for response in responses %}
                                         <tr>
                                             <td>
-                                              <div class="btn-group">
-                                                <!-- Update Info (functional) -->
-                                                <button type="button"
-                                                        class="btn btn-default btn-flat">
-                                                  <i class="fas fa-pencil-alt text-primary"></i>
-                                                </button>
-            
-                                                <!-- Field Visit -->
-                                                <button type="button"
-                                                        class="btn btn-default btn-flat">
-                                                  <i class="fas fa-map-marker-alt text-success"></i>
-                                                </button>
-            
-                                                <!-- Attach Document -->
-                                                <button type="button"
-                                                        class="btn btn-default btn-flat">
-                                                  <i class="fas fa-paperclip text-secondary"></i>
-                                                </button>
-            
-                                                <!-- Progress -->
-                                                <button type="button"
-                                                        class="btn btn-default btn-flat">
-                                                  <i class="fas fa-tasks text-warning"></i>
-                                                </button>
-                                              </div>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'trackableobjects:trackable_object_response_detail' response.id %}"
+                                                            class="btn btn-default btn-flat response-info">
+                                                        <i class="fas fa-info text-primary"></i>
+                                                    </a>
+                                                </div>
                                             </td>
                                             <td>{{ response.created_by.get_full_name|default:object.created_by.email }}</td>
                                             <td>{{ response.updated_at|date:"d M, Y - P" }}</td>
@@ -111,6 +92,7 @@
                                         <tr>
                                             <td>
                                               <div class="btn-group">
+                                                  
                                                 <!-- Update Info (functional) -->
                                                 <button type="button"
                                                         class="btn btn-default btn-flat">
