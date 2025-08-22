@@ -18,41 +18,81 @@
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-12">
-        <div class="card card-warning mt-4 mb-4 shadow">
-            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
-                <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
-                   class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
-                    {% translate 'Select Subproject Custom fields' %}
-                </h4>
-            </div>
-            <div class="card-body p-2">
-                {% if trackable_objects %}
-                    <div class="list-group">
-                        {% for trackable_object in trackable_objects %}
-                            <a href="{% url 'trackableobjects:mobile:trackable_object_edit' trackable_object.id %}"
-                               class="list-group-item list-group-item-action d-flex align-items-center">
-                                <i class="fas fa-briefcase mr-3 text-warning"></i>
-                                <span class="flex-grow-1">{{ trackable_object.name }}</span>
-                                <i class="fas fa-chevron-right ml-2"></i>
-                                {% if trackable_object.has_no_response %}
-                                <span class="notification-dot"></span>
-                                {% endif %}
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
-                        <span class="text-muted">{% translate 'No activity forms available.' %}</span>
-                    </div>
-                {% endif %}
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card card-warning mt-4 mb-4 shadow">
+                <div class="card-header position-relative d-flex align-items-center justify-content-center"
+                     style="min-height:56px;">
+                    <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
+                       class="btn btn-link p-2 position-absolute"
+                       style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                        {% translate 'Select Trackable Object' %}
+                    </h4>
+                </div>
+                <div class="card-body p-2">
+                    {% if trackable_objects %}
+                        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                            {% for trackable_object in trackable_objects %}
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">
+                                        <i class="fas fa-briefcase mr-3 text-warning"></i>
+                                        <p>
+                                            {{ trackable_object.name }}
+                                            <i class="right fas fa-angle-left"></i>
+                                            {% if trackable_object.has_no_response %}
+                                                <span class="notification-dot"></span>
+                                            {% endif %}
+                                        </p>
+                                    </a>
+                                        
+                                    <ul class="nav nav-treeview" style="display: none;">
+                                        <li class="nav-item">
+                                            <a href="{% url 'trackableobjects:mobile:trackable_object_edit' trackable_object.id %}" class="nav-link">
+                                                <i class="fas fa-file-contract nav-icon text-warning"></i>
+                                                <p>{{ trackable_object.name }} Form</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="#" class="nav-link">
+                                                <i class="fas fa-signature nav-icon text-warning"></i>
+                                                <p>
+                                                    Follow up Events
+                                                    <i class="right fas fa-angle-left"></i>
+                                                </p>
+                                            </a>
+                                            <ul class="nav nav-treeview" style="display: none;">
+                                                {% for follow_up_event in trackable_object.follow_up_events.all %}
+                                                    <li class="nav-item">
+                                                        <a href="{% url 'trackableobjects:mobile:follow_up_event_detail' follow_up_event.pk %}"
+                                                           class="nav-link">
+                                                            <i class="fas fa-file-signature nav-icon text-warning"></i>
+                                                            <p>{{ follow_up_event.name }}</p>
+                                                        </a>
+                                                    </li>
+                                                {% empty %}
+                                                    <li class="nav-item">
+                                                        <a class="nav-link">
+                                                            <i>No Follow Up Events</i>
+                                                        </a>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
+                            <span class="text-muted">{% translate 'No activity forms available.' %}</span>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}

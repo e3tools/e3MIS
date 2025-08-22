@@ -11,7 +11,7 @@ class TrackableObject(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
-    groups = models.ManyToManyField(Group, verbose_name=_('Custom Fields'), related_name="trackable_objects",
+    groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="trackable_objects",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
 
@@ -23,6 +23,8 @@ class FollowUpEvent(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
+    groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="follow_up_events",
+                                    blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
 
 
@@ -43,4 +45,5 @@ class FollowUpEventResponse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
-    follow_up_event = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE)
+    follow_up_event = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="responses",)
+    jsonForm = models.JSONField(help_text="JSON response schema", default=list)
