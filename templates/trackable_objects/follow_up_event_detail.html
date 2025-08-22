@@ -36,18 +36,15 @@
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col-12 col-sm-8">
+                            <div class="col-12">
                                 <h4>{% translate 'Description' %}</h4>
                                 <p class="text-muted">
                                     <b class="d-block">{{ object.description }}</b>
                                 </p>
                             </div>
-                            <div class="col-12 col-sm-4">
-                                <a href="{% url 'trackableobjects:follow_up_event_object_create' object.pk %}" class="btn btn-block btn-default">Create follow up event</a>
-                            </div>
                         </div>
                         <div class="row">
-                            <div class="col-12 col-sm-6">
+                            <div class="col-12 col-sm-12">
                                 <h4>{% translate 'Responses' %}</h4>
                                 
                                 <table id="table-subprojects" class="table table-striped">
@@ -63,7 +60,7 @@
                                         <tr>
                                             <td>
                                                 <div class="btn-group">
-                                                    <a href="{% url 'trackableobjects:trackable_object_response_detail' response.id %}"
+                                                    <a href="{% url 'trackableobjects:follow_up_event_response_detail' response.id %}"
                                                             class="btn btn-default btn-flat response-info">
                                                         <i class="fas fa-info text-primary"></i>
                                                     </a>
@@ -71,35 +68,6 @@
                                             </td>
                                             <td>{{ response.created_by.get_full_name|default:object.created_by.email }}</td>
                                             <td>{{ response.updated_at|date:"d M, Y - P" }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <h4>{% translate 'Follow up event' %}</h4>
-                                
-                                <table id="table-subprojects" class="table table-striped">
-                                    <thead>
-                                    <tr>
-                                        <th>{% translate 'Actions' %}</th>
-                                        <th>{% translate 'Name' %}</th>
-                                        <th>{% translate 'Date' %}</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for follow_up_event in object.follow_up_events.all %}
-                                        <tr>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
-                                                            class="btn btn-default btn-flat response-info">
-                                                        <i class="fas fa-info text-primary"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                            <td>{{ follow_up_event.name }}</td>
-                                            <td>{{ follow_up_event.updated_at|date:"d M, Y - P" }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>

@@ -26,9 +26,9 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
         kwargs = super().get_form_kwargs()
         kwargs.update({
             "user": self.request.user,
-            "trackable_object": self.kwargs['trackable_object_pk'],
+            "trackable_object": self.kwargs['pk'],
         })
         return kwargs
 
     def get_success_url(self):
-        return reverse_lazy("trackableobjects:trackable_object_detail", args=[self.kwargs['trackable_object_pk']])
+        return reverse_lazy("trackableobjects:trackable_object_detail", args=[self.kwargs['pk']])
