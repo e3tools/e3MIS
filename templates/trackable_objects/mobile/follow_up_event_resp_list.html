@@ -36,7 +36,7 @@
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                         {% for resp in object.responses.all %}
                             <li class="nav-item">
-                                <a href="#" class="nav-link">
+                                <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' object.id resp.id %}" class="nav-link">
                                     <i class="fas fa-briefcase mr-3 text-warning"></i>
                                     <p>
                                         {{ resp.created_at|date }}

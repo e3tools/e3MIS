@@ -3,6 +3,7 @@ from django.db.models import Q, OuterRef, Count, Subquery, IntegerField, F
 
 from src.permissions import IsFieldAgentUserMixin
 from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
+from trackableobjects.models import TrackableObject
 
 
 class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
@@ -12,6 +13,7 @@ class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
     def get_context_data(self, **kwargs):
         self.user_groups = self.request.user.groups.all()
         kwargs.update({'administrative_units': self.get_descendants(self.request.user.administrative_unit)})
+        kwargs.update({'trackable_objects': TrackableObject.objects.all()})
         return super().get_context_data(**kwargs)
 
     def get_descendants(self, administrative_unit):

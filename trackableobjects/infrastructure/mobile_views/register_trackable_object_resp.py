@@ -1,6 +1,8 @@
 import datetime
 from django.views.generic.edit import CreateView
 from django.template.response import TemplateResponse
+from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
 from subprojects.models import Attachment
 from trackableobjects.models import TrackableObject, TrackableObjectResponse
 from src.permissions import IsFieldAgentUserMixin
@@ -73,10 +75,7 @@ class TrackableObjectResponseCreateView(IsFieldAgentUserMixin, CreateView):
         #             file=value,
         #         )
 
-        return TemplateResponse(self.request, "trackable_objects/mobile/register_trackable_object_resp.html", {
-            'custom_form': self.get_custom_form(),
-            'success': True,  # <<<<<<<<<<<<<<<<
-        })
+        return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:select-trackable-object'))
 
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {

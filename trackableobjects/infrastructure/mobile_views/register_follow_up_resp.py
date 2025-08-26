@@ -4,7 +4,7 @@ from django.template.response import TemplateResponse
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from subprojects.models import Attachment
-from trackableobjects.models import FollowUpEvent, FollowUpEventResponse
+from trackableobjects.models import FollowUpEvent, FollowUpEventResponse, TrackableObjectResponse
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
@@ -60,11 +60,15 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             instance = self.model(
                 follow_up_event=self.object,
                 created_by=self.request.user,
-                jsonForm=cleaned_data
+                jsonForm=cleaned_data,
+                trackable_object_response=TrackableObjectResponse.objects.filter(
+                    id=self.request.POST.get('trackable_object_response_id', None)).first(),
             )
         else:
             instance.filled_by = self.request.user
             instance.jsonForm = cleaned_data
+            instance.trackable_object_response = TrackableObjectResponse.objects.filter(
+                id=self.request.POST.get('trackable_object_response_id', None)).first()
         instance.save()
 
         # if form.files is not None:
@@ -88,11 +92,16 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
+        context['trackable_object_responses'] = TrackableObjectResponse.objects.all()
         return context
 
     def get_initial(self):
         """Return the initial data to use for forms on this view."""
-        follow_up_event_response = FollowUpEventResponse.objects.filter(follow_up_event=self.object).first()
+        follow_up_event_response = FollowUpEventResponse.objects.filter(
+            id=self.kwargs.get('response', None),
+            follow_up_event=self.object
+        ).first()
+
         if follow_up_event_response is not None:
             initial = follow_up_event_response.jsonForm
             # attachment_initial = Attachment.objects.filter(subproject_form_response=form_response).all()

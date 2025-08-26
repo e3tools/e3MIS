@@ -14,6 +14,14 @@
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
+                    <div class="form-group">
+                        <label for="trackable_object_response_id">{% translate 'Trackable object response' %}</label>
+                        <select class="form-control" name="trackable_object_response_id" id="trackable_object_response_id">
+                            {% for response in trackable_object_responses %}
+                                <option value="{{ response.id }}">{{ response.trackable_object.name }} - {{ response.created_at|date }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                         {% for field in custom_form %}
                             {% if field.field.widget.input_type == "file" %}
                                 {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}

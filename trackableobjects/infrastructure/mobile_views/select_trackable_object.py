@@ -5,7 +5,7 @@ from trackableobjects.models import TrackableObject, TrackableObjectResponse
 
 
 class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
-    template_name = 'trackable_objects/mobile/select_trackable_object.html'
+    template_name = 'subprojects/mobile/register_menu.html'
 
     def get_context_data(self, **kwargs):
         user_group_ids = list(self.request.user.groups.values_list('id', flat=True))

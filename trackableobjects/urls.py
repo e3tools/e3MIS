@@ -29,5 +29,6 @@ urlpatterns = [
         path('<int:pk>/edit/', TrackableObjectResponseCreateView.as_view(), name='trackable_object_edit'),
         path('follow-up/<int:pk>/', MobileViewsFollowUpEventDetailView.as_view(), name='follow_up_event_detail'),
         path('follow-up/<int:pk>/form/', FollowUpEventResponseCreateView.as_view(), name='follow_up_event_response_create'),
+        path('follow-up/<int:pk>/form/response/<int:response>/', FollowUpEventResponseCreateView.as_view(), name='follow_up_event_response_update'),
     ], 'mobile'))),
 ]
