@@ -1,7 +1,7 @@
 from django.views.generic import TemplateView
 from django.db.models import Q, OuterRef, Count, Subquery, IntegerField, F
 from src.permissions import IsFieldAgentUserMixin
-from trackableobjects.models import TrackableObject, TrackableObjectResponse
+from trackableobjects.models import TrackableObject, TrackableObjectInstance
 
 
 class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
@@ -27,7 +27,7 @@ class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
         kwargs.update({'trackable_objects': trackable_objects})
 
         for trackable_object in kwargs['trackable_objects']:
-            if not TrackableObjectResponse.objects.filter(
+            if not TrackableObjectInstance.objects.filter(
                 trackable_object__id=trackable_object.id
             ).exists():
                 trackable_object.has_no_response = True

@@ -3,12 +3,12 @@ from django.contrib import admin
 from .models import (
     TrackableObject,
     FollowUpEvent,
-    TrackableObjectResponse,
+    TrackableObjectInstance,
     FollowUpEventResponse
 )
 
 
 admin.site.register(TrackableObject)
 admin.site.register(FollowUpEvent)
-admin.site.register(TrackableObjectResponse)
+admin.site.register(TrackableObjectInstance)
 admin.site.register(FollowUpEventResponse)

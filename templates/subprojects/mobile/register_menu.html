@@ -25,56 +25,15 @@
                     </a>
                 {% endif %}
                 <hr>
-                
                 {% if trackable_objects %}
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                         {% for trackable_object in trackable_objects %}
                             <li class="nav-item">
-                                <a href="#" class="nav-link">
-                                    <i class="fas fa-briefcase mr-3 text-warning"></i>
-                                    <p>
-                                        {{ trackable_object.name }}
-                                        <i class="right fas fa-angle-left"></i>
-                                        {% if trackable_object.has_no_response %}
-                                            <span class="notification-dot"></span>
-                                        {% endif %}
-                                    </p>
+                                <a href="{% url 'trackableobjects:mobile:trackable_object_instance_list' trackable_object.id %}"
+                                   class="nav-link">
+                                    <i class="fas fa-file-contract nav-icon text-warning"></i>
+                                    <p>{{ trackable_object.name }} Form</p>
                                 </a>
-                                    
-                                <ul class="nav nav-treeview" style="display: none;">
-                                    <li class="nav-item">
-                                        <a href="{% url 'trackableobjects:mobile:trackable_object_edit' trackable_object.id %}" class="nav-link">
-                                            <i class="fas fa-file-contract nav-icon text-warning"></i>
-                                            <p>{{ trackable_object.name }} Form</p>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="#" class="nav-link">
-                                            <i class="fas fa-signature nav-icon text-warning"></i>
-                                            <p>
-                                                Follow up Events
-                                                <i class="right fas fa-angle-left"></i>
-                                            </p>
-                                        </a>
-                                        <ul class="nav nav-treeview" style="display: none;">
-                                            {% for follow_up_event in trackable_object.follow_up_events.all %}
-                                                <li class="nav-item">
-                                                    <a href="{% url 'trackableobjects:mobile:follow_up_event_detail' follow_up_event.pk %}"
-                                                       class="nav-link">
-                                                        <i class="fas fa-file-signature nav-icon text-warning"></i>
-                                                        <p>{{ follow_up_event.name }}</p>
-                                                    </a>
-                                                </li>
-                                            {% empty %}
-                                                <li class="nav-item">
-                                                    <a class="nav-link">
-                                                        <i>No Follow Up Events</i>
-                                                    </a>
-                                                </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </li>
-                                </ul>
                             </li>
                         {% endfor %}
                     </ul>
@@ -89,4 +48,12 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        $(document).ready(function () {
+            $('.js-example-basic-multiple').select2();
+        });
+    </script>
 {% endblock %}

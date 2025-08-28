@@ -2,14 +2,14 @@ from django.views.generic import DetailView
 from django.utils.translation import gettext as _
 
 from subprojects.models import Attachment
-from trackableobjects.models import TrackableObjectResponse
+from trackableobjects.models import TrackableObjectInstance
 from django.contrib.auth.mixins import LoginRequiredMixin
 from src.permissions import IsStaffMemberMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
 
-class TrackableObjectResponseDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailView):
-    model = TrackableObjectResponse
+class TrackableObjectInstanceDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailView):
+    model = TrackableObjectInstance
     template_name = "trackable_objects/response_detail.html"
     extra_context = {
         'title': 'Response Detail',
@@ -19,7 +19,7 @@ class TrackableObjectResponseDetailView(LoginRequiredMixin, IsStaffMemberMixin, 
         context = super().get_context_data(**kwargs)
         context['title'] = '{}: {}'.format(self.object.trackable_object.name, _('Trackable Object Detail'))
         context['form'] = self.get_custom_form()
-        context['attachments'] = Attachment.objects.filter(trackable_object_response=self.object)
+        context['attachments'] = Attachment.objects.filter(trackable_object_instance=self.object)
         return context
 
     def get_custom_form(self):
@@ -35,7 +35,7 @@ class TrackableObjectResponseDetailView(LoginRequiredMixin, IsStaffMemberMixin, 
                     }
                 ]
             }
-        except TrackableObjectResponse.DoesNotExist:
+        except TrackableObjectInstance.DoesNotExist:
             schema_json = {
                 "form": [
                     {

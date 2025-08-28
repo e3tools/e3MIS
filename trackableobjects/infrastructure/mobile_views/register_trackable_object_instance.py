@@ -4,9 +4,11 @@ from django.template.response import TemplateResponse
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from subprojects.models import Attachment
-from trackableobjects.models import TrackableObject, TrackableObjectResponse
+from trackableobjects.models import TrackableObject, TrackableObjectInstance
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
+
+from administrativelevels.models import AdministrativeUnit
 
 
 def serialize_for_json(data):
@@ -22,8 +24,8 @@ def serialize_for_json(data):
     return data
 
 
-class TrackableObjectResponseCreateView(IsFieldAgentUserMixin, CreateView):
-    model = TrackableObjectResponse
+class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
+    model = TrackableObjectInstance
     queryset = TrackableObject.objects.all()
     fields = '__all__'
     template_name = "trackable_objects/mobile/register_trackable_object_resp.html"
@@ -49,23 +51,21 @@ class TrackableObjectResponseCreateView(IsFieldAgentUserMixin, CreateView):
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
-        instance = self.model.objects.filter(trackable_object=self.object).first()
+        post_dict = self.request.POST.copy()
+
         cleaned_data = serialize_for_json(form.cleaned_data)
 
         for key in cleaned_data.keys():
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
-        if instance is None:
-            instance = self.model(
-                trackable_object=self.object,
-                created_by=self.request.user,
-                jsonForm=cleaned_data
-            )
-        else:
-            instance.filled_by = self.request.user
-            instance.response_schema = cleaned_data
+        instance = self.model(
+            trackable_object=self.object,
+            created_by=self.request.user,
+            jsonForm=cleaned_data
+        )
         instance.save()
+        instance.administrative_units.add(*post_dict.pop('administrative_units'))
 
         # if form.files is not None:
         #     for key, value in form.files.items():
@@ -87,18 +87,26 @@ class TrackableObjectResponseCreateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-        return context
+        administrative_units_qs = AdministrativeUnit.objects.filter(
+            id__in=self.get_descendants(self.request.user.administrative_unit)).select_related('parent')
 
-    def get_initial(self):
-        """Return the initial data to use for forms on this view."""
-        trackable_object_response = TrackableObjectResponse.objects.filter(trackable_object=self.object).first()
-        if trackable_object_response is not None:
-            initial = trackable_object_response.jsonForm
-            # attachment_initial = Attachment.objects.filter(subproject_form_response=form_response).all()
-            # for attachment in attachment_initial:
-            #     initial.update({attachment.field_name: attachment.file})
-            return initial
-        return self.initial.copy()
+        response_list = list()
+        for administrative_unit in administrative_units_qs:
+            flag = False
+            for node in response_list:
+                if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
+                    node['children'].append({'id': administrative_unit.id, 'name': administrative_unit.name})
+                    flag = True
+            if not flag:
+                response_list.append({
+                    'parent_id': administrative_unit.parent.id,
+                    'name': administrative_unit.parent.name,
+                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.name}]
+                })
+
+        context['administrative_units'] = response_list
+
+        return context
 
     def get_custom_form(self):
         try:
@@ -145,17 +153,22 @@ class TrackableObjectResponseCreateView(IsFieldAgentUserMixin, CreateView):
             )
         return kwargs
 
-    def get_custom_field_names(self):
-        try:
-            trackable_object = TrackableObject.objects.last()
-            schema_json = trackable_object.jsonForm if trackable_object else {}
-            return list(schema_json['form'][0]['page']['properties'].keys())
-        except Exception:
-            return []
-
     def has_object_permission_groups(self):
         groups = self.object.groups.all()
         for group in groups:
             if not self.request.user.groups.filter(id=group.id).exists():
                 return False
         return True
+
+    def get_descendants(self, administrative_unit):
+        descendants = list()
+
+        def recurse(node):
+            if node.children.exists():
+                for child in node.children.all():
+                    recurse(child)
+            else:
+                descendants.append(node.id)
+
+        recurse(administrative_unit)
+        return descendants

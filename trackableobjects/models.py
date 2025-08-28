@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 from django.contrib.auth.models import Group
 
+from administrativelevels.models import AdministrativeUnit
 from src.settings import AUTH_USER_MODEL
 
 
@@ -33,11 +34,15 @@ class FollowUpEventDependency(models.Model):
     child = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="dependencies_children")
 
 
-class TrackableObjectResponse(models.Model):
+class TrackableObjectInstance(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
-    trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE, related_name="responses", )
+    trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE, related_name="instances", )
+    groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="trackable_object_instances",
+                                    blank=True)
+    administrative_units = models.ManyToManyField(AdministrativeUnit, verbose_name=_('Administrative units'),
+                                                  blank=True, related_name="trackable_object_instances", )
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
 
 
@@ -46,7 +51,7 @@ class FollowUpEventResponse(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
     follow_up_event = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="responses", )
-    trackable_object_response = models.ForeignKey(TrackableObjectResponse, blank=True, null=True,
+    trackable_object_instance = models.ForeignKey(TrackableObjectInstance, blank=True, null=True,
                                                   on_delete=models.SET_NULL,
-                                                  related_name="trackable_object_responses", )
+                                                  related_name="trackable_object_instances", )
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)

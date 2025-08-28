@@ -1,0 +1,59 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block extracss %}
+    <style>
+        .notification-dot {
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            z-index: 10;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card card-warning mt-4 mb-4 shadow">
+                <div class="card-header position-relative d-flex align-items-center justify-content-center"
+                     style="min-height:56px;">
+                    <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
+                       class="btn btn-link p-2 position-absolute"
+                       style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                        {{ object.name }} {% translate 'instances' %}
+                    </h4>
+                </div>
+                <div class="card-body p-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        {% for instance in object.instances.all %}
+                            <li class="nav-item">
+                                <a href="{% url 'trackableobjects:mobile:trackable_object_edit' instance.id %}" class="nav-link">
+                                    <i class="fas fa-briefcase mr-3 text-warning"></i>
+                                    <p>
+                                        {{ instance.created_at|date }}
+                                    </p>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    
+                        <li class="nav-item">
+                            <a href="{% url 'trackableobjects:mobile:trackable_object_create' object.id %}" class="nav-link">
+                                <i class="fas fa-file-contract nav-icon text-warning"></i>
+                                <p>Create New Instance</p>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

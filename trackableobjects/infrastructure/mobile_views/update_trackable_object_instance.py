@@ -4,9 +4,11 @@ from django.template.response import TemplateResponse
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from subprojects.models import Attachment
-from trackableobjects.models import FollowUpEvent, FollowUpEventResponse, TrackableObjectInstance
+from trackableobjects.models import TrackableObject, TrackableObjectInstance
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
+
+from administrativelevels.models import AdministrativeUnit
 
 
 def serialize_for_json(data):
@@ -22,11 +24,10 @@ def serialize_for_json(data):
     return data
 
 
-class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
-    model = FollowUpEventResponse
-    queryset = FollowUpEvent.objects.all()
+class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
+    queryset = TrackableObjectInstance.objects.all()
     fields = '__all__'
-    template_name = "trackable_objects/mobile/register_follow_up_event_resp.html"
+    template_name = "trackable_objects/mobile/register_trackable_object_resp.html"
 
     def post(self, request, *args, **kwargs):
         """
@@ -49,27 +50,18 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
-        instance = self.model.objects.filter(follow_up_event=self.object).first()
         cleaned_data = serialize_for_json(form.cleaned_data)
+        post_dict = self.request.POST.copy()
 
         for key in cleaned_data.keys():
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
-        if instance is None:
-            instance = self.model(
-                follow_up_event=self.object,
-                created_by=self.request.user,
-                jsonForm=cleaned_data,
-                trackable_object_instance=TrackableObjectInstance.objects.filter(
-                    id=self.request.POST.get('trackable_object_instance_id', None)).first(),
-            )
-        else:
-            instance.filled_by = self.request.user
-            instance.jsonForm = cleaned_data
-            instance.trackable_object_instance = TrackableObjectInstance.objects.filter(
-                id=self.request.POST.get('trackable_object_instance_id', None)).first()
-        instance.save()
+        self.object.filled_by = self.request.user
+        self.object.jsonForm = cleaned_data
+        self.object.save()
+        self.object.administrative_units.clear()
+        self.object.administrative_units.add(*post_dict.pop('administrative_units'))
 
         # if form.files is not None:
         #     for key, value in form.files.items():
@@ -79,8 +71,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         #             file=value,
         #         )
 
-        return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:follow_up_event_detail',
-                                                 args=[instance.follow_up_event.id]))
+        return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:select-trackable-object'))
 
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {
@@ -92,18 +83,33 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-        context['trackable_object_instances'] = TrackableObjectInstance.objects.all()
+
+        administrative_units_qs = AdministrativeUnit.objects.filter(
+            id__in=self.get_descendants(self.request.user.administrative_unit)).select_related('parent')
+
+        response_list = list()
+        for administrative_unit in administrative_units_qs:
+            flag = False
+            for node in response_list:
+                if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
+                    node['children'].append({'id': administrative_unit.id, 'name': administrative_unit.name})
+                    flag = True
+            if not flag:
+                response_list.append({
+                    'parent_id': administrative_unit.parent.id,
+                    'name': administrative_unit.parent.name,
+                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.name}]
+                })
+
+        context['administrative_units'] = response_list
+        context['selected_administrative_units'] = context['object'].administrative_units.all().values_list('id',
+                                                                                                            flat=True)
         return context
 
     def get_initial(self):
         """Return the initial data to use for forms on this view."""
-        follow_up_event_response = FollowUpEventResponse.objects.filter(
-            id=self.kwargs.get('response', None),
-            follow_up_event=self.object
-        ).first()
-
-        if follow_up_event_response is not None:
-            initial = follow_up_event_response.jsonForm
+        if self.object is not None:
+            initial = self.object.jsonForm
             # attachment_initial = Attachment.objects.filter(subproject_form_response=form_response).all()
             # for attachment in attachment_initial:
             #     initial.update({attachment.field_name: attachment.file})
@@ -112,8 +118,8 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
 
     def get_custom_form(self):
         try:
-            follow_up_event = self.object
-            schema_json = follow_up_event.jsonForm if follow_up_event else {
+            trackable_object = self.object.trackable_object
+            schema_json = trackable_object.jsonForm if trackable_object else {
                 "form": [
                     {
                         "page": {
@@ -123,7 +129,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                     }
                 ]
             }
-        except FollowUpEvent.DoesNotExist:
+        except TrackableObject.DoesNotExist:
             schema_json = {
                 "form": [
                     {
@@ -155,17 +161,22 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             )
         return kwargs
 
-    def get_custom_field_names(self):
-        try:
-            follow_up_event = FollowUpEvent.objects.last()
-            schema_json = follow_up_event.jsonForm if follow_up_event else {}
-            return list(schema_json['form'][0]['page']['properties'].keys())
-        except Exception:
-            return []
-
     def has_object_permission_groups(self):
         groups = self.object.groups.all()
         for group in groups:
             if not self.request.user.groups.filter(id=group.id).exists():
                 return False
         return True
+
+    def get_descendants(self, administrative_unit):
+        descendants = list()
+
+        def recurse(node):
+            if node.children.exists():
+                for child in node.children.all():
+                    recurse(child)
+            else:
+                descendants.append(node.id)
+
+        recurse(administrative_unit)
+        return descendants
