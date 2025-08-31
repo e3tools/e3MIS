@@ -47,7 +47,7 @@
         </div>
     </div>
 </div>
-    
+
 <div class="row justify-content-center">
     <div class="col-12">
         <div class="card card-warning mt-3 mb-3 shadow">
@@ -152,7 +152,7 @@
         }
         return post_template;
     }
-    
+
     function formatOption(option) {
         if (!option.id) {
             return option.text;  // For placeholder etc.
@@ -165,19 +165,19 @@
     }
 
     $(document).ready(function () {
-        
+
         let subproject_input = $('#subproject-input');
         fill_btn_wrapper(subproject_input.val());
         subproject_input.change(function () {
             fill_btn_wrapper($(this).val());
         });
-        
+
         subproject_input.select2({
           templateResult: formatOption,
           templateSelection: formatOption,
           escapeMarkup: function(markup) { return markup; }  // Allow HTML
         });
-        
+
     });
 </script>
 {% endblock %}

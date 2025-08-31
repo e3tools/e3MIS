@@ -11,17 +11,18 @@
             </div>
         {% else %}
             <div class="card card-primary mt-4 mb-4 shadow">
+                <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                    <a href="{% url 'subprojects:mobile:index' %}"
+                       class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                        {{ trackable_object_instance.trackable_object.name }} - {{ follow_up_event.name }}
+                    </h4>
+                </div>
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                    <div class="form-group">
-                        <label for="trackable_object_instance_id">{% translate 'Trackable object response' %}</label>
-                        <select class="form-control" name="trackable_object_instance_id" id="trackable_object_instance_id">
-                            {% for response in trackable_object_instances %}
-                                <option value="{{ response.id }}">{{ response.trackable_object.name }} - {{ response.created_at|date }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
                         {% for field in custom_form %}
                             {% if field.field.widget.input_type == "file" %}
                                 {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}

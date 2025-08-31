@@ -20,10 +20,10 @@
 {% block content %}
     <div class="row justify-content-center">
         <div class="col-12">
-            <div class="card card-warning mt-4 mb-4 shadow">
+            <div class="card card-primary mt-4 mb-4 shadow">
                 <div class="card-header position-relative d-flex align-items-center justify-content-center"
                      style="min-height:56px;">
-                    <a href="{% url 'subprojects:mobile:select-subproject-for-activity' %}"
+                    <a onclick="window.history.go(-1); return false;" 
                        class="btn btn-link p-2 position-absolute"
                        style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
                         <i class="fas fa-arrow-left"></i>
@@ -33,25 +33,22 @@
                     </h4>
                 </div>
                 <div class="card-body p-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        {% for resp in object.responses.all %}
-                            <li class="nav-item">
-                                <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' object.id resp.id %}" class="nav-link">
-                                    <i class="fas fa-briefcase mr-3 text-warning"></i>
-                                    <p>
-                                        {{ resp.created_at|date }}
-                                    </p>
-                                </a>
-                            </li>
-                        {% endfor %}
-                    
-                        <li class="nav-item">
-                            <a href="{% url 'trackableobjects:mobile:follow_up_event_response_create' object.id %}" class="nav-link">
-                                <i class="fas fa-file-contract nav-icon text-warning"></i>
-                                <p>Create New Response</p>
-                            </a>
-                        </li>
-                    </ul>
+                    {% for resp in responses %}
+                        <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' object.id resp.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
+                           style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ resp.created_at|date }}</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+                <div class="card-footer p-2">
+                    <a href="{% url 'trackableobjects:mobile:follow_up_event_response_create' trackable_instance_id object.id %}" class="btn btn-block btn-primary text-left d-flex align-items-center"
+                       style="font-size: 1.15rem;">
+                        <i class="fas fa-file-contract nav-icon mr-3"></i>
+                        <span class="btn-label flex-grow-1">{% translate 'Create New Response' %}</span>
+                        <i class="fas fa-chevron-right ml-2"></i>
+                    </a>
                 </div>
             </div>
         </div>

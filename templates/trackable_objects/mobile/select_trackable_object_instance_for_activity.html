@@ -1,0 +1,148 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block extracss %}
+    <style>
+        .notification-dot {
+            position: absolute;
+            top: 8px;
+            right: 16px;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            z-index: 10;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card card-warning mt-4 mb-4 shadow">
+                <div class="card-header position-relative d-flex align-items-center justify-content-center"
+                     style="min-height:56px;">
+                    <a onclick="window.history.go(-1); return false;" 
+                       class="btn btn-link position-absolute"
+                       style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                        {{ object.name }} {% translate 'instances' %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row justify-content-center">
+                        <div class="col-12 form-group">
+                            <label for="administrative_units_select_id">{% translate 'Administrative levels related' %}</label>
+                            <select id="administrative_units_select_id" name="administrative_units" class="form-control">
+                                {% for administrative_unit in administrative_units %}
+                                    <optgroup label="{{ administrative_unit.name }}">
+                                        {% for child in administrative_unit.children %}
+                                            {% if child.id in selected_administrative_units %}
+                                            <option value="{{ child.id }}" data-badge="{{ child.pending_responses }}" selected>{{ child.name }}</option>
+                                            {% else %}
+                                            <option value="{{ child.id }}" data-badge="{{ child.pending_responses }}">{{ child.name }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <hr class="mt-0">
+                    <div id="id-btn-wrapper"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <template id="btn-template">
+        <div class="row justify-content-center">
+            <div class="col-12 mb-3">
+                <a href="" class="btn btn-block btn-default text-left d-flex align-items-center"
+                   style="font-size: 1.15rem;">
+                    <i class="fas fa-briefcase mr-3"></i>
+                    <span class="btn-label flex-grow-1"></span>
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+                <span class="notification-dot"></span>
+            </div>
+        </div>
+    </template>
+{% endblock %}
+
+{% block extrajs %}
+<script type="text/javascript">
+    function fill_btn_wrapper(administrative_unit){
+        let url = "{% url 'trackableobjects:api:trackable_object_instance' %}?administrative-unit=" + administrative_unit;
+        let wrapper = $('#id-btn-wrapper');
+        wrapper.html('');
+        $.ajax({
+            url: url,
+            headers: {
+                user: "{{ user.id }}"
+            },
+            success: function(data) {
+                if (data.length === 0) {
+                    wrapper.html(
+                        `<div class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                            <span>{% translate 'No activities available.' %}</span>
+                        </div>`
+                    );
+                    return;
+                }
+                data.forEach(function (trackable_object_instance) {
+                    const rendered_button = render_trackable_object_instance_button(trackable_object_instance);
+                    wrapper.append(rendered_button);
+                });
+            }
+        });
+    }
+
+    function render_trackable_object_instance_button(trackable_object_instance) {
+        let post_template = $($('#btn-template')[0].content).clone();
+        let href = "{% url 'trackableobjects:mobile:follow_up_event_list' '1' %}";
+        href = href.replace('1', trackable_object_instance.id);
+        post_template.find('a').attr('href', href);
+        post_template.find('.btn-label').text(trackable_object_instance.created_at);
+        if ( !trackable_object_instance.has_badge ) {
+            post_template.find('.notification-dot').toggleClass('notification-dot');
+        }
+        return post_template;
+    }
+
+    function formatOption(option) {
+        if (!option.id) {
+            return option.text;  // For placeholder etc.
+        }
+
+        const badge = $(option.element).data('badge');
+        const name = option.text;
+
+        return $(`<span>${name} <span class="badge badge-danger">${badge}</span></span>`);
+    }
+
+    $(document).ready(function () {
+
+        let administrative_units_input = $('#administrative_units_select_id');
+        
+        fill_btn_wrapper(administrative_units_input.val());
+        
+        administrative_units_input.change(function () {
+            fill_btn_wrapper($(this).val());
+        });
+
+        administrative_units_input.select2({
+            templateResult: formatOption,
+            templateSelection: formatOption,
+            escapeMarkup: function (markup) {
+                return markup;
+            }  // Allow HTML
+        });
+
+    });
+</script>
+{% endblock %}

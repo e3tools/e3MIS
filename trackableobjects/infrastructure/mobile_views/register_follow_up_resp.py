@@ -27,6 +27,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
     queryset = FollowUpEvent.objects.all()
     fields = '__all__'
     template_name = "trackable_objects/mobile/register_follow_up_event_resp.html"
+    pk_url_kwarg = 'follow_up_event'
 
     def post(self, request, *args, **kwargs):
         """
@@ -49,7 +50,14 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
-        instance = self.model.objects.filter(follow_up_event=self.object).first()
+        instance = self.model.objects.filter(id=self.kwargs['response']).first() if 'response' in self.kwargs else None
+
+        if instance is not None:
+            trackable_object_instance = instance.trackable_object_instance
+        else:
+            trackable_object_instance = TrackableObjectInstance.objects.filter(
+                id=self.kwargs.get('trackable_instance')).first()
+
         cleaned_data = serialize_for_json(form.cleaned_data)
 
         for key in cleaned_data.keys():
@@ -61,14 +69,12 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                 follow_up_event=self.object,
                 created_by=self.request.user,
                 jsonForm=cleaned_data,
-                trackable_object_instance=TrackableObjectInstance.objects.filter(
-                    id=self.request.POST.get('trackable_object_instance_id', None)).first(),
+                trackable_object_instance=trackable_object_instance,
             )
         else:
             instance.filled_by = self.request.user
             instance.jsonForm = cleaned_data
-            instance.trackable_object_instance = TrackableObjectInstance.objects.filter(
-                id=self.request.POST.get('trackable_object_instance_id', None)).first()
+            instance.trackable_object_instance = trackable_object_instance
         instance.save()
 
         # if form.files is not None:
@@ -80,7 +86,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         #         )
 
         return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:follow_up_event_detail',
-                                                 args=[instance.follow_up_event.id]))
+                                                 args=[trackable_object_instance.id, instance.follow_up_event.id]))
 
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {
@@ -92,7 +98,11 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-        context['trackable_object_instances'] = TrackableObjectInstance.objects.all()
+        context['follow_up_event'] = FollowUpEvent.objects.filter(id=self.kwargs['follow_up_event']).first()
+        if 'trackable_instance' in self.kwargs:
+            context['trackable_object_instance'] = TrackableObjectInstance.objects.filter(id=self.kwargs['trackable_instance']).first()
+        else:
+            context['trackable_object_instance'] = FollowUpEventResponse.objects.filter(id=self.kwargs['response']).first().trackable_object_instance
         return context
 
     def get_initial(self):
