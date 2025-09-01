@@ -48,7 +48,7 @@
                         </div>
                         <div class="row">
                             <div class="col-12 col-sm-6">
-                                <h4>{% translate 'Responses' %}</h4>
+                                <h4>{% translate 'Subprojects' %}</h4>
                                 
                                 <table id="table-subprojects" class="table table-striped">
                                     <thead>
@@ -59,18 +59,18 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {% for response in responses %}
+                                    {% for instance in instances %}
                                         <tr>
                                             <td>
                                                 <div class="btn-group">
-                                                    <a href="{% url 'trackableobjects:trackable_object_instance_detail' response.id %}"
+                                                    <a href="{% url 'trackableobjects:trackable_object_instance_detail' instance.id %}"
                                                             class="btn btn-default btn-flat response-info">
                                                         <i class="fas fa-info text-primary"></i>
                                                     </a>
                                                 </div>
                                             </td>
-                                            <td>{{ response.created_by.get_full_name|default:object.created_by.email }}</td>
-                                            <td>{{ response.updated_at|date:"d M, Y - P" }}</td>
+                                            <td>{{ instance.created_by.get_full_name|default:object.created_by.email }}</td>
+                                            <td>{{ instance.updated_at|date:"d M, Y - P" }}</td>
                                         </tr>
                                     {% endfor %}
                                     </tbody>

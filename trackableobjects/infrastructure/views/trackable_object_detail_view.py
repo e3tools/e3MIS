@@ -19,7 +19,7 @@ class TrackableObjectDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailVi
         context = super().get_context_data(**kwargs)
         context['title'] = '{}: {}'.format(self.object.name, _('Trackable Object Detail'))
         context['form'] = self.get_custom_form()
-        context['responses'] = self.object.responses.all()
+        context['instances'] = self.object.instances.all()
         return context
 
     def get_custom_form(self):
