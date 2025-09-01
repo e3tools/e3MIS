@@ -33,25 +33,24 @@
                     </h4>
                 </div>
                 <div class="card-body p-2">
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        {% for instance in object.instances.all %}
-                            <li class="nav-item">
-                                <a href="{% url 'trackableobjects:mobile:trackable_object_edit' instance.id %}" class="nav-link">
-                                    <i class="fas fa-briefcase mr-3 text-warning"></i>
-                                    <p>
-                                        {{ instance.created_at|date }}
-                                    </p>
-                                </a>
-                            </li>
-                        {% endfor %}
-                    
-                        <li class="nav-item">
-                            <a href="{% url 'trackableobjects:mobile:trackable_object_create' object.id %}" class="nav-link">
-                                <i class="fas fa-file-contract nav-icon text-warning"></i>
-                                <p>Create New Instance</p>
-                            </a>
-                        </li>
-                    </ul>
+                    {% for instance in object.instances.all %}
+                        <a href="{% url 'trackableobjects:mobile:trackable_object_edit' instance.id %}"
+                           class="btn btn-block btn-default text-left d-flex align-items-center"
+                           style="font-size: 1.15rem;">
+                            <i class="fas fa-briefcase mr-3 text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ instance.created_at|date }}</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+                <div class="card-footer p-2">
+                    <a href="{% url 'trackableobjects:mobile:trackable_object_create' object.id %}"
+                       class="btn btn-block btn-warning text-left d-flex align-items-center"
+                       style="font-size: 1.15rem;">
+                        <i class="fas fa-file-contract nav-icon mr-3"></i>
+                        <span class="btn-label flex-grow-1">Create New Subproject</span>
+                        <i class="fas fa-chevron-right ml-2"></i>
+                    </a>
                 </div>
             </div>
         </div>

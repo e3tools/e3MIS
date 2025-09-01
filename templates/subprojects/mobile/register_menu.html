@@ -26,17 +26,15 @@
                 {% endif %}
                 <hr>
                 {% if trackable_objects %}
-                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        {% for trackable_object in trackable_objects %}
-                            <li class="nav-item">
-                                <a href="{% url 'trackableobjects:mobile:trackable_object_instance_registration_list' trackable_object.id %}"
-                                   class="nav-link">
-                                    <i class="fas fa-file-contract nav-icon text-warning"></i>
-                                    <p>{{ trackable_object.name }} Form</p>
-                                </a>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                    {% for trackable_object in trackable_objects %}
+                        <a href="{% url 'trackableobjects:mobile:trackable_object_instance_registration_list' trackable_object.id %}"
+                           class="btn btn-block btn-default text-left d-flex align-items-center"
+                           style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ trackable_object.name }} Form</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% endfor %}
                 {% else %}
                     <div class="text-center py-4">
                         <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
