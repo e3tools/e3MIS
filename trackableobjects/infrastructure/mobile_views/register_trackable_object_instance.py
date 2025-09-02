@@ -74,6 +74,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         #             field_name=key,
         #             file=value,
         #         )
+        messages.success(self.request, f"Successfully created {self.object.name} instance.")
 
         return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:select-trackable-object'))
 
