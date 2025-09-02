@@ -29,7 +29,7 @@
                         <i class="fas fa-arrow-left"></i>
                     </a>
                     <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
-                        {{ object.name }} {% translate 'instances' %}
+                        {{ object.name }} {% translate 'Registration' %}
                     </h4>
                 </div>
                 <div class="card-body p-2">
@@ -38,7 +38,13 @@
                            class="btn btn-block btn-default text-left d-flex align-items-center"
                            style="font-size: 1.15rem;">
                             <i class="fas fa-briefcase mr-3 text-warning mr-3"></i>
-                            <span class="btn-label flex-grow-1">{{ instance.created_at|date }}</span>
+                                <span class="btn-label flex-grow-1">
+                                    {{ object.name }} -
+                                    {% for unit in instance.administrative_units.all %}
+                                        {{ unit.name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    - {{ instance.created_at|date }}
+                                </span>
                             <i class="fas fa-chevron-right ml-2"></i>
                         </a>
                     {% endfor %}
@@ -48,7 +54,7 @@
                        class="btn btn-block btn-warning text-left d-flex align-items-center"
                        style="font-size: 1.15rem;">
                         <i class="fas fa-file-contract nav-icon mr-3"></i>
-                        <span class="btn-label flex-grow-1">Create New Subproject</span>
+                        <span class="btn-label flex-grow-1">Create New {{ object.name }}</span>
                         <i class="fas fa-chevron-right ml-2"></i>
                     </a>
                 </div>
