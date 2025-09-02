@@ -1,4 +1,5 @@
 from django.db import models
+from django.template.defaultfilters import date
 from django.utils.translation import gettext as _
 from django.contrib.auth.models import Group
 
@@ -9,6 +10,7 @@ from src.settings import AUTH_USER_MODEL
 class TrackableObject(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
+    identifier_field = models.CharField(max_length=255, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
@@ -16,10 +18,14 @@ class TrackableObject(models.Model):
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
 
+    def __str__(self):
+        return self.name
+
 
 class FollowUpEvent(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
+    identifier_field = models.CharField(max_length=255, null=True, blank=True)
     trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE, related_name="follow_up_events", )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -28,6 +34,9 @@ class FollowUpEvent(models.Model):
     groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="follow_up_events",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
+
+    def __str__(self):
+        return self.name
 
 
 class FollowUpEventDependency(models.Model):
@@ -46,6 +55,12 @@ class TrackableObjectInstance(models.Model):
                                                   blank=True, related_name="trackable_object_instances", )
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
 
+    @property
+    def identifier(self):
+        if self.trackable_object.identifier_field in self.jsonForm:
+            return self.jsonForm[self.trackable_object.identifier_field]
+        return date(self.created_at, "N j, y")
+
 
 class FollowUpEventResponse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -56,3 +71,9 @@ class FollowUpEventResponse(models.Model):
                                                   on_delete=models.SET_NULL,
                                                   related_name="follow_up_responses", )
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
+
+    @property
+    def identifier(self):
+        if self.follow_up_event.identifier_field in self.jsonForm:
+            return self.jsonForm[self.follow_up_event.identifier_field]
+        return date(self.created_at, "N j, y")

@@ -22,11 +22,13 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
         all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
-            node_list = list(TrackableObjectInstance.objects.filter(
+            node_list = TrackableObjectInstance.objects.filter(
                 administrative_units=child,
                 trackable_object__id=trackable_object,
-            ).values(
-                'created_at', 'id', 'trackable_object__id'))
+            )
+            node_list = [{'created_at': obj.created_at, 'id': obj.id,
+                          'trackable_object__id': obj.trackable_object.id,
+                          'identifier': obj.identifier} for obj in node_list]
             for node in node_list:
                 node['created_at'] = date(node['created_at'], "N j, y")
                 sub_qs = Subquery(FollowUpEvent.objects.filter(
@@ -38,6 +40,7 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
                     node['has_badge'] = False
                 else:
                     node['has_badge'] = True
+
             resp_list += node_list
 
         return Response(resp_list)

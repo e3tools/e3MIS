@@ -107,7 +107,7 @@
         let href = "{% url 'trackableobjects:mobile:follow_up_event_list' '1' %}";
         href = href.replace('1', trackable_object_instance.id);
         post_template.find('a').attr('href', href);
-        post_template.find('.btn-label').text(trackable_object_instance.created_at);
+        post_template.find('.btn-label').text(trackable_object_instance.identifier);
         if ( !trackable_object_instance.has_badge ) {
             post_template.find('.notification-dot').toggleClass('notification-dot');
         }

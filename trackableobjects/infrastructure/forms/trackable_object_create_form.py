@@ -8,7 +8,7 @@ class TrackableObjectForm(forms.ModelForm):
 
     class Meta:
         model = TrackableObject
-        fields = ['name', 'description', 'jsonForm', 'groups']
+        fields = ['name', 'description', 'jsonForm', 'groups', 'identifier_field']
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)

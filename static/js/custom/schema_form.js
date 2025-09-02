@@ -287,8 +287,10 @@ document.addEventListener("DOMContentLoaded", function () {
           ul.className = "list-group";
 
           const properties = page.page.properties || {};
+          let counter = 0;
 
           for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+            counter += 1;
             const isRequired = page.page.required.includes(fieldName);
             const type = this.getFieldTypeDisplay(fieldSchema);
             const enumValues = fieldSchema.enum ? ` [${fieldSchema.enum.join(", ")}]` : '';
@@ -306,6 +308,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     (${type})${enumValues} ${isRequired ? '[required]' : ''}
                   </small>
                   ${help ? `<small class="text-muted d-block">${help}</small>` : ""}
+                </div>
+                <div class="custom-control custom-radio">
+                  <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
+                  <label class="custom-control-label" for="identifierRadio${counter}">Use as identifier</label>
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="SchemaForm.removeField('${fieldName}')">
                   <i class="fas fa-trash-alt"></i> Remove

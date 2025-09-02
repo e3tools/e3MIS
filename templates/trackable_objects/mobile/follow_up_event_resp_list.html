@@ -37,7 +37,7 @@
                         <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' object.id resp.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
                            style="font-size: 1.15rem;">
                             <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
-                            <span class="btn-label flex-grow-1">{{ resp.created_at|date }}</span>
+                            <span class="btn-label flex-grow-1">{{ resp.identifier }}</span>
                             <i class="fas fa-chevron-right ml-2"></i>
                         </a>
                     {% endfor %}
