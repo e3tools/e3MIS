@@ -42,43 +42,18 @@
                                     <b class="d-block">{{ object.description }}</b>
                                 </p>
                             </div>
-                            <div class="col-12 col-sm-4">
-                                <a href="{% url 'trackableobjects:follow_up_event_object_create' object.pk %}" class="btn btn-block btn-default">Create follow up event</a>
-                            </div>
+
                         </div>
-                        <div class="row">
-                            <div class="col-12 col-sm-6">
-                                <h4>{% translate 'Subprojects' %}</h4>
-                                
-                                <table id="table-subprojects" class="table table-striped">
-                                    <thead>
-                                    <tr>
-                                        <th>{% translate 'Actions' %}</th>
-                                        <th>{% translate 'Created by' %}</th>
-                                        <th>{% translate 'Date' %}</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for instance in instances %}
-                                        <tr>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <a href="{% url 'trackableobjects:trackable_object_instance_detail' instance.id %}"
-                                                            class="btn btn-default btn-flat response-info">
-                                                        <i class="fas fa-info text-primary"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                            <td>{{ instance.created_by.get_full_name|default:object.created_by.email }}</td>
-                                            <td>{{ instance.updated_at|date:"d M, Y - P" }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="col-12 col-sm-6">
+                    <div class="row mb-2">
+                        <div class="col-6">
                                 <h4>{% translate 'Follow up event' %}</h4>
-                                
+                        </div>
+                        <div class="col-6">
+                                    <a href="{% url 'trackableobjects:follow_up_event_object_create' object.pk %}" class="btn btn-block btn-primary">Create follow up event</a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 col-sm-12">
                                 <table id="table-subprojects" class="table table-striped">
                                     <thead>
                                     <tr>
@@ -105,6 +80,38 @@
                                     </tbody>
                                 </table>
                             </div>
+                    </div>
+                        <div class="row">
+                            <div class="col-12 col-sm-12">
+                                <h4>{% translate 'Form Submissions' %}</h4>
+
+                                <table id="table-subprojects" class="table table-striped">
+                                    <thead>
+                                    <tr>
+                                        <th>{% translate 'Actions' %}</th>
+                                        <th>{% translate 'Created by' %}</th>
+                                        <th>{% translate 'Date' %}</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for instance in instances %}
+                                        <tr>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{% url 'trackableobjects:trackable_object_instance_detail' instance.id %}"
+                                                            class="btn btn-default btn-flat response-info">
+                                                        <i class="fas fa-info text-primary"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                            <td>{{ instance.created_by.get_full_name|default:object.created_by.email }}</td>
+                                            <td>{{ instance.updated_at|date:"d M, Y - P" }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
                         </div>
                     </div>
                     <div class="col-12 col-md-12 col-lg-3 order-1 order-md-2">
