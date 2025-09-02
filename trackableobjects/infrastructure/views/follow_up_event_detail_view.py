@@ -15,7 +15,7 @@ class FollowUpEventDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['title'] = '{}: {}'.format(self.object.name, _('Follow Up Event Detail'))
+        context['title'] = '{} {}'.format(self.object.name, _(' Detail'))
         context['form'] = self.get_custom_form()
         context['responses'] = self.object.responses.all()
         return context

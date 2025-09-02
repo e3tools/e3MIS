@@ -2,130 +2,163 @@
 {% load static i18n bootstrap4 %}
 
 {% block content %}
-    <section class="content">
+<section class="content">
 
-        <!-- Default box -->
-        <div class="card">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-12 col-md-12 col-lg-9 order-2 order-md-1">
-                        <div class="row">
-                            <div class="col-12 col-sm-4">
-                                <div class="info-box bg-light">
-                                    <div class="info-box-content">
-                                        <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
-                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_by.get_full_name|default:object.created_by.email }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-sm-4">
-                                <div class="info-box bg-light">
-                                    <div class="info-box-content">
-                                        <span class="info-box-text text-center text-muted">{% translate 'Created' %}</span>
-                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_at|date:"d M, Y - P" }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-sm-4">
-                                <div class="info-box bg-light">
-                                    <div class="info-box-content">
-                                        <span class="info-box-text text-center text-muted">{% translate 'Updated' %}</span>
-                                        <span class="info-box-number text-center text-muted mb-0">{{ object.updated_at|date:"d M, Y - P" }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 col-sm-8">
-                                <h4>{% translate 'Description' %}</h4>
-                                <p class="text-muted">
-                                    <b class="d-block">{{ object.description }}</b>
-                                </p>
-                            </div>
-                            <div class="col-12 col-sm-4">
-                                <a href="{% url 'trackableobjects:follow_up_event_object_create' object.pk %}" class="btn btn-block btn-default">Create follow up event</a>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12 col-sm-6">
-                                <h4>{% translate 'Subprojects' %}</h4>
-                                
-                                <table id="table-subprojects" class="table table-striped">
-                                    <thead>
-                                    <tr>
-                                        <th>{% translate 'Actions' %}</th>
-                                        <th>{% translate 'Created by' %}</th>
-                                        <th>{% translate 'Date' %}</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for instance in instances %}
-                                        <tr>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <a href="{% url 'trackableobjects:trackable_object_instance_detail' instance.id %}"
-                                                            class="btn btn-default btn-flat response-info">
-                                                        <i class="fas fa-info text-primary"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                            <td>{{ instance.created_by.get_full_name|default:object.created_by.email }}</td>
-                                            <td>{{ instance.updated_at|date:"d M, Y - P" }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="col-12 col-sm-6">
-                                <h4>{% translate 'Follow up event' %}</h4>
-                                
-                                <table id="table-subprojects" class="table table-striped">
-                                    <thead>
-                                    <tr>
-                                        <th>{% translate 'Actions' %}</th>
-                                        <th>{% translate 'Name' %}</th>
-                                        <th>{% translate 'Date' %}</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for follow_up_event in object.follow_up_events.all %}
-                                        <tr>
-                                            <td>
-                                                <div class="btn-group">
-                                                    <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
-                                                            class="btn btn-default btn-flat response-info">
-                                                        <i class="fas fa-info text-primary"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                            <td>{{ follow_up_event.name }}</td>
-                                            <td>{{ follow_up_event.updated_at|date:"d M, Y - P" }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-12 col-lg-3 order-1 order-md-2">
-                        <div class="info-box bg-light">
-                            <div class="info-box-content">
-                                <h4>{% translate 'Form Preview' %}</h4>
-                                    {% for field in form %}
-                                        {% if field.field.widget.input_type == "file" %}
-                                            {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}
-                                        {% else %}
-                                            {% bootstrap_field field %}
-                                        {% endif %}
-                                    {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- /.card-body -->
+  <!-- Top metadata row -->
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <div class="info-box bg-light">
+        <div class="info-box-content">
+          <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
+          <span class="info-box-number text-center text-muted mb-0">
+            {{ object.created_by.get_full_name|default:object.created_by.email }}
+          </span>
         </div>
-        <!-- /.card -->
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="info-box bg-light">
+        <div class="info-box-content">
+          <span class="info-box-text text-center text-muted">{% translate 'Created' %}</span>
+          <span class="info-box-number text-center text-muted mb-0">
+            {{ object.created_at|date:"d M, Y - P" }}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="info-box bg-light">
+        <div class="info-box-content">
+          <span class="info-box-text text-center text-muted">{% translate 'Updated' %}</span>
+          <span class="info-box-number text-center text-muted mb-0">
+            {{ object.updated_at|date:"d M, Y - P" }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    </section>
+  <!-- Main split: content left, high-importance form right -->
+  <div class="row">
+
+    <!-- LEFT COLUMN: description, events, submissions -->
+    <div class="col-lg-8 order-lg-1 order-2">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h4 class="mb-2">{% translate 'Description' %}</h4>
+          <p class="text-muted mb-0"><b>{{ object.description }}</b></p>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h4 class="mb-0">{% translate 'Follow up event' %}</h4>
+            <a href="{% url 'trackableobjects:follow_up_event_object_create' object.pk %}" class="btn btn-primary">
+              <i class="fas fa-plus"></i> {% translate 'Create follow up event' %}
+            </a>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th class="text-nowrap">{% translate 'Actions' %}</th>
+                  <th>{% translate 'Name' %}</th>
+                  <th class="text-nowrap">{% translate 'Date' %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for follow_up_event in object.follow_up_events.all %}
+                  <tr>
+                    <td class="text-nowrap">
+                      <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
+                         class="btn btn-sm btn-info" title="{% translate 'Details' %}">
+                        <i class="fas fa-info-circle"></i>
+                      </a>
+                    </td>
+                    <td>{{ follow_up_event.name }}</td>
+                    <td class="text-nowrap">{{ follow_up_event.updated_at|date:"d M, Y - P" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="text-muted">{% translate 'No follow up events yet.' %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h4 class="mb-2">{% translate 'Form Submissions' %}</h4>
+          <div class="table-responsive">
+            <table class="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th class="text-nowrap">{% translate 'Actions' %}</th>
+                  <th>{% translate 'Created by' %}</th>
+                  <th>{% translate 'Administrative Units' %}</th>
+                  <th class="text-nowrap">{% translate 'Date' %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for instance in instances %}
+                  <tr>
+                    <td class="text-nowrap">
+                      <a href="{% url 'trackableobjects:trackable_object_instance_detail' instance.id %}"
+                         class="btn btn-sm btn-info" title="{% translate 'Details' %}">
+                        <i class="fas fa-info-circle"></i>
+                      </a>
+                    </td>
+                    <td>{{ instance.created_by.get_full_name|default:object.created_by.email }}</td>
+                    <td>
+                      {% for unit in instance.administrative_units.all %}
+                        {{ unit.name }}{% if not forloop.last %}, {% endif %}
+                      {% empty %}
+                        <span class="text-muted">{% translate 'None' %}</span>
+                      {% endfor %}
+                    </td>
+                    <td class="text-nowrap">{{ instance.updated_at|date:"d M, Y - P" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-muted">{% translate 'No submissions yet.' %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: high-importance form (sticky) -->
+    <div class="col-lg-4 order-lg-2 order-1 mb-3 mb-lg-0">
+      <div class="card shadow-sm" style="position: sticky; top: 1rem; z-index: 100;">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <h5 class="mb-0">{% translate 'Form Preview' %}</h5>
+        </div>
+        <div class="card-body">
+          <!-- If this is a real form submission, wrap with <form> + csrf -->
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in form %}
+              {% if field.field.widget.input_type == "file" %}
+                {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}
+              {% else %}
+                {% bootstrap_field field %}
+              {% endif %}
+            {% endfor %}
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+</section>
 {% endblock %}
