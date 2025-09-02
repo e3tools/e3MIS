@@ -74,9 +74,9 @@
 {% endblock %}
 
 {% block extrajs %}
-<script type="text/javascript">
-    function fill_btn_wrapper(administrative_unit){
-        let url = "{% url 'trackableobjects:api:trackable_object_instance' %}?administrative-unit=" + administrative_unit;
+<script type="text/javascript" id="select_trackable_object_instance_for_activity_script_id" data-tracakble-object="{{ trackable_object }}">
+    function fill_btn_wrapper(administrative_unit, trackable_object){
+        let url = "{% url 'trackableobjects:api:trackable_object_instance' %}?administrative-unit=" + administrative_unit + "&trackable-object=" + trackable_object;
         let wrapper = $('#id-btn-wrapper');
         wrapper.html('');
         $.ajax({
@@ -126,13 +126,15 @@
     }
 
     $(document).ready(function () {
+        
+        const trackable_object = $('#select_trackable_object_instance_for_activity_script_id').data('tracakble-object')
 
         let administrative_units_input = $('#administrative_units_select_id');
         
-        fill_btn_wrapper(administrative_units_input.val());
+        fill_btn_wrapper(administrative_units_input.val(), trackable_object);
         
         administrative_units_input.change(function () {
-            fill_btn_wrapper($(this).val());
+            fill_btn_wrapper($(this).val(), trackable_object);
         });
 
         administrative_units_input.select2({

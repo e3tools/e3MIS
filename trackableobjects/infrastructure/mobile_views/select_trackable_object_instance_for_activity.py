@@ -13,6 +13,7 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['trackable_object'] = self.kwargs.get('pk', None)
         administrative_units_qs = AdministrativeUnit.objects.filter(
             id__in=self.get_descendants(self.request.user.administrative_unit)).select_related('parent')
 

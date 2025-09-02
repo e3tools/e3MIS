@@ -17,11 +17,15 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         resp_list = list()
         administrative_unit_id = self.request.query_params.get('administrative-unit', None)
+        trackable_object = self.request.query_params.get('trackable-object', None)
 
         administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
         all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
-            node_list = list(TrackableObjectInstance.objects.filter(administrative_units=child).values(
+            node_list = list(TrackableObjectInstance.objects.filter(
+                administrative_units=child,
+                trackable_object__id=trackable_object,
+            ).values(
                 'created_at', 'id', 'trackable_object__id'))
             for node in node_list:
                 node['created_at'] = date(node['created_at'], "N j, y")
