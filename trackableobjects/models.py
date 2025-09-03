@@ -64,6 +64,9 @@ class TrackableObjectInstance(models.Model):
             return self.jsonForm[self.trackable_object.identifier_field]
         return date(self.created_at, "N j, y")
 
+    def __str__(self):
+        return "{}".format(self.identifier)
+
 
 class FollowUpEventResponse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)

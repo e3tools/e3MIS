@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Subquery
 from django.template.defaultfilters import date
 
+from authorization.models import CustomUser
 from administrativelevels.models import AdministrativeUnit
 from trackableobjects.api.serializers import TrackableObjectInstanceSerializer
 from trackableobjects.models import TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent
@@ -16,32 +17,46 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
 
     def list(self, request, *args, **kwargs):
         resp_list = list()
+        ids_in = list()
         administrative_unit_id = self.request.query_params.get('administrative-unit', None)
         trackable_object = self.request.query_params.get('trackable-object', None)
 
-        administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
+        if administrative_unit_id == '':
+            user = CustomUser.objects.filter(id=self.request.META.get('HTTP_USER', None)).first()
+            if user:
+                administrative_unit = user.administrative_unit
+            else:
+                administrative_unit = AdministrativeUnit.objects.none()
+        else:
+            administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
+
         all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
-            node_list = TrackableObjectInstance.objects.filter(
+            trackable_object_instance_qs = TrackableObjectInstance.objects.filter(
                 administrative_units=child,
                 trackable_object__id=trackable_object,
-            )
-            node_list = [{'created_at': obj.created_at, 'id': obj.id,
-                          'trackable_object__id': obj.trackable_object.id,
-                          'identifier': obj.identifier} for obj in node_list]
-            for node in node_list:
-                node['created_at'] = date(node['created_at'], "N j, y")
-                sub_qs = Subquery(FollowUpEvent.objects.filter(
-                    trackable_object__id=node['trackable_object__id'],
-                    is_one_off=True
-                ).values('id'))
-                if FollowUpEventResponse.objects.filter(trackable_object_instance__id=node['id'],
-                                                        follow_up_event__id__in=sub_qs).exists():
-                    node['has_badge'] = False
-                else:
-                    node['has_badge'] = True
+            ).distinct()
+            for obj in trackable_object_instance_qs:
+                if obj.id not in ids_in:
+                    node = {
+                        'created_at': date(obj.created_at, "N j, y"),
+                        'id': obj.id,
+                        'trackable_object__id': obj.trackable_object.id,
+                        'identifier': obj.identifier,
+                    }
 
-            resp_list += node_list
+                    sub_qs = Subquery(FollowUpEvent.objects.filter(
+                        trackable_object__id=node['trackable_object__id'],
+                        is_one_off=True
+                    ).values('id'))
+                    if FollowUpEventResponse.objects.filter(trackable_object_instance__id=node['id'],
+                                                            follow_up_event__id__in=sub_qs).exists():
+                        node['has_badge'] = False
+                    else:
+                        node['has_badge'] = True
+
+                    ids_in.append(obj.id)
+                    resp_list.append(node)
 
         return Response(resp_list)
 

@@ -16,15 +16,6 @@
                 </h4>
             </div>
             <div class="card-body">
-                {% if user|has_group:'Technical facilitator' %}
-                    <a href="{% url 'subprojects:mobile:register-contractor' %}"
-                       class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-2 shadow-sm">
-                        <i class="fas fa-id-badge mr-2"></i>
-                        <span>{% translate 'Create contractor' %}</span>
-                        <i class="fas fa-chevron-right ml-2"></i>
-                    </a>
-                {% endif %}
-                <hr>
                 {% if trackable_objects %}
                     {% for trackable_object in trackable_objects %}
                         <a href="{% url 'trackableobjects:mobile:trackable_object_instance_registration_list' trackable_object.id %}"

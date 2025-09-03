@@ -37,6 +37,7 @@
                         <div class="col-12 form-group">
                             <label for="administrative_units_select_id">{% translate 'Administrative levels related' %}</label>
                             <select id="administrative_units_select_id" name="administrative_units" class="form-control">
+                                <option value="">{% translate 'All' %}</option>
                                 {% for administrative_unit in administrative_units %}
                                     <optgroup label="{{ administrative_unit.name }}">
                                         {% for child in administrative_unit.children %}
