@@ -1,0 +1,96 @@
+{% extends 'layout/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-lg-4">
+            <div class="form-group mb-3">
+                <label for="search">{% translate 'Trackable objects' %}</label>
+                <select id="search" class="form-control">
+                    <option value="">------</option>
+                    {% for trackable_object in trackable_objects %}
+                        <option value="{{ trackable_object.name }}">{{ trackable_object.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        {% if user.is_superuser or user|has_group:"Admin" %}
+                        <div class="btn-group pull-right">
+                            <a class="btn btn-primary" href="{% url 'trackableobjects:trackable_object_create' %}">{% translate 'Create' %} {% translate 'Trackable Object' %}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-subprojects" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Actions' %}</th>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Description' %}</th>
+                            <th>{% translate 'Trackable object' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for follow_up_event in object_list %}
+                            <tr>
+                                <td>
+                                    <div class="btn-group">
+                                        <!-- Detail Info (functional) -->
+                                        <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
+                                           class="btn btn-default btn-flat">
+                                            <i class="fas fa-info"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>{{ follow_up_event.name }}</td>
+                                <td>{{ follow_up_event.description }}</td>
+                                <td>{{ follow_up_event.trackable_object.name }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+            
+            const search_select = $('#search');
+            search_select.select2();
+
+            let table = $('#table-subprojects').DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: "ltipr",
+                columnDefs: [
+                    {
+                        targets: 1,
+                        orderable: false,
+                        searchable: true,
+                    }
+                ],
+                lengthMenu: [10, 50, 100],
+                pageLength: 10,
+                order: [[0, 'desc', 'desc']]
+            });
+            search_select.on('change', function () {
+                table.search($(this).val()).draw();
+            });
+        });
+    </script>
+{% endblock %}
+
+
+    

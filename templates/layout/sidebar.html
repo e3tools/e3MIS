@@ -74,6 +74,13 @@
                         <p>{% translate "Trackable objects" %}</p>
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a href="{% url 'trackableobjects:follow_up_event_list' %}"
+                       class="nav-link {% if url_name == 'follow_up_event_list' %}active{% endif %}">
+                        <i class="nav-icon fas fa-tags"></i>
+                        <p>{% translate "Follow up events" %}</p>
+                    </a>
+                </li>
             </ul>
             {% endwith %}
         </nav>
