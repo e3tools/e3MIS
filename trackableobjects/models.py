@@ -43,6 +43,9 @@ class FollowUpEventDependency(models.Model):
     parent = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="dependencies_parents")
     child = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE, related_name="dependencies_children")
 
+    def __str__(self):
+        return "{} depends on  {}".format(self.child.name, self.parent.name)
+
 
 class TrackableObjectInstance(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
