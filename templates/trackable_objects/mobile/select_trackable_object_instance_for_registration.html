@@ -39,11 +39,7 @@
                            style="font-size: 1.15rem;">
                             <i class="fas fa-briefcase mr-3 text-warning mr-3"></i>
                                 <span class="btn-label flex-grow-1">
-                                    {{ object.name }} -
-                                    {% for unit in instance.administrative_units.all %}
-                                        {{ unit.name }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                    - {{ instance.created_at|date }}
+                                    {{ instance.identifier }} 
                                 </span>
                             <i class="fas fa-chevron-right ml-2"></i>
                         </a>
