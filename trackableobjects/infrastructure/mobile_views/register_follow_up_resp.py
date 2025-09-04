@@ -3,6 +3,8 @@ from django.views.generic.edit import CreateView
 from django.template.response import TemplateResponse
 from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
+from django.contrib import messages
+from django.utils.translation import gettext as _
 from subprojects.models import Attachment
 from trackableobjects.models import FollowUpEvent, FollowUpEventResponse, TrackableObjectInstance
 from src.permissions import IsFieldAgentUserMixin
@@ -85,6 +87,8 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         #             field_name=key,
         #             file=value,
         #         )
+
+        messages.success(self.request, _('Your Follow Up Event was successfully created or updated.'))
 
         return HttpResponseRedirect(self.get_success_url())
 

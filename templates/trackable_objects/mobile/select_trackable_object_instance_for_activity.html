@@ -42,9 +42,9 @@
                                     <optgroup label="{{ administrative_unit.name }}">
                                         {% for child in administrative_unit.children %}
                                             {% if child.id in selected_administrative_units %}
-                                            <option value="{{ child.id }}" data-badge="{{ child.pending_responses }}" selected>{{ child.name }}</option>
+                                            <option value="{{ child.id }}" data-count="{{ child.trackable_instances_count }}" data-pending="{{ child.pending_responses }}" selected>{{ child.name }}</option>
                                             {% else %}
-                                            <option value="{{ child.id }}" data-badge="{{ child.pending_responses }}">{{ child.name }}</option>
+                                            <option value="{{ child.id }}" data-count="{{ child.trackable_instances_count }}" data-pending="{{ child.pending_responses }}">{{ child.name }}</option>
                                             {% endif %}
                                         {% endfor %}
                                     </optgroup>
@@ -120,10 +120,19 @@
             return option.text;  // For placeholder etc.
         }
 
-        const badge = $(option.element).data('badge');
+        const pending = $(option.element).data('pending');
+        const count = $(option.element).data('count');
         const name = option.text;
+        let notif = '<i class="fas fa-xs fa-circle text-warning float-right"></i>';
+        
+        if(pending === ''){
+            notif = '';
+        }
 
-        return $(`<span>${name} <span class="badge badge-danger">${badge}</span></span>`);
+        return $(`
+            <span>${name} 
+                <span class="badge badge-primary">${count}</span>` + notif + `
+            </span>`);
     }
 
     $(document).ready(function () {

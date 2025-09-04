@@ -1,5 +1,5 @@
 from django.views.generic.detail import DetailView
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q, F, Count, Sum
 
 from administrativelevels.models import AdministrativeUnit
 from trackableobjects.models import TrackableObject, TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent
@@ -15,49 +15,49 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
         context = super().get_context_data(**kwargs)
         context['trackable_object'] = self.kwargs.get('pk', None)
         administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=self.get_descendants(self.request.user.administrative_unit)).select_related('parent')
+            id__in=self.get_descendants(self.request.user.administrative_unit)
+        ).select_related('parent')
 
         response_list = list()
         for administrative_unit in administrative_units_qs:
+
+            base_instances = TrackableObjectInstance.objects.filter(
+                administrative_units=administrative_unit,
+                trackable_object=self.object
+            )
+
+            qs = base_instances.annotate(
+                total_one_off_events=Count(
+                    'trackable_object__follow_up_events',
+                    filter=Q(trackable_object__follow_up_events__is_one_off=True),
+                    distinct=True
+                ),
+                total_one_off_responses=Count(
+                    'follow_up_responses',
+                    filter=Q(follow_up_responses__follow_up_event__is_one_off=True),
+                    distinct=True
+                ),
+            ).annotate(pending_one_off=F('total_one_off_events') - F('total_one_off_responses'))
+
+            result = qs.aggregate(pending_total=Sum('pending_one_off'))['pending_total'] or ''
+
+            child = {
+                'id': administrative_unit.id,
+                'name': administrative_unit.name,
+                'pending_responses': result,
+                'trackable_instances_count': base_instances.count() or ''
+            }
+
             flag = False
             for node in response_list:
                 if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
-
-                    base_instances = TrackableObjectInstance.objects.filter(
-                        administrative_units=administrative_unit
-                    )
-
-                    # Does this instance's TrackableObject define at least one one-off event?
-                    one_off_event_exists = FollowUpEvent.objects.filter(
-                        trackable_object=OuterRef('trackable_object'),
-                        is_one_off=True,
-                    )
-
-                    # Does this instance already have any response for any one-off event?
-                    one_off_response_exists = FollowUpEventResponse.objects.filter(
-                        trackable_object_instance=OuterRef('pk'),
-                        follow_up_event__is_one_off=True,
-                    )
-
-                    qs = (
-                        base_instances
-                        .annotate(has_one_off=Exists(one_off_event_exists),
-                                  has_one_off_response=Exists(one_off_response_exists))
-                        .filter(has_one_off=True, has_one_off_response=False)
-                        .distinct()
-                    )
-
-                    node['children'].append({
-                        'id': administrative_unit.id,
-                        'name': administrative_unit.name,
-                        'pending_responses': qs.count() or ''
-                    })
                     flag = True
+                    node['children'].append(child)
             if not flag:
                 response_list.append({
                     'parent_id': administrative_unit.parent.id,
                     'name': administrative_unit.parent.name,
-                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.name}]
+                    'children': [child]
                 })
 
         context['administrative_units'] = response_list
@@ -75,3 +75,40 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
 
         recurse(administrative_unit)
         return descendants
+
+
+"""
+
+            if TrackableObjectInstance.objects.filter(
+                        administrative_units__in=[administrative_unit],
+                        trackable_object=self.object
+                    ).first() is not None:
+                print('----')
+                print(
+                    TrackableObjectInstance.objects.filter(
+                        administrative_units=administrative_unit,
+                        trackable_object=self.object
+                    ).first().trackable_object, ' - ',
+                    FollowUpEvent.objects.filter(
+                        trackable_object=TrackableObjectInstance.objects.filter(
+                            administrative_units=administrative_unit,
+                            trackable_object=self.object
+                        ).first().trackable_object,
+                        is_one_off=True,
+                    )
+                )
+                print(
+                    TrackableObjectInstance.objects.filter(
+                        administrative_units=administrative_unit,
+                        trackable_object=self.object
+                    ).first(), ' - ',
+                    FollowUpEventResponse.objects.filter(
+                        trackable_object_instance=TrackableObjectInstance.objects.filter(
+                            administrative_units=administrative_unit,
+                            trackable_object=self.object
+                        ).first(),
+                        follow_up_event__is_one_off=True,
+                    )
+                )
+                print('----')
+"""

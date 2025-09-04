@@ -1,5 +1,5 @@
 {% extends 'layout/base.html' %}
-{% load static i18n %}
+{% load static bootstrap4 i18n %}
 
 {% block content %}
     <h2>Trackable Object Schema Editor</h2>
@@ -16,34 +16,17 @@
                 <div class="row">
 
                     <!-- Form name input -->
-                    <div class="form-group col-md-6 col-12">
-                        <label for="name">{% translate 'Form Name' %}</label>
-                        <input type="text" class="form-control" name="name" id="name" value="{{ object.name }}"
-                               placeholder="Enter form name">
-                    </div>
-
-                    <!-- Form description input -->
-                    <div class="form-group col-md-6 col-12">
-                        <label for="description">{% translate 'Form Description' %}</label>
-                        <textarea class="form-control" name="description" id="description"
-                                  rows="2">{{ object.description }}</textarea>
-                    </div>
+                    {% bootstrap_field form.name form_group_class="form-group col-md-6 col-12" %}
+                    
+                    <!-- Form groups input -->
+                    {% bootstrap_field form.groups form_group_class="form-group col-md-6 col-12" %}
+                    
                 </div>
                 <div class="row">
-
-                    <!-- Form dependencies input -->
-                    <div class="form-group col-md-6 col-12">
-                        <label for="groups">{% translate 'Associated group' %}</label>
-                        <select class="form-control" name="groups" id="groups" multiple>
-                            {% for group in groups %}
-                                {% if group.id in trackable_object_groups %}
-                                    <option value="{{ group.id }}" selected>{{ group.name }}</option>
-                                {% else %}
-                                    <option value="{{ group.id }}">{{ group.name }}</option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                    </div>
+                
+                    <!-- Form description input -->
+                    {% bootstrap_field form.description form_group_class="form-group col-md-6 col-12" %}
+                    
                 </div>
 
                 <!-- Page and field controls -->

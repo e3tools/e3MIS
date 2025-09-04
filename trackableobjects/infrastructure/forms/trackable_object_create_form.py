@@ -1,10 +1,13 @@
 from django import forms
+from django.utils.translation import gettext as _
 from django.contrib.auth.models import Group
 from trackableobjects.models import TrackableObject
 
 
 class TrackableObjectForm(forms.ModelForm):
-    groups = forms.ModelMultipleChoiceField(queryset=Group.objects.all(), required=False)
+    name = forms.CharField(label=_("Name"), max_length=255)
+    groups = forms.ModelMultipleChoiceField(queryset=Group.objects.all(), required=False, label=_('Groups'))
+    description = forms.CharField(widget=forms.Textarea(attrs={'rows': '4'}), label=_('Description'), required=False)
 
     class Meta:
         model = TrackableObject

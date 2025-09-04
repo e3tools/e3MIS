@@ -45,15 +45,19 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
                         'identifier': obj.identifier,
                     }
 
-                    sub_qs = Subquery(FollowUpEvent.objects.filter(
+                    sub_qs_1 = FollowUpEvent.objects.filter(
                         trackable_object__id=node['trackable_object__id'],
                         is_one_off=True
-                    ).values('id'))
-                    if FollowUpEventResponse.objects.filter(trackable_object_instance__id=node['id'],
-                                                            follow_up_event__id__in=sub_qs).exists():
-                        node['has_badge'] = False
-                    else:
+                    )
+                    sub_qs_2 = FollowUpEventResponse.objects.filter(
+                            trackable_object_instance__id=node['id'],
+                            follow_up_event__id__in=Subquery(sub_qs_1.values('id'))
+                    )
+
+                    if sub_qs_1.count() != sub_qs_2.count():
                         node['has_badge'] = True
+                    else:
+                        node['has_badge'] = False
 
                     ids_in.append(obj.id)
                     resp_list.append(node)

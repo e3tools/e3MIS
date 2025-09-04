@@ -77,7 +77,9 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         #         )
         messages.success(self.request, f"Successfully created {self.object.name} instance.")
 
-        return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:select-trackable-object'))
+        return HttpResponseRedirect(
+            reverse_lazy('trackableobjects:mobile:trackable_object_instance_registration_list', args=[self.object.id])
+        )
 
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {

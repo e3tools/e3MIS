@@ -12,7 +12,7 @@ class FollowUpEventForm(forms.ModelForm):
     is_one_off = forms.BooleanField(widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
                                     label=_('One time'), help_text=_(
             'Check mark to denote that the form can only have one set of responses'), required=False)
-    groups = forms.ModelMultipleChoiceField(queryset=Group.objects.all(), label=_('Groups'),)
+    groups = forms.ModelMultipleChoiceField(queryset=Group.objects.all(), label=_('Groups'))
 
     class Meta:
         model = FollowUpEvent
