@@ -1,8 +1,8 @@
 from django.views.generic.detail import DetailView
-from django.db.models import Exists, OuterRef, Q, F, Count, Sum
+from django.db.models import Q, F, Count, Sum
 
 from administrativelevels.models import AdministrativeUnit
-from trackableobjects.models import TrackableObject, TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent
+from trackableobjects.models import TrackableObject, TrackableObjectInstance
 
 from src.permissions import IsFieldAgentUserMixin
 
@@ -75,40 +75,3 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
 
         recurse(administrative_unit)
         return descendants
-
-
-"""
-
-            if TrackableObjectInstance.objects.filter(
-                        administrative_units__in=[administrative_unit],
-                        trackable_object=self.object
-                    ).first() is not None:
-                print('----')
-                print(
-                    TrackableObjectInstance.objects.filter(
-                        administrative_units=administrative_unit,
-                        trackable_object=self.object
-                    ).first().trackable_object, ' - ',
-                    FollowUpEvent.objects.filter(
-                        trackable_object=TrackableObjectInstance.objects.filter(
-                            administrative_units=administrative_unit,
-                            trackable_object=self.object
-                        ).first().trackable_object,
-                        is_one_off=True,
-                    )
-                )
-                print(
-                    TrackableObjectInstance.objects.filter(
-                        administrative_units=administrative_unit,
-                        trackable_object=self.object
-                    ).first(), ' - ',
-                    FollowUpEventResponse.objects.filter(
-                        trackable_object_instance=TrackableObjectInstance.objects.filter(
-                            administrative_units=administrative_unit,
-                            trackable_object=self.object
-                        ).first(),
-                        follow_up_event__is_one_off=True,
-                    )
-                )
-                print('----')
-"""

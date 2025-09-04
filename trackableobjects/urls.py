@@ -10,6 +10,7 @@ from trackableobjects.infrastructure.views.follow_up_event_detail_view import Fo
 from trackableobjects.infrastructure.views.follow_up_event_responses_detail_view import FollowUpEventResponseDetailView
 from trackableobjects.infrastructure.views.follow_up_event_list_view import FollowUpEventListView
 
+from trackableobjects.infrastructure.mobile_views.index import IndexTemplateView
 from trackableobjects.infrastructure.mobile_views.select_trackable_object import SelectSubprojectCustomFieldView
 from trackableobjects.infrastructure.mobile_views.select_trackable_object_for_activity import \
     SelectTrackableObjectForActivityView
@@ -39,6 +40,7 @@ urlpatterns = [
          name='follow_up_event_response_detail'),
     path('api/', include('trackableobjects.api.urls')),
     path('mobile/', include(([
+                                 path('', IndexTemplateView.as_view(), name='index'),
                                  path('select-trackable-object/', SelectSubprojectCustomFieldView.as_view(),
                                       name='select-trackable-object'),
                                  path('select-trackable-object-for-activity/',

@@ -34,7 +34,6 @@ urlpatterns = [
     path('subprojects-adminunit/', AdministrativeUnitSubprojectsView.as_view(), name='subproject_adminunit'),
     path('contractors/', ContractorListView.as_view(), name='contractor_list'),
     path('mobile/', include(([
-        path('', IndexTemplateView.as_view(), name='index'),
         path('register/', RegisterMenuTemplateView.as_view(), name='register-menu'),
         path('register/sub-project/', RegisterSubprojectView.as_view(), name='register-subproject'),
         path('register/contractor/', ContractorCreateView.as_view(), name='register-contractor'),
