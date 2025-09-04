@@ -1,0 +1,97 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n authorization_tags %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <a onclick="window.history.go(-1); return false;" 
+                        class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {{ trackable_object_instance.trackable_object.name }} {% translate 'Activities' %}
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {% translate 'One-off Activities' %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if one_off_follow_up_events %}
+                    {% for one_off_follow_up_event in one_off_follow_up_events %}
+                        {% if one_off_follow_up_event.has_no_response %}
+                            <a href="{% url 'trackableobjects:mobile:follow_up_event_response_create' trackable_object_instance.id one_off_follow_up_event.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
+                               style="font-size: 1.15rem;">
+                                <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                                <span class="btn-label flex-grow-1">{{ one_off_follow_up_event.name }} Form</span>
+                                <span class="badge badge-primary">{% translate 'New' %}</span>
+                                <i class="fas fa-chevron-right ml-2"></i>
+                            </a>
+                        {% else %}
+                            <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' one_off_follow_up_event.id one_off_follow_up_event.response_id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
+                               style="font-size: 1.15rem;">
+                                <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                                <span class="btn-label flex-grow-1">{{ one_off_follow_up_event.name }} Form</span>
+                                <i class="fas fa-chevron-right ml-2"></i>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
+                        <span class="text-muted">{% translate 'No activity forms available.' %}</span>
+                    </div>
+                {% endif %}
+            
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {% translate 'Repeating Activities' %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if repeating_follow_up_events %}
+                    {% for repeating_follow_up_event in repeating_follow_up_events %}
+                        <a href="{% url 'trackableobjects:mobile:follow_up_event_detail' trackable_object_instance.id repeating_follow_up_event.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
+                           style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ repeating_follow_up_event.name }} Form</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
+                        <span class="text-muted">{% translate 'No activity forms available.' %}</span>
+                    </div>
+                {% endif %}
+            
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        $(document).ready(function () {
+            $('.js-example-basic-multiple').select2();
+        });
+    </script>
+{% endblock %}

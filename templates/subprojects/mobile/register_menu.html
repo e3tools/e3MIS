@@ -7,7 +7,7 @@
     <div class="col-12">
         <div class="card card-primary mt-3 mb-4 shadow">
             <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
-                <a href="{% url 'subprojects:mobile:index' %}"
+                <a href="{% url 'trackableobjects:mobile:index' %}"
                    class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
                     <i class="fas fa-arrow-left"></i>
                 </a>
@@ -16,32 +16,33 @@
                 </h4>
             </div>
             <div class="card-body">
-                {% if user|has_group:'Community facilitator' %}
-                    <a href="{% url 'subprojects:mobile:register-subproject' %}"
-                       class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-2 shadow-sm">
-                        <i class="fas fa-briefcase mr-2"></i>
-                        <span>{% translate 'Create subproject' %}</span>
-                        <i class="fas fa-chevron-right ml-2"></i>
-                    </a>
+                {% if trackable_objects %}
+                    {% for trackable_object in trackable_objects %}
+                        <a href="{% url 'trackableobjects:mobile:trackable_object_instance_registration_list' trackable_object.id %}"
+                           class="btn btn-block btn-default text-left d-flex align-items-center"
+                           style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ trackable_object.name }} Form</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
+                        <span class="text-muted">{% translate 'No activity forms available.' %}</span>
+                    </div>
                 {% endif %}
-                {% if user|has_group:'Technical facilitator' %}
-                    <a href="{% url 'subprojects:mobile:register-contractor' %}"
-                       class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-2 shadow-sm">
-                        <i class="fas fa-id-badge mr-2"></i>
-                        <span>{% translate 'Create contractor' %}</span>
-                        <i class="fas fa-chevron-right ml-2"></i>
-                    </a>
-                {% endif %}
-                {% if user|has_group:'Community facilitator' %}
-                <a href="{% url 'subprojects:mobile:register-village-development-committee' %}"
-                   class="btn btn-primary btn-block btn-lg d-flex align-items-center justify-content-center mb-2 shadow-sm">
-                    <i class="fas fa-users mr-2"></i>
-                    <span>{% translate 'Create village development committee' %}</span>
-                    <i class="fas fa-chevron-right ml-2"></i>
-                </a>
-                {% endif %}
+            
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        $(document).ready(function () {
+            $('.js-example-basic-multiple').select2();
+        });
+    </script>
 {% endblock %}

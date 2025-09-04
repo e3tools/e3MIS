@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'subprojects',
     'administrativelevels',
     'authorization',
+    'trackableobjects',
 ]
 
 
@@ -171,7 +172,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = '/subprojects/mobile'
+LOGIN_REDIRECT_URL = '/trackable-objects/mobile'
 
 AUTH_USER_MODEL = 'authorization.CustomUser'
 

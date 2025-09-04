@@ -15,6 +15,11 @@
         <!-- Main content -->
         <section class="content">
             <div class="container-fluid">
+                <div class="alert-div-content">
+                    <span id="popup-messages-content">
+                        {% include 'common/messages.html' %}
+                    </span>
+                </div>
                 {% block content %}
                 {% endblock %}
             </div>

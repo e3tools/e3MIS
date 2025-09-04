@@ -11,60 +11,74 @@
         <nav class="mt-2">
             {% with request.resolver_match.url_name as url_name %}
             <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-                <li class="nav-item">
+{% comment %}                <li class="nav-item">
                     <a href="{% url 'administrativelevels:administrative_levels_list' %}"
                        class="nav-link {% if url_name == 'administrative_levels_list' %}active{% endif %}">
                         <i class="nav-icon fa fa-home"></i>
                         <p>{% translate "Administrative levels" %}</p>
                     </a>
-                </li>
+                </li>{% endcomment %}
+{#                <li class="nav-item">#}
+{#                    <a href="{% url 'subprojects:subproject_list' %}"#}
+{#                       class="nav-link {% if url_name == 'administrative_level_list' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-project-diagram"></i>#}
+{#                        <p>{% translate "Subprojects" %}</p>#}
+{#                    </a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a href="{% url 'subprojects:subproject_dashboard' %}"#}
+{#                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-map"></i>#}
+{#                        <p>{% translate "Subprojects map" %}</p>#}
+{#                    </a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a href=""#}
+{#                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-file-contract"></i>#}
+{#                        <p>{% translate 'Registration' %}</p>#}
+{#                    </a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a href=""#}
+{#                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-file-alt"></i>#}
+{#                        <p>{% translate "Submit activity" %}</p>#}
+{#                    </a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a href="{% url 'subprojects:subproject_custom_fields' %}"#}
+{#                       class="nav-link {% if url_name == 'subproject_custom_fields' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-file-alt"></i>#}
+{#                        <p>{% translate "Custom fields" %}</p>#}
+{#                    </a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a href="{% url 'authorization:field_angent_list' %}"#}
+{#                       class="nav-link {% if url_name == 'field_angent_list' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-user-ninja"></i>#}
+{#                        <p>{% translate "Field agents" %}</p>#}
+{#                    </a>#}
+{#                </li>#}
+{#                <li class="nav-item">#}
+{#                    <a href="{% url 'subprojects:contractor_list' %}"#}
+{#                       class="nav-link {% if url_name == 'contractor_list' %}active{% endif %}">#}
+{#                        <i class="nav-icon fas fa-id-badge"></i>#}
+{#                        <p>{% translate "Contractors" %}</p>#}
+{#                    </a>#}
+{#                </li>#}
                 <li class="nav-item">
-                    <a href="{% url 'subprojects:subproject_list' %}"
-                       class="nav-link {% if url_name == 'administrative_level_list' %}active{% endif %}">
-                        <i class="nav-icon fas fa-project-diagram"></i>
-                        <p>{% translate "Subprojects" %}</p>
+                    <a href="{% url 'trackableobjects:trackable_object_list' %}"
+                       class="nav-link {% if url_name == 'trackable_object_list' %}active{% endif %}">
+                        <i class="nav-icon fas fa-tags"></i>
+                        <p>{% translate "Trackable objects" %}</p>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'subprojects:subproject_dashboard' %}"
-                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">
-                        <i class="nav-icon fas fa-map"></i>
-                        <p>{% translate "Subprojects map" %}</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href=""
-                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">
-                        <i class="nav-icon fas fa-file-contract"></i>
-                        <p>{% translate 'Registration' %}</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href=""
-                       class="nav-link {% if url_name == 'subproject_dashboard' %}active{% endif %}">
-                        <i class="nav-icon fas fa-file-alt"></i>
-                        <p>{% translate "Submit activity" %}</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{% url 'subprojects:subproject_custom_fields' %}"
-                       class="nav-link {% if url_name == 'subproject_custom_fields' %}active{% endif %}">
-                        <i class="nav-icon fas fa-file-alt"></i>
-                        <p>{% translate "Custom fields" %}</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{% url 'authorization:field_angent_list' %}"
-                       class="nav-link {% if url_name == 'field_angent_list' %}active{% endif %}">
-                        <i class="nav-icon fas fa-user-ninja"></i>
-                        <p>{% translate "Field agents" %}</p>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{% url 'subprojects:contractor_list' %}"
-                       class="nav-link {% if url_name == 'contractor_list' %}active{% endif %}">
-                        <i class="nav-icon fas fa-id-badge"></i>
-                        <p>{% translate "Contractors" %}</p>
+                    <a href="{% url 'trackableobjects:follow_up_event_list' %}"
+                       class="nav-link {% if url_name == 'follow_up_event_list' %}active{% endif %}">
+                        <i class="nav-icon fas fa-tags"></i>
+                        <p>{% translate "Follow up events" %}</p>
                     </a>
                 </li>
             </ul>

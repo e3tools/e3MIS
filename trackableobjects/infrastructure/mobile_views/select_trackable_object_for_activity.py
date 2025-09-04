@@ -6,8 +6,8 @@ from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Su
 from trackableobjects.models import TrackableObject
 
 
-class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
-    template_name = 'subprojects/mobile/select_subproject_for_activity.html'
+class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
+    template_name = 'trackable_objects/mobile/select_trackable_object_for_activity.html'
     user_groups = None
 
     def get_context_data(self, **kwargs):

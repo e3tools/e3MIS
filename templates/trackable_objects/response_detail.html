@@ -1,0 +1,68 @@
+{% extends 'layout/base.html' %}
+{% load static i18n bootstrap4 %}
+
+{% block content %}
+    <section class="content">
+
+        <!-- Default box -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 order-2 order-md-1">
+                        <div class="row">
+                            <div class="col-12 col-sm-4">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_by.get_full_name|default:object.created_by.email }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-center text-muted">{% translate 'Created' %}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_at|date:"d M, Y - P" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-sm-4">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <span class="info-box-text text-center text-muted">{% translate 'Updated' %}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{{ object.updated_at|date:"d M, Y - P" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 order-1 order-md-2">
+                                <div class="info-box bg-light">
+                                    <div class="info-box-content">
+                                        <div class="row">
+                                            {% for field in form %}
+                                                <div class="col-12 col-md-6">
+                                                    {% if field.field.widget.input_type == "file" %}
+                                                        {% for attachment in attachments %}
+                                                            {% if field.name == attachment.field_name %}
+                                                                <a href="{{ attachment.file.url }}">{{ attachment.field_name }}</a>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        {% bootstrap_field field %}
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+            </div>
+            <!-- /.card-body -->
+        </div>
+        <!-- /.card -->
+
+    </section>
+{% endblock %}
