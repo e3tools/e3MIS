@@ -29,3 +29,6 @@ tomli==2.2.1
 typing_extensions==4.12.2
 tzdata==2025.2
 virtualenv==20.29.3
+psycopg2-binary==2.9.10
+gunicorn==23.0.0
+djangorestframework_simplejwt==5.5.0

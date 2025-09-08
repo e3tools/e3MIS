@@ -34,10 +34,11 @@ env.read_env()
 SECRET_KEY = 'django-insecure-j90lb^5w#_51jeepqdu%72jym7z@#h*0_#f=j2kd3xql&!*4@@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "mis.coso.gouv.bj"]
 
+CSRF_TRUSTED_ORIGINS = ["https://*.mis.coso.gouv.bj","https://*.127.0.0.1"]
 
 # Application definition
 
@@ -109,11 +110,15 @@ SIMPLE_JWT = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": env.db(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
 
 
