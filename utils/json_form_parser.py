@@ -10,19 +10,8 @@ def parse_custom_jsonschema(schema_json, page_index=0):
         'number': forms.FloatField,
         'integer': forms.IntegerField,
         'boolean': forms.BooleanField,
+        'file': forms.FileField,
     }
-
-    def get_field(field_name, field_schema):
-        field_type = field_schema.get('type', 'string')
-        field_class = field_map.get(field_type, forms.CharField)
-
-        # Handle enums as ChoiceFields
-        if field_type == 'string' and 'enum' in field_schema:
-            choices = [(opt, opt) for opt in field_schema['enum']]
-            field_class = forms.ChoiceField
-            return field_name, field_class(choices=choices, **common_args)
-
-        return field_name, field_class(**common_args)
 
     fields = {}
     required_fields = set(page_schema.get('required', []))
@@ -37,9 +26,23 @@ def parse_custom_jsonschema(schema_json, page_index=0):
             'required': field_name in required_fields,
         }
 
+        # Dropdown (enum)
         if field_schema.get('type') == 'string' and 'enum' in field_schema:
             choices = [(opt, opt) for opt in field_schema['enum']]
             fields[field_name] = forms.ChoiceField(choices=choices, **common_args)
+
+        # Date field
+        elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
+            fields[field_name] = forms.DateField(
+                widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+                **common_args
+            )
+
+        elif field_schema.get('type') == 'file':
+            fields[field_name] = forms.FileField(
+                widget=forms.FileInput(attrs={'type': 'file', 'class': 'custom-file-input'}),
+                **common_args
+            )
         else:
             field_type = field_schema.get('type', 'string')
             field_class = field_map.get(field_type, forms.CharField)

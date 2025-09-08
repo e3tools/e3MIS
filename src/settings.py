@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'subprojects',
     'administrativelevels',
     'authorization',
+    'trackableobjects',
 ]
 
 
@@ -166,6 +167,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
+MEDIA_URL = '/media/'
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
@@ -175,7 +177,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGIN_REDIRECT_URL = '/subprojects/mobile'
+LOGIN_REDIRECT_URL = '/trackable-objects/mobile'
 
 AUTH_USER_MODEL = 'authorization.CustomUser'
 

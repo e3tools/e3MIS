@@ -19,3 +19,10 @@ class ContractorCreateForm(forms.ModelForm):
         subproject.contractors.add(instance)
         return instance
 
+
+class ContractorMobileCreateForm(forms.ModelForm):
+
+    class Meta:
+        model = Contractor
+        exclude = ('subproject', )
+

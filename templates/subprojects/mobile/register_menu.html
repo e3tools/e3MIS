@@ -1,20 +1,48 @@
 {% extends 'subprojects/mobile/layout/mobile_base.html' %}
-{% load static i18n %}
+{% load static i18n authorization_tags %}
 {% get_current_language as LANGUAGE_CODE %}
+
 {% block content %}
-    <div class="row">
-        <div class="col-12">
-            <p class="text-center">{% translate 'Register' %}</p>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <a href="{% url 'trackableobjects:mobile:index' %}"
+                   class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {% translate 'Register' %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if trackable_objects %}
+                    {% for trackable_object in trackable_objects %}
+                        <a href="{% url 'trackableobjects:mobile:trackable_object_instance_registration_list' trackable_object.id %}"
+                           class="btn btn-block btn-default text-left d-flex align-items-center"
+                           style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ trackable_object.name }} Form</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2 text-gray"></i><br>
+                        <span class="text-muted">{% translate 'No activity forms available.' %}</span>
+                    </div>
+                {% endif %}
+            
+            </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-12">
-            <a href="{% url 'subprojects:mobile:register-subproject' %}" class="btn btn-block btn-warning custom-button">
-                <div class="button-content">
-                    <i class="fas fa-briefcase"></i>
-                    <span>{% translate 'Create subproject' %}</span>
-                </div>
-            </a>
-        </div>
-    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>
+        $(document).ready(function () {
+            $('.js-example-basic-multiple').select2();
+        });
+    </script>
 {% endblock %}

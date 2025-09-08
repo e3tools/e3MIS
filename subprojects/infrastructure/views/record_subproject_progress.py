@@ -1,13 +1,13 @@
 from subprojects.models import Subproject, ProgressUpdate
-# View to create a new subproject progress update using htmx
 from django.views.generic.edit import CreateView
-from django.urls import reverse_lazy
 
+from src.permissions import IsStaffMemberMixin
 from subprojects.infrastructure.forms.subproject_progress_form import SubprojectProgressForm
 from django.template.response import TemplateResponse
 from django.contrib import messages
 
-class SubprojectProgressCreateView(CreateView):
+
+class SubprojectProgressCreateView(IsStaffMemberMixin, CreateView):
     model = ProgressUpdate
     form_class = SubprojectProgressForm
     template_name = "subprojects/partial_progress_form.html"

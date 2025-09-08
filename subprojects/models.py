@@ -1,5 +1,8 @@
 from django.db import models
 from django.utils.translation import gettext as _
+from django.contrib.auth.models import Group
+from trackableobjects.models import TrackableObjectInstance, FollowUpEventResponse
+
 from src.settings import AUTH_USER_MODEL
 
 
@@ -22,6 +25,15 @@ class BeneficiaryGroup(models.Model):
         return self.name
 
 
+class VillageDevelopmentCommittee(models.Model):
+    village_neighborhood = models.CharField(max_length=255)
+    name_of_the_sales_representative = models.CharField(max_length=255)
+    number_of_male_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    number_of_female_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    number_of_young_members_in_the_b_adv_adq_and_its_organs = models.IntegerField()
+    adv_account_number = models.CharField(max_length=255)
+
+
 class Subproject(models.Model):
     STATUS_CHOICES = [
         ('planned', 'Planned'),
@@ -31,7 +43,7 @@ class Subproject(models.Model):
         ('canceled', 'Canceled'),
     ]
 
-    ACTIVITY_CHOICES =[
+    ACTIVITY_CHOICES = [
         ('agropastoralism', _('Agropastoralism')),
         ('local_economy', _('Local economy')),
         ('sports_and_leisure', _('Sports and leisure')),
@@ -100,9 +112,6 @@ class Subproject(models.Model):
     # Many-to-Many through SubprojectBeneficiary
     beneficiary_groups = models.ManyToManyField(BeneficiaryGroup, through='SubprojectBeneficiary')
 
-    # Custom Fields Json
-    custom_fields = models.JSONField(blank=True, null=True, default=dict)
-
     def __str__(self):
         return self.name
 
@@ -163,6 +172,8 @@ class Document(models.Model):
 class SubprojectCustomField(models.Model):
     name = models.CharField(max_length=255)
     config_schema = models.JSONField(help_text="JSON schema + options for the form", default=list)
+    groups = models.ManyToManyField(Group, verbose_name=_('Custom Fields'), related_name="subproject_custom_fields",
+                                    blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -170,9 +181,32 @@ class SubprojectCustomField(models.Model):
         return self.name
 
 
+class SubprojectCustomFieldDependency(models.Model):
+    parent = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE, related_name="dependencies_parents")
+    child = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE, related_name="dependencies_children")
+
+
 class SubprojectFormResponse(models.Model):
     custom_form = models.ForeignKey(SubprojectCustomField, on_delete=models.CASCADE)
-    subproject = models.ForeignKey(Subproject, on_delete=models.CASCADE)
+    subproject = models.ForeignKey(Subproject, related_name="custom_fields_responses", on_delete=models.CASCADE,
+                                   null=True, blank=True)
     filled_by = models.ForeignKey(AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    response_schema = models.JSONField(help_text="JSON response schema", default=list)
     created_date = models.DateTimeField(auto_now_add=True)
     updated_date = models.DateTimeField(auto_now=True)
+
+
+class Attachment(models.Model):
+    subproject_form_response = models.ForeignKey(SubprojectFormResponse, blank=True, null=True,
+                                                 on_delete=models.CASCADE, related_name="attachments")
+    trackable_object_instance = models.ForeignKey(TrackableObjectInstance, blank=True, null=True,
+                                                  on_delete=models.CASCADE, related_name="attachments")
+    follow_up_event_response = models.ForeignKey(FollowUpEventResponse, blank=True, null=True,
+                                                 on_delete=models.CASCADE, related_name="attachments")
+    field_name = models.CharField(max_length=255, blank=True, null=True)
+    file = models.FileField(upload_to='media/attachments/')
+
+
+class DisplayFieldSetting(models.Model):
+    field_name = models.CharField(max_length=100, unique=True)
+    enabled = models.BooleanField(default=False)

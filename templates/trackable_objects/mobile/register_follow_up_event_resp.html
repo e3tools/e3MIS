@@ -1,0 +1,59 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n custom_tags bootstrap4 %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        {% if success %}
+            <div class="alert alert-success text-center mt-5 mb-4 p-4 fs-5" role="alert" style="border-radius: 16px;">
+                <i class="fas fa-check-circle mr-2"></i>
+                {% translate "Form saved successfully!" %}
+            </div>
+        {% else %}
+            <div class="card card-primary mt-4 mb-4 shadow">
+                <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                    <a href="{% url 'trackableobjects:mobile:index' %}"
+                       class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                        {{ trackable_object_instance.trackable_object.name }} - {{ follow_up_event.name }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for field in custom_form %}
+                            {% if field.field.widget.input_type == "file" %}
+                                {% bootstrap_field field form_group_class="custom-file" label_class="custom-file-label" %}
+                            {% else %}
+                                {% bootstrap_field field %}
+                            {% endif %}
+                        {% endfor %}
+                        <div class="d-flex justify-content-end mt-3">
+                            <a href="{% url 'trackableobjects:trackable_object_list' %}"
+                               class="btn btn-outline-secondary btn-lg mr-2">
+                                <i class="fas fa-times mr-1"></i>
+                                {% translate 'Cancel' %}
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save mr-1"></i>
+                                {% translate 'Save' %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="{% static 'AdminLTE/plugins/bs-custom-file-input/bs-custom-file-input.js' %}"></script>
+<script type="text/javascript">
+    $( Document ).ready(function(){
+        bsCustomFileInput.init()
+    });
+</script>
+{% endblock %}
