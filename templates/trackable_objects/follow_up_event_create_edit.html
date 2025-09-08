@@ -15,14 +15,18 @@
 
                 <div class="row">
                     <!-- Form name input -->
-                    {% bootstrap_field form.name form_group_class="form-group col-md-3 col-6" %}
+                    {% bootstrap_field form.name form_group_class="form-group col-md-6 col-12" %}
+                </div>
+                
+                <div class="row">
+                    <!-- Form groups input -->
+                    {% bootstrap_field form.groups form_group_class="form-group col-md-6 col-12" %}
                     
                     <!-- Form is_one_off input -->
                     {% bootstrap_field form.is_one_off form_group_class="col-md-3 col-6" label_class="form-check-input" %}
                     
-                    <!-- Form groups input -->
-                    {% bootstrap_field form.groups form_group_class="form-group col-md-6 col-12" %}
-                    
+                    <!-- Form is_one_off input -->
+                    {% bootstrap_field form.is_active form_group_class="col-md-3 col-6" label_class="form-check-input" %}
                 </div>
                 
                 <div class="row">

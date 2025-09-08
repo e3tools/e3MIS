@@ -27,7 +27,8 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
                 Q(total_groups=F('matched_groups'))
             ).filter(
                 trackable_object=kwargs['trackable_object_instance'].trackable_object,
-                is_one_off=True
+                is_one_off=True,
+                is_active=True
             ).distinct()
 
         repeating_follow_up_events = FollowUpEvent.objects.annotate(
@@ -38,7 +39,8 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
                 Q(total_groups=F('matched_groups'))
             ).filter(
                 trackable_object=kwargs['trackable_object_instance'].trackable_object,
-                is_one_off=False
+                is_one_off=False,
+                is_active=True
             ).distinct()
 
         kwargs.update({'one_off_follow_up_events': one_off_follow_up_events})

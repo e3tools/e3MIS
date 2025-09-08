@@ -80,13 +80,13 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             self.instance.trackable_object_instance = trackable_object_instance
         self.instance.save()
 
-        # if form.files is not None:
-        #     for key, value in form.files.items():
-        #         Attachment.objects.create(
-        #             subproject_form_response=instance,
-        #             field_name=key,
-        #             file=value,
-        #         )
+        if form.files is not None:
+            for key, value in form.files.items():
+                Attachment.objects.create(
+                    follow_up_event_response=self.instance,
+                    field_name=key,
+                    file=value,
+                )
 
         messages.success(self.request, _('Your Follow Up Event was successfully created or updated.'))
 

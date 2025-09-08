@@ -31,6 +31,7 @@ class FollowUpEvent(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
     is_one_off = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="follow_up_events",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)

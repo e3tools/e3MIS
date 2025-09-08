@@ -45,7 +45,11 @@
                                                     {% if field.field.widget.input_type == "file" %}
                                                         {% for attachment in attachments %}
                                                             {% if field.name == attachment.field_name %}
-                                                                <a href="{{ attachment.file.url }}">{{ attachment.field_name }}</a>
+                                                                {% bootstrap_label field.label %}
+                                                                <a href="{{ attachment.file.url }}" target="_blank">
+                                                                    <img src="{{ attachment.file.url }}" alt="{{ field.label }}" class="img-thumbnail" style="width: 100%; height: auto;">
+                                                                </a>
+                                                                <small class="form-text text-muted text-right">{{ field.help_text }}</small>
                                                             {% endif %}
                                                         {% endfor %}
                                                     {% else %}
