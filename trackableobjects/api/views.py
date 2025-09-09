@@ -1,13 +1,21 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from rest_framework.response import Response
 
 from django.db.models import Subquery
 from django.template.defaultfilters import date
 
+from api.permissions import ReadOnly
 from authorization.models import CustomUser
 from administrativelevels.models import AdministrativeUnit
-from trackableobjects.api.serializers import TrackableObjectInstanceSerializer
-from trackableobjects.models import TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent
+from trackableobjects.api.serializers import (
+    TrackableObjectSerializer, TrackableObjectInstanceSerializer,
+    FollowUpEventSerializer, FollowUpEventDependencySerializer,
+    FollowUpEventResponseSerializer
+)
+from trackableobjects.models import (
+    TrackableObject, TrackableObjectInstance,
+    FollowUpEventResponse, FollowUpEvent, FollowUpEventDependency
+)
 
 
 class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
@@ -77,3 +85,33 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         get_children(administrative_unit)
 
         return administrative_units
+
+
+class TrackableObjectModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [ReadOnly]
+    queryset = TrackableObject.objects.all()
+    serializer_class = TrackableObjectSerializer
+
+
+class FollowUpEventModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [ReadOnly]
+    queryset = FollowUpEvent.objects.all()
+    serializer_class = FollowUpEventSerializer
+
+
+class FollowUpEventDependencyModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [ReadOnly]
+    queryset = FollowUpEventDependency.objects.all()
+    serializer_class = FollowUpEventDependencySerializer
+
+
+class TrackableObjectInstanceModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [ReadOnly]
+    queryset = TrackableObjectInstance.objects.all()
+    serializer_class = TrackableObjectInstanceSerializer
+
+
+class FollowUpEventResponseModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [ReadOnly]
+    queryset = FollowUpEventResponse.objects.all()
+    serializer_class = FollowUpEventResponseSerializer
