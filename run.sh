@@ -28,6 +28,7 @@ case "$1" in
 
     serve )
         python ./manage.py migrate
+        python ./manage.py collectstatic --noinput
         gunicorn src.wsgi:application \
         --bind 0.0.0.0:9000 \
         --workers 4
