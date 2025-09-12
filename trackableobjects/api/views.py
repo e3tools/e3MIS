@@ -22,6 +22,7 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
     pagination_class = None
     queryset = TrackableObjectInstance.objects.all()
     serializer_class = TrackableObjectInstanceSerializer
+    swagger_schema = None
 
     def list(self, request, *args, **kwargs):
         resp_list = list()

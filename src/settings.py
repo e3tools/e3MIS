@@ -59,6 +59,7 @@ INSTALLED_APPS = [
 THIRD_PARTY_APPS = [
     'bootstrap4',
     'rest_framework',
+    'drf_yasg',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS
