@@ -1,4 +1,45 @@
 from django import forms
+from django.utils.translation import gettext as _
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
+
+
+class ButtonWidget(forms.widgets.Widget):
+    # No value_from_datadict because we don't expect data for a button
+    def __init__(self, label="Click", button_type="button", **kwargs):
+        self.label = label
+        self.button_type = button_type
+        super().__init__(**kwargs)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        attrs = attrs or {}
+        attrs_str = " ".join(f'{k}="{v}"' for k, v in attrs.items())
+        # Give it a name/value if you want to detect clicks server-side
+        return mark_safe(format_html(
+            '<div class="row d-none" id="geolocation-display">'
+            '<div class="col-6"><b>Latitude:</b> <span class="lat-label"></span></div>'
+            '<div class="col-6"><b>Longitude:</b> <span class="lon-label"></span></div>'
+            '<div class="col-6"><b>Accuracy:</b> ±<span class="acc-label"></span>m</div>'
+            '</div>'
+            '<div class="row d-none" id="geocode-address-display">'
+            '<div class="col-12"><b>Address:</b> <span class="address-label"></span></div>'
+            '</div>'
+            '<button type="{}" name="{}" value="1" {}>{}'
+            '<i class="fas fa-spinner fa-spin ml-2 d-none" id="btn-spinner"></i>'
+            '</button>',
+            self.button_type, name, mark_safe(attrs_str), self.label
+        ))
+
+
+class ButtonField(forms.Field):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("required", False)
+        super().__init__(*args, **kwargs)
+
+    # Optional: treat "pressed" as True if present
+    def clean(self, value):
+        return bool(value)
+
 
 def parse_custom_jsonschema(schema_json, page_index=0):
     form_def = schema_json['form'][page_index]
@@ -31,6 +72,11 @@ def parse_custom_jsonschema(schema_json, page_index=0):
             choices = [(opt, opt) for opt in field_schema['enum']]
             fields[field_name] = forms.ChoiceField(choices=choices, **common_args)
 
+        # Multiselect (multi)
+        if field_schema.get('type') == 'string' and 'multi' in field_schema:
+            choices = [(opt, opt) for opt in field_schema['multi']]
+            fields[field_name] = forms.MultipleChoiceField(choices=choices, **common_args)
+
         # Date field
         elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
             fields[field_name] = forms.DateField(
@@ -41,6 +87,18 @@ def parse_custom_jsonschema(schema_json, page_index=0):
         elif field_schema.get('type') == 'file':
             fields[field_name] = forms.FileField(
                 widget=forms.FileInput(attrs={'type': 'file', 'class': 'custom-file-input'}),
+                **common_args
+            )
+
+        elif field_schema.get('type') == 'geolocation':
+            fields['get_geoloc'] = ButtonField(
+                widget=ButtonWidget(
+                    label=_('Use my location'),
+                    attrs={"class": "btn btn-secondary btn-use-location"}
+                ), **common_args
+            )
+            fields[field_name] = forms.CharField(
+                widget=forms.HiddenInput(attrs={'class': 'coordinates'}),
                 **common_args
             )
         else:

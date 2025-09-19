@@ -74,4 +74,7 @@
             bsCustomFileInput.init()
         });
     </script>
+    {% if custom_form.get_geoloc %}
+        <script src="{% static 'js/custom/geolocation_schema_form.js' %}"></script>
+    {% endif %}
 {% endblock %}

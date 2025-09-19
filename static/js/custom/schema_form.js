@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Show/hide enum input based on type
       document.getElementById("field-type-input").addEventListener("change", function () {
-        const showEnum = this.value === "enum";
+        const showEnum = this.value === "enum" || this.value === "multi";
         document.getElementById("enum-options-group").style.display = showEnum ? "block" : "none";
       });
 
@@ -228,6 +228,21 @@ document.addEventListener("DOMContentLoaded", function () {
           type: "string",
           enum: enumOptions
         };
+      } else if (fieldType === "multi") {
+        const rawOptions = document.getElementById("enum-options-input").value.trim();
+        const enumOptions = rawOptions
+          ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
+          : [];
+
+        if (enumOptions.length === 0) {
+          alert("You must provide at least one multiselect option.");
+          return;
+        }
+
+        page.page.properties[fieldName] = {
+          type: "string",
+          multi: enumOptions
+        };
       } else if (fieldType === "date") {
         page.page.properties[fieldName] = {
           type: "string",
@@ -294,25 +309,33 @@ document.addEventListener("DOMContentLoaded", function () {
             const isRequired = page.page.required.includes(fieldName);
             const type = this.getFieldTypeDisplay(fieldSchema);
             const enumValues = fieldSchema.enum ? ` [${fieldSchema.enum.join(", ")}]` : '';
+            const multiValues = fieldSchema.multi ? ` [${fieldSchema.multi.join(", ")}]` : '';
             const label = page.options.fields[fieldName]?.label || fieldName;
             const help = page.options.fields[fieldName]?.help || "";
 
+            let is_identifier_html = ''
+
             const li = document.createElement("li");
             li.className = "list-group-item";
+
+            if ( type === 'string' && enumValues === '' && multiValues === '' ) {
+              is_identifier_html = `
+              <div class="custom-control custom-radio">
+                <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
+                <label class="custom-control-label" for="identifierRadio${counter}">Use as identifier</label>
+              </div>`
+            }
 
             li.innerHTML = `
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <strong>${label}</strong>
                   <small class="text-muted d-block">
-                    (${type})${enumValues} ${isRequired ? '[required]' : ''}
+                    (${type})${enumValues}${multiValues} ${isRequired ? '[required]' : ''}
                   </small>
                   ${help ? `<small class="text-muted d-block">${help}</small>` : ""}
                 </div>
-                <div class="custom-control custom-radio">
-                  <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
-                  <label class="custom-control-label" for="identifierRadio${counter}">Use as identifier</label>
-                </div>
+                ${is_identifier_html ? `${is_identifier_html}` : ""}
                 <button type="button" class="btn btn-sm btn-danger" onclick="SchemaForm.removeField('${fieldName}')">
                   <i class="fas fa-trash-alt"></i> Remove
                 </button>

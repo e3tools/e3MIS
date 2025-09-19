@@ -62,6 +62,7 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
                 </div>
             </div>
             <!-- /.card-body -->
@@ -69,4 +70,53 @@
         <!-- /.card -->
 
     </section>
+{% endblock %}
+
+{% block extrajs %}
+    {% if form.get_geoloc %}
+        <script type="text/javascript">
+            async function initPosition(latitude, longitude, accuracy) {
+        
+                $(".lat-label").text(latitude);
+                $(".lon-label").text(longitude);
+                $(".acc-label").text(accuracy);
+                $("#geolocation-display").removeClass('d-none');
+        
+                // Optional: reverse geocode to a human-readable address.
+                // This uses OSM Nominatim. Be nice: low frequency, cache, and follow their usage policy.
+                try {
+                    const address = await reverseGeocode(parseFloat(latitude), parseFloat(longitude));
+                    if (address) {
+                        $(".address-label").html(address);
+                        $("#geocode-address-display").removeClass('d-none');
+                    }
+                } catch (e) {
+                    // Don’t make a scene if reverse geocoding fails.
+                }
+            }
+            
+            async function reverseGeocode(lat, lon) {
+                const url = new URL("https://nominatim.openstreetmap.org/reverse");
+                url.searchParams.set("lat", lat);
+                url.searchParams.set("lon", lon);
+                url.searchParams.set("format", "jsonv2");
+        
+                const resp = await fetch(url.toString(), {
+                    headers: {
+                        // Nominatim requires a valid UA/Referer indicating your app
+                        "Accept": "application/json"
+                    }
+                });
+                if (!resp.ok) return null;
+                const data = await resp.json();
+                return data.display_name || null;
+            }
+        
+            $( document ).ready( function(){
+                $('.btn-use-location').addClass('d-none');
+                const loc_values = $('.coordinates').val().split(" ");
+                initPosition(loc_values[0], loc_values[1], loc_values[2]);
+            } );
+        </script>
+    {% endif %}
 {% endblock %}
