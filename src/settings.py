@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'api.apps.ApiConfig',
     'subprojects',
     'administrativelevels',
     'authorization',
@@ -58,6 +59,7 @@ INSTALLED_APPS = [
 THIRD_PARTY_APPS = [
     'bootstrap4',
     'rest_framework',
+    'drf_yasg',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS
@@ -96,14 +98,20 @@ WSGI_APPLICATION = 'src.wsgi.application'
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'api.authentication.BearerApiTokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    ],
 }
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
+
+API_KEY_CONFIG = {
+    'TOKEN_PEPPER': SECRET_KEY,
+    'COMPANY_PREFIX': 'MIS',
 }
 
 

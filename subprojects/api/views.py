@@ -14,6 +14,7 @@ class AdministrativeUnitListAPIView(generics.ListAPIView):
     queryset = AdministrativeUnit.objects.all()
     permission_classes = (IsAuthenticated,)
     serializer_class = SubprojectSerializer
+    swagger_schema = None
 
     def get_queryset(self):
         queryset = self.queryset
@@ -49,12 +50,14 @@ class AdministrativeUnitListAPIView(generics.ListAPIView):
 class AdministrativeUnitListForSelectAPIView(AdministrativeUnitListAPIView):
     permission_classes = (AllowAny,)
     pagination_class = None
+    swagger_schema = None
 
 
 class LastSubprojectCustomFieldRetrieveAPIView(generics.RetrieveAPIView):
     queryset = SubprojectCustomField.objects.all()
     permission_classes = (IsAuthenticated,)
     serializer_class = SubprojectCustomFieldSerializer
+    swagger_schema = None
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
@@ -74,6 +77,7 @@ class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
     pagination_class = None
     queryset = SubprojectCustomField.objects.all()
     serializer_class = SubprojectCustomFieldSerializer
+    swagger_schema = None
 
     def list(self, request, *args, **kwargs):
         resp_list = list()
