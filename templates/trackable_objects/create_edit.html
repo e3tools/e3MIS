@@ -165,6 +165,53 @@
                         </div>
                     </div>
                     
+                    <!-- Conditional Display -->
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="enable-conditional">
+                            <label class="custom-control-label font-weight-bold" for="enable-conditional">
+                                <i class="fas fa-eye"></i> Conditional Display
+                            </label>
+                            <small class="form-text text-muted">Show this field only when another field meets a
+                                condition</small>
+                        </div>
+                    </div>
+
+                    <div id="conditional-display-group" style="display: none;">
+                        <div class="card card-light mb-3">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="conditional-field-select">Show this field when:</label>
+                                    <select class="form-control" id="conditional-field-select">
+                                        <option value="">Select a field...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="conditional-operator-group-form">
+                                    <label for="conditional-operator-select">Operator</label>
+                                    <select class="form-control" id="conditional-operator-select">
+                                        <option value="equals">Equals (=)</option>
+                                        <option value="not_equals">Not Equals (≠)</option>
+                                        <option value="contains">Contains</option>
+                                        <option value="greater_than">Greater Than (>)</option>
+                                        <option value="less_than">Less Than (<)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="conditional-value-input">Value</label>
+                                    <input type="text" class="form-control" id="conditional-value-input"
+                                           placeholder="Enter value">
+                                    <select class="form-control" id="conditional-value-select" style="display: none;">
+                                        <option value="">Select a value...</option>
+                                    </select>
+                                    <small class="form-text text-muted">The field will only show when this condition is
+                                        met</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
 
                 <div class="modal-footer">

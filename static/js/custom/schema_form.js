@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+$(document).ready(function () {
   const SchemaForm = {
     formSchema: {
       form: [
@@ -17,8 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
     currentPageIndex: 0,
 
     init() {
-      this.pageContainer = document.getElementById("pages-container");
-      this.configTextarea = document.getElementById("config_schema");
+      this.pageContainer = $("#pages-container");
+      this.configTextarea = $("#config_schema");
 
       // Load existing schema if available
       this.loadExistingSchema();
@@ -27,30 +27,44 @@ document.addEventListener("DOMContentLoaded", function () {
       this.renderAllPages();
 
       // Handle + Add Page
-      document.getElementById("add-page-btn").addEventListener("click", () => {
+      $("#add-page-btn").on("click", () => {
         this.addPage();
       });
 
       // Handle + Add Field
-      document.getElementById("add-text-field").addEventListener("click", () => {
+      $("#add-text-field").on("click", () => {
         this.resetFieldModal();
+        this.populateConditionalFieldOptions();
         $('#addFieldModal').modal('show');
       });
 
       // Show/hide enum input based on type
-      document.getElementById("field-type-input").addEventListener("change", () => {
+      $("#field-type-input").on("change", () => {
         this.toggleFieldTypeOptions();
       });
 
+      // Handle conditional display toggle
+      $("#enable-conditional").on("change", (e) => {
+        const conditionalGroup = $("#conditional-display-group");
+        conditionalGroup.toggle(e.target.checked);
+      });
+
+      // Handle conditional field selection to populate values
+      $("#conditional-field-select").on("change", () => {
+
+        $("#conditional-operator-group-form").show();
+        this.populateConditionalValues();
+      });
+
       // Handle Save Field
-      document.getElementById("save-field-btn").addEventListener("click", () => {
+      $("#save-field-btn").on("click", () => {
         this.saveField();
       });
 
       // Optional debug
-      const form = document.querySelector("form");
-      if (form) {
-        form.addEventListener("submit", () => {
+      const form = $("form");
+      if (form.length) {
+        form.on("submit", () => {
           console.log("Submitting schema:", this.formSchema);
           this.updateSchemaTextarea();
         });
@@ -72,49 +86,99 @@ document.addEventListener("DOMContentLoaded", function () {
       $("#min-date-input").val("");
       $("#max-date-input").val("");
 
+      // Reset conditional fields
+      $("#enable-conditional").prop("checked", false);
+      $("#conditional-display-group").hide();
+      $("#conditional-field-select").val("");
+      $("#conditional-operator-select").val("equals");
+      $("#conditional-value-input").val("").attr("type", "text");
+      $("#conditional-value-select").val("").hide();
+
       $("#btn-required-yes").addClass("active");
       $("#btn-required-no").removeClass("active");
 
       this.toggleFieldTypeOptions();
     },
 
-    toggleFieldTypeOptions() {
-      const fieldType = document.getElementById("field-type-input").value;
+    populateConditionalFieldOptions() {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const select = $("#conditional-field-select");
 
-      const enum_options_group = $("#enum-options-group");
-      const text_restrictions_group = $("#text-restrictions-group");
-      const number_restrictions_group = $("#number-restrictions-group");
-      const date_restrictions_group = $("#date-restrictions-group");
+      // Clear existing options
+      select.empty().append('<option value="">Select a field...</option>');
 
-      // Hide all restriction groups first
-      enum_options_group.hide();
-      text_restrictions_group.hide();
-      number_restrictions_group.hide();
-      date_restrictions_group.hide();
+      // Add all existing fields as options
+      const properties = page.page.properties || {};
+      for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+        const label = page.options.fields[fieldName]?.label || fieldName;
+        select.append($('<option>', {
+          value: fieldName,
+          text: `${label} (${fieldName})`
+        }));
+      }
+    },
 
-      // Show relevant restriction group based on field type
-      switch (fieldType) {
-        case "enum":
-        case "multi":
-          enum_options_group.show();
-          break;
-        case "string":
-          text_restrictions_group.show();
-          break;
-        case "number":
-        case "integer":
-          number_restrictions_group.show();
-          break;
-        case "date":
-          date_restrictions_group.show();
-          break;
+    populateConditionalValues() {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const selectedField = $("#conditional-field-select").val();
+      const valueInput = $("#conditional-value-input");
+      const valueSelect = $("#conditional-value-select");
+
+      if (!selectedField) {
+        valueInput.attr('type', 'text').show();
+        valueSelect.hide();
+        return;
+      }
+
+      const fieldSchema = page.page.properties[selectedField];
+
+      // If field has enum or multi values, show dropdown
+      if (fieldSchema.enum || fieldSchema.multi) {
+        const options = fieldSchema.enum || fieldSchema.multi;
+        valueSelect.empty().append('<option value="">Select a value...</option>');
+
+        options.forEach(opt => {
+          valueSelect.append($('<option>', {
+            value: opt,
+            text: opt
+          }));
+        });
+
+        valueInput.hide();
+        valueSelect.show();
+      }
+      // If field is a date, change input type to date
+      else if (fieldSchema.format === "date" || fieldSchema.type === "date") {
+        valueInput.attr('type', 'date').val('').show();
+        valueSelect.hide();
+      }
+      // If field is a number or integer, change input type to number
+      else if (fieldSchema.type === "number" || fieldSchema.type === "integer") {
+        valueInput.attr('type', 'number').val('').show();
+        valueSelect.hide();
+      }
+      // If field is a boolean, show yes/no dropdown
+      else if (fieldSchema.type === "bool") {
+        valueSelect.empty()
+          .append('<option value="">Select...</option>')
+          .append('<option value="true">Yes</option>')
+          .append('<option value="false">No</option>');
+
+        $("#conditional-operator-group-form").hide();
+        valueInput.hide();
+        valueSelect.show();
+      }
+      // Default: text input
+      else {
+        valueInput.attr('type', 'text').val('').show();
+        valueSelect.hide();
       }
     },
 
     saveField() {
-      const fieldName = document.getElementById("field-name-input").value.trim();
-      const fieldType = document.getElementById("field-type-input").value;
-      const isRequired = document.getElementById("btn-required-yes").classList.contains("active");
+      const fieldName = $("#field-name-input").val().trim();
+      const fieldType = $("#field-type-input").val();
+      const isRequired = $("#btn-required-yes").hasClass("active");
 
       if (!fieldName) {
         alert("Field name cannot be empty.");
@@ -133,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     loadExistingSchema() {
       // Check if there's existing schema data in the textarea
-      const existingSchemaValue = this.configTextarea.value.trim();
+      const existingSchemaValue = this.configTextarea.val().trim();
 
       if (existingSchemaValue) {
         try {
@@ -235,8 +299,40 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     },
 
+    toggleFieldTypeOptions() {
+      const fieldType = $("#field-type-input").val();
+      const enumOptionsGroup = $("#enum-options-group");
+      const textRestrictionsGroup = $("#text-restrictions-group");
+      const numberRestrictionsGroup = $("#number-restrictions-group");
+      const dateRestrictionsGroup = $("#date-restrictions-group");
+
+      // Hide all restriction groups first
+      enumOptionsGroup.hide();
+      textRestrictionsGroup.hide();
+      numberRestrictionsGroup.hide();
+      dateRestrictionsGroup.hide();
+
+      // Show relevant restriction group based on field type
+      switch (fieldType) {
+        case "enum":
+        case "multi":
+          enumOptionsGroup.show();
+          break;
+        case "string":
+          textRestrictionsGroup.show();
+          break;
+        case "number":
+        case "integer":
+          numberRestrictionsGroup.show();
+          break;
+        case "date":
+          dateRestrictionsGroup.show();
+          break;
+      }
+    },
+
     updateSchemaTextarea() {
-      this.configTextarea.value = JSON.stringify(this.formSchema);
+      this.configTextarea.val(JSON.stringify(this.formSchema));
     },
 
     addPage() {
@@ -264,7 +360,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Handle dropdown (enum)
       if (fieldType === "enum") {
-        const rawOptions = document.getElementById("enum-options-input").value.trim();
+        const rawOptions = $("#enum-options-input").val().trim();
         const enumOptions = rawOptions
             ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
             : [];
@@ -279,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
           enum: enumOptions
         };
       } else if (fieldType === "multi") {
-        const rawOptions = document.getElementById("enum-options-input").value.trim();
+        const rawOptions = $("#enum-options-input").val().trim();
         const enumOptions = rawOptions
             ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
             : [];
@@ -301,8 +397,8 @@ document.addEventListener("DOMContentLoaded", function () {
         };
 
         // Add date restrictions
-        const minDate = document.getElementById("min-date-input").value.trim();
-        const maxDate = document.getElementById("max-date-input").value.trim();
+        const minDate = $("#min-date-input").val().trim();
+        const maxDate = $("#max-date-input").val().trim();
 
         if (minDate) {
           fieldSchema.validators.min = minDate;
@@ -316,8 +412,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const fieldSchema = { type: fieldType, validators: {} };
 
         // Add string length restrictions
-        const minLength = document.getElementById("min-length-input").value.trim();
-        const maxLength = document.getElementById("max-length-input").value.trim();
+        const minLength = $("#min-length-input").val().trim();
+        const maxLength = $("#max-length-input").val().trim();
 
         if (minLength && !isNaN(minLength)) {
           fieldSchema.validators.min_length = parseInt(minLength);
@@ -331,8 +427,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const fieldSchema = { type: fieldType, validators: {} };
 
         // Add number restrictions
-        const minNumber = document.getElementById("min-number-input").value.trim();
-        const maxNumber = document.getElementById("max-number-input").value.trim();
+        const minNumber = $("#min-number-input").val().trim();
+        const maxNumber = $("#max-number-input").val().trim();
 
         if (minNumber && !isNaN(minNumber)) {
           fieldSchema.validators.min_value = parseFloat(minNumber);
@@ -347,10 +443,44 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       // Add to options
-      page.options.fields[fieldName] = {
-        label: document.getElementById("field-label-input").value.trim() || fieldName,
-        help: document.getElementById("field-help-input").value.trim()
+      const fieldOptions = {
+        label: $("#field-label-input").val().trim() || fieldName,
+        help: $("#field-help-input").val().trim()
       };
+
+      // Add conditional display logic
+      const enableConditional = $("#enable-conditional").is(":checked");
+      if (enableConditional) {
+        const conditionalField = $("#conditional-field-select").val();
+        const conditionalOperator = $("#conditional-operator-select").val();
+
+        // Get value from either input or select
+        let conditionalValue;
+        if ($("#conditional-value-select").is(":visible")) {
+          conditionalValue = $("#conditional-value-select").val();
+        } else {
+          conditionalValue = $("#conditional-value-input").val().trim();
+        }
+
+        if (!conditionalField) {
+          alert("Please select a field for the conditional display.");
+          return;
+        }
+
+        if (!conditionalValue) {
+          alert("Please enter a value for the conditional display.");
+          return;
+        }
+
+        fieldOptions.dependencies = {
+          [conditionalField]: {
+            operator: conditionalOperator,
+            value: conditionalValue
+          }
+        };
+      }
+
+      page.options.fields[fieldName] = fieldOptions;
 
       // Add to required
       if (isRequired) {
@@ -369,31 +499,28 @@ document.addEventListener("DOMContentLoaded", function () {
     },
 
     renderAllPages() {
-      this.pageContainer.innerHTML = "";
+      this.pageContainer.empty();
 
       this.formSchema.form.forEach((page, index) => {
         // Create page card
-        const card = document.createElement("div");
-        card.className = "card card-secondary";
+        const card = $("<div>").addClass("card card-secondary");
 
         // Header with page switch
-        const cardHeader = document.createElement("div");
-        cardHeader.className = "card-header d-flex justify-content-between align-items-center";
-        cardHeader.innerHTML = `
-          <h3 class="card-title mb-0" style="cursor:pointer">
-            Page ${index + 1}${index === this.currentPageIndex ? " <small>(active)</small>" : ""}
-          </h3>
-        `;
-        cardHeader.onclick = () => this.switchToPage(index);
-        card.appendChild(cardHeader);
+        const cardHeader = $("<div>")
+          .addClass("card-header d-flex justify-content-between align-items-center")
+          .html(`
+            <h3 class="card-title mb-0" style="cursor:pointer">
+              Page ${index + 1}${index === this.currentPageIndex ? " <small>(active)</small>" : ""}
+            </h3>
+          `)
+          .on("click", () => this.switchToPage(index));
+
+        card.append(cardHeader);
 
         // Only render body for active page
         if (index === this.currentPageIndex) {
-          const cardBody = document.createElement("div");
-          cardBody.className = "card-body";
-
-          const ul = document.createElement("ul");
-          ul.className = "list-group";
+          const cardBody = $("<div>").addClass("card-body");
+          const ul = $("<ul>").addClass("list-group");
 
           const properties = page.page.properties || {};
           let counter = 0;
@@ -405,13 +532,13 @@ document.addEventListener("DOMContentLoaded", function () {
             const enumValues = fieldSchema.enum ? ` [${fieldSchema.enum.join(", ")}]` : '';
             const multiValues = fieldSchema.multi ? ` [${fieldSchema.multi.join(", ")}]` : '';
             const restrictionsText = this.getFieldRestrictionsText(fieldSchema);
+            const conditionalText = this.getConditionalDisplayText(page, fieldName);
             const label = page.options.fields[fieldName]?.label || fieldName;
             const help = page.options.fields[fieldName]?.help || "";
 
             let is_identifier_html = ''
 
-            const li = document.createElement("li");
-            li.className = "list-group-item";
+            const li = $("<li>").addClass("list-group-item");
 
             if (type === 'string' && enumValues === '' && multiValues === '') {
               is_identifier_html = `
@@ -421,30 +548,34 @@ document.addEventListener("DOMContentLoaded", function () {
               </div>`
             }
 
-            li.innerHTML = `
+            li.html(`
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <strong>${label}</strong>
                   <small class="text-muted d-block">
                     (${type})${enumValues}${multiValues}${restrictionsText} ${isRequired ? '[required]' : ''}
                   </small>
+                  ${conditionalText ? `<small class="text-info d-block"><i class="fas fa-eye"></i> ${conditionalText}</small>` : ""}
                   ${help ? `<small class="text-muted d-block">${help}</small>` : ""}
                 </div>
                 ${is_identifier_html ? `${is_identifier_html}` : ""}
-                <button type="button" class="btn btn-sm btn-danger" onclick="SchemaForm.removeField('${fieldName}')">
+                <button type="button" class="btn btn-sm btn-danger" data-field-name="${fieldName}">
                   <i class="fas fa-trash-alt"></i> Remove
                 </button>
               </div>
-            `;
+            `);
 
-            ul.appendChild(li);
+            // Attach event listener for remove button
+            li.find("button").on("click", () => this.removeField(fieldName));
+
+            ul.append(li);
           }
 
-          cardBody.appendChild(ul);
-          card.appendChild(cardBody);
+          cardBody.append(ul);
+          card.append(cardBody);
         }
 
-        this.pageContainer.appendChild(card);
+        this.pageContainer.append(card);
       });
 
       this.updateSchemaTextarea();
@@ -465,7 +596,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const restrictions = [];
 
       // String length restrictions
-      if (fieldSchema.validators.min_length !== undefined || fieldSchema.validators.max_length !== undefined) {
+      if (fieldSchema.validators?.min_length !== undefined || fieldSchema.validators?.max_length !== undefined) {
         let lengthText = " length: ";
         if (fieldSchema.validators.min_length !== undefined && fieldSchema.validators.max_length !== undefined) {
           lengthText += `${fieldSchema.validators.min_length}-${fieldSchema.validators.max_length}`;
@@ -478,7 +609,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       // Number restrictions
-      if (fieldSchema.validators.minimum !== undefined || fieldSchema.validators.maximum !== undefined) {
+      if (fieldSchema.validators?.minimum !== undefined || fieldSchema.validators?.maximum !== undefined) {
         let rangeText = " range: ";
         if (fieldSchema.validators.minimum !== undefined && fieldSchema.validators.maximum !== undefined) {
           rangeText += `${fieldSchema.validators.minimum}-${fieldSchema.validators.maximum}`;
@@ -491,6 +622,28 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       return restrictions.join("");
+    },
+
+    getConditionalDisplayText(page, fieldName) {
+      const fieldOptions = page.options.fields[fieldName];
+      if (!fieldOptions || !fieldOptions.dependencies) {
+        return "";
+      }
+
+      const deps = fieldOptions.dependencies;
+      const depFieldName = Object.keys(deps)[0];
+      const depConfig = deps[depFieldName];
+      const depLabel = page.options.fields[depFieldName]?.label || depFieldName;
+
+      const operatorText = {
+        'equals': '=',
+        'not_equals': '≠',
+        'contains': 'contains',
+        'greater_than': '>',
+        'less_than': '<'
+      };
+
+      return `Show when "${depLabel}" ${operatorText[depConfig.operator]} "${depConfig.value}"`;
     }
   };
 

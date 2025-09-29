@@ -2,6 +2,7 @@ from django import forms
 from django.utils.translation import gettext as _
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+import json
 
 
 class ButtonWidget(forms.widgets.Widget):
@@ -67,36 +68,74 @@ def parse_custom_jsonschema(schema_json, page_index=0):
             'required': field_name in required_fields,
         }
 
-        common_args.update(field_schema.get('validators', {}))
+        # Get validators and remove them from common_args to avoid conflicts
+        validators = field_schema.get('validators', {})
+
+        # Handle dependencies (conditional display)
+        dependencies = meta.get('dependencies', {})
+        widget_attrs = {}
+
+        if dependencies:
+            # Add data attributes for conditional display
+            # Format: data-depends-on="field_name" data-depends-operator="equals" data-depends-value="value"
+            for dep_field, dep_config in dependencies.items():
+                widget_attrs['data-depends-on'] = dep_field
+                widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
+                widget_attrs['data-depends-value'] = dep_config.get('value', '')
+                # Initially hide the field (will be shown by JS if condition is met)
+                widget_attrs['data-conditional'] = 'true'
 
         # Dropdown (enum)
         if field_schema.get('type') == 'string' and 'enum' in field_schema:
             choices = [(opt, opt) for opt in field_schema['enum']]
-            fields[field_name] = forms.ChoiceField(choices=choices, **common_args)
+            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+            fields[field_name] = forms.ChoiceField(
+                choices=choices,
+                widget=forms.Select(attrs=widget_attrs),
+                **common_args
+            )
 
         # Multiselect (multi)
-        if field_schema.get('type') == 'string' and 'multi' in field_schema:
+        elif field_schema.get('type') == 'string' and 'multi' in field_schema:
             choices = [(opt, opt) for opt in field_schema['multi']]
-            fields[field_name] = forms.MultipleChoiceField(choices=choices, **common_args)
+            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+            fields[field_name] = forms.MultipleChoiceField(
+                choices=choices,
+                widget=forms.SelectMultiple(attrs=widget_attrs),
+                **common_args
+            )
 
-        # Boolean (multi)
-        if field_schema.get('type') == 'bool':
-            fields[field_name] = forms.BooleanField(widget=forms.CheckboxInput(), **common_args)
+        # Boolean
+        elif field_schema.get('type') == 'bool':
+            fields[field_name] = forms.BooleanField(
+                widget=forms.CheckboxInput(attrs=widget_attrs),
+                **common_args
+            )
 
         # Date field
         elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
-            validator_min = common_args.pop('min', None)
-            validators_max = common_args.pop('max', None)
-            attrs = {'type': 'date', 'class': 'form-control', 'min': validator_min, 'max': validators_max}
-            attrs.update(common_args)
+            validator_min = validators.get('min', None)
+            validators_max = validators.get('max', None)
+            date_attrs = {
+                'type': 'date',
+                'class': 'form-control'
+            }
+            if validator_min:
+                date_attrs['min'] = validator_min
+            if validators_max:
+                date_attrs['max'] = validators_max
+            date_attrs.update(widget_attrs)
+
             fields[field_name] = forms.DateField(
-                widget=forms.DateInput(attrs=attrs),
+                widget=forms.DateInput(attrs=date_attrs),
                 **common_args
             )
 
         elif field_schema.get('type') == 'file':
+            file_attrs = {'type': 'file', 'class': 'custom-file-input'}
+            file_attrs.update(widget_attrs)
             fields[field_name] = forms.FileField(
-                widget=forms.FileInput(attrs={'type': 'file', 'class': 'custom-file-input'}),
+                widget=forms.FileInput(attrs=file_attrs),
                 **common_args
             )
 
@@ -107,14 +146,51 @@ def parse_custom_jsonschema(schema_json, page_index=0):
                     attrs={"class": "btn btn-secondary btn-use-location"}
                 ), **common_args
             )
+            hidden_attrs = {'class': 'coordinates'}
+            hidden_attrs.update(widget_attrs)
             fields[field_name] = forms.CharField(
-                widget=forms.HiddenInput(attrs={'class': 'coordinates'}),
+                widget=forms.HiddenInput(attrs=hidden_attrs),
+                **common_args
+            )
+
+        # Number with validators
+        elif field_schema.get('type') in ['number', 'integer']:
+            field_type = field_schema.get('type')
+            field_class = field_map.get(field_type, forms.CharField)
+
+            number_attrs = {'class': 'form-control', 'type': 'number'}
+            if 'min_value' in validators:
+                number_attrs['min'] = validators['min_value']
+            if 'max_value' in validators:
+                number_attrs['max'] = validators['max_value']
+            number_attrs.update(widget_attrs)
+
+            fields[field_name] = field_class(
+                widget=forms.NumberInput(attrs=number_attrs),
+                **common_args
+            )
+
+        # String with validators
+        elif field_schema.get('type') == 'string':
+            text_attrs = {'class': 'form-control'}
+            if 'min_length' in validators:
+                text_attrs['minlength'] = validators['min_length']
+            if 'max_length' in validators:
+                text_attrs['maxlength'] = validators['max_length']
+            text_attrs.update(widget_attrs)
+
+            fields[field_name] = forms.CharField(
+                widget=forms.TextInput(attrs=text_attrs),
                 **common_args
             )
 
         else:
             field_type = field_schema.get('type', 'string')
             field_class = field_map.get(field_type, forms.CharField)
-            fields[field_name] = field_class(**common_args)
+            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+            fields[field_name] = field_class(
+                widget=forms.TextInput(attrs=widget_attrs),
+                **common_args
+            )
 
     return type(f"DynamicFormPage{page_index}", (forms.Form,), fields)
