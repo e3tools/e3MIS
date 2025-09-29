@@ -67,6 +67,8 @@ def parse_custom_jsonschema(schema_json, page_index=0):
             'required': field_name in required_fields,
         }
 
+        common_args.update(field_schema.get('validators', {}))
+
         # Dropdown (enum)
         if field_schema.get('type') == 'string' and 'enum' in field_schema:
             choices = [(opt, opt) for opt in field_schema['enum']]
@@ -79,8 +81,12 @@ def parse_custom_jsonschema(schema_json, page_index=0):
 
         # Date field
         elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
+            validator_min = common_args.pop('min', None)
+            validators_max = common_args.pop('max', None)
+            attrs = {'type': 'date', 'class': 'form-control', 'min': validator_min, 'max': validators_max}
+            attrs.update(common_args)
             fields[field_name] = forms.DateField(
-                widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+                widget=forms.DateInput(attrs=attrs),
                 **common_args
             )
 
@@ -101,6 +107,7 @@ def parse_custom_jsonschema(schema_json, page_index=0):
                 widget=forms.HiddenInput(attrs={'class': 'coordinates'}),
                 **common_args
             )
+
         else:
             field_type = field_schema.get('type', 'string')
             field_class = field_map.get(field_type, forms.CharField)

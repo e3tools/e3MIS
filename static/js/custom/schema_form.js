@@ -33,42 +33,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Handle + Add Field
       document.getElementById("add-text-field").addEventListener("click", () => {
-        document.getElementById("field-name-input").value = "";
-        document.getElementById("field-type-input").value = "string";
-        document.getElementById("enum-options-input").value = "";
-        document.getElementById("enum-options-group").style.display = "none";
-        document.getElementById("btn-required-yes").classList.add("active");
-        document.getElementById("btn-required-no").classList.remove("active");
-        document.getElementById("field-label-input").value = "";
-        document.getElementById("field-help-input").value = "";
+        this.resetFieldModal();
         $('#addFieldModal').modal('show');
       });
 
       // Show/hide enum input based on type
-      document.getElementById("field-type-input").addEventListener("change", function () {
-        const showEnum = this.value === "enum" || this.value === "multi";
-        document.getElementById("enum-options-group").style.display = showEnum ? "block" : "none";
+      document.getElementById("field-type-input").addEventListener("change", () => {
+        this.toggleFieldTypeOptions();
       });
 
       // Handle Save Field
       document.getElementById("save-field-btn").addEventListener("click", () => {
-        const fieldName = document.getElementById("field-name-input").value.trim();
-        const fieldType = document.getElementById("field-type-input").value;
-        const isRequired = document.getElementById("btn-required-yes").classList.contains("active");
-
-        if (!fieldName) {
-          alert("Field name cannot be empty.");
-          return;
-        }
-
-        const currentPage = this.formSchema.form[this.currentPageIndex];
-        if (fieldName in currentPage.page.properties) {
-          alert("Field name already exists in this page.");
-          return;
-        }
-
-        this.addField(fieldName, fieldType, isRequired);
-        $('#addFieldModal').modal('hide');
+        this.saveField();
       });
 
       // Optional debug
@@ -79,6 +55,80 @@ document.addEventListener("DOMContentLoaded", function () {
           this.updateSchemaTextarea();
         });
       }
+    },
+
+    resetFieldModal() {
+      $("#field-name-input").val("");
+      $("#field-type-input").val("string");
+      $("#enum-options-input").val("");
+      $("#field-label-input").val("");
+      $("#field-help-input").val("");
+
+      // Reset validation fields
+      $("#min-length-input").val("");
+      $("#max-length-input").val("");
+      $("#min-number-input").val("");
+      $("#max-number-input").val("");
+      $("#min-date-input").val("");
+      $("#max-date-input").val("");
+
+      $("#btn-required-yes").addClass("active");
+      $("#btn-required-no").removeClass("active");
+
+      this.toggleFieldTypeOptions();
+    },
+
+    toggleFieldTypeOptions() {
+      const fieldType = document.getElementById("field-type-input").value;
+
+      const enum_options_group = $("#enum-options-group");
+      const text_restrictions_group = $("#text-restrictions-group");
+      const number_restrictions_group = $("#number-restrictions-group");
+      const date_restrictions_group = $("#date-restrictions-group");
+
+      // Hide all restriction groups first
+      enum_options_group.hide();
+      text_restrictions_group.hide();
+      number_restrictions_group.hide();
+      date_restrictions_group.hide();
+
+      // Show relevant restriction group based on field type
+      switch (fieldType) {
+        case "enum":
+        case "multi":
+          enum_options_group.show();
+          break;
+        case "string":
+          text_restrictions_group.show();
+          break;
+        case "number":
+        case "integer":
+          number_restrictions_group.show();
+          break;
+        case "date":
+          date_restrictions_group.show();
+          break;
+      }
+    },
+
+    saveField() {
+      const fieldName = document.getElementById("field-name-input").value.trim();
+      const fieldType = document.getElementById("field-type-input").value;
+      const isRequired = document.getElementById("btn-required-yes").classList.contains("active");
+
+      if (!fieldName) {
+        alert("Field name cannot be empty.");
+        return;
+      }
+
+      const currentPage = this.formSchema.form[this.currentPageIndex];
+      if (fieldName in currentPage.page.properties) {
+        alert("Field name already exists in this page.");
+        return;
+      }
+
+      this.addField(fieldName, fieldType, isRequired);
+      $('#addFieldModal').modal('hide');
     },
 
     loadExistingSchema() {
@@ -216,8 +266,8 @@ document.addEventListener("DOMContentLoaded", function () {
       if (fieldType === "enum") {
         const rawOptions = document.getElementById("enum-options-input").value.trim();
         const enumOptions = rawOptions
-          ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
-          : [];
+            ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
+            : [];
 
         if (enumOptions.length === 0) {
           alert("You must provide at least one dropdown option.");
@@ -231,8 +281,8 @@ document.addEventListener("DOMContentLoaded", function () {
       } else if (fieldType === "multi") {
         const rawOptions = document.getElementById("enum-options-input").value.trim();
         const enumOptions = rawOptions
-          ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
-          : [];
+            ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
+            : [];
 
         if (enumOptions.length === 0) {
           alert("You must provide at least one multiselect option.");
@@ -244,12 +294,56 @@ document.addEventListener("DOMContentLoaded", function () {
           multi: enumOptions
         };
       } else if (fieldType === "date") {
-        page.page.properties[fieldName] = {
+        const fieldSchema = {
           type: "string",
-          format: "date" // ✅ JSON Schema convention for date
+          format: "date",
+          validators: {}
         };
+
+        // Add date restrictions
+        const minDate = document.getElementById("min-date-input").value.trim();
+        const maxDate = document.getElementById("max-date-input").value.trim();
+
+        if (minDate) {
+          fieldSchema.validators.min = minDate;
+        }
+        if (maxDate) {
+          fieldSchema.validators.max = maxDate;
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
+      } else if (fieldType === "string") {
+        const fieldSchema = { type: fieldType, validators: {} };
+
+        // Add string length restrictions
+        const minLength = document.getElementById("min-length-input").value.trim();
+        const maxLength = document.getElementById("max-length-input").value.trim();
+
+        if (minLength && !isNaN(minLength)) {
+          fieldSchema.validators.min_length = parseInt(minLength);
+        }
+        if (maxLength && !isNaN(maxLength)) {
+          fieldSchema.validators.max_length = parseInt(maxLength);
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
+      } else if (fieldType === "number" || fieldType === "integer") {
+        const fieldSchema = { type: fieldType, validators: {} };
+
+        // Add number restrictions
+        const minNumber = document.getElementById("min-number-input").value.trim();
+        const maxNumber = document.getElementById("max-number-input").value.trim();
+
+        if (minNumber && !isNaN(minNumber)) {
+          fieldSchema.validators.min_value = parseFloat(minNumber);
+        }
+        if (maxNumber && !isNaN(maxNumber)) {
+          fieldSchema.validators.max_value = parseFloat(maxNumber);
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
       } else {
-        page.page.properties[fieldName] = { type: fieldType };
+        page.page.properties[fieldName] = {type: fieldType};
       }
 
       // Add to options
@@ -310,6 +404,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const type = this.getFieldTypeDisplay(fieldSchema);
             const enumValues = fieldSchema.enum ? ` [${fieldSchema.enum.join(", ")}]` : '';
             const multiValues = fieldSchema.multi ? ` [${fieldSchema.multi.join(", ")}]` : '';
+            const restrictionsText = this.getFieldRestrictionsText(fieldSchema);
             const label = page.options.fields[fieldName]?.label || fieldName;
             const help = page.options.fields[fieldName]?.help || "";
 
@@ -318,7 +413,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const li = document.createElement("li");
             li.className = "list-group-item";
 
-            if ( type === 'string' && enumValues === '' && multiValues === '' ) {
+            if (type === 'string' && enumValues === '' && multiValues === '') {
               is_identifier_html = `
               <div class="custom-control custom-radio">
                 <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
@@ -331,7 +426,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 <div>
                   <strong>${label}</strong>
                   <small class="text-muted d-block">
-                    (${type})${enumValues}${multiValues} ${isRequired ? '[required]' : ''}
+                    (${type})${enumValues}${multiValues}${restrictionsText} ${isRequired ? '[required]' : ''}
                   </small>
                   ${help ? `<small class="text-muted d-block">${help}</small>` : ""}
                 </div>
@@ -364,6 +459,38 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         return fieldSchema.type || "string";
       }
+    },
+
+    getFieldRestrictionsText(fieldSchema) {
+      const restrictions = [];
+
+      // String length restrictions
+      if (fieldSchema.validators.min_length !== undefined || fieldSchema.validators.max_length !== undefined) {
+        let lengthText = " length: ";
+        if (fieldSchema.validators.min_length !== undefined && fieldSchema.validators.max_length !== undefined) {
+          lengthText += `${fieldSchema.validators.min_length}-${fieldSchema.validators.max_length}`;
+        } else if (fieldSchema.validators.min_length !== undefined) {
+          lengthText += `min ${fieldSchema.validators.min_length}`;
+        } else {
+          lengthText += `max ${fieldSchema.validators.max_length}`;
+        }
+        restrictions.push(lengthText);
+      }
+
+      // Number restrictions
+      if (fieldSchema.validators.minimum !== undefined || fieldSchema.validators.maximum !== undefined) {
+        let rangeText = " range: ";
+        if (fieldSchema.validators.minimum !== undefined && fieldSchema.validators.maximum !== undefined) {
+          rangeText += `${fieldSchema.validators.minimum}-${fieldSchema.validators.maximum}`;
+        } else if (fieldSchema.validators.minimum !== undefined) {
+          rangeText += `min ${fieldSchema.validators.minimum}`;
+        } else {
+          rangeText += `max ${fieldSchema.validators.maximum}`;
+        }
+        restrictions.push(rangeText);
+      }
+
+      return restrictions.join("");
     }
   };
 
