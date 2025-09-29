@@ -79,6 +79,10 @@ def parse_custom_jsonschema(schema_json, page_index=0):
             choices = [(opt, opt) for opt in field_schema['multi']]
             fields[field_name] = forms.MultipleChoiceField(choices=choices, **common_args)
 
+        # Boolean (multi)
+        if field_schema.get('type') == 'bool':
+            fields[field_name] = forms.BooleanField(widget=forms.CheckboxInput(), **common_args)
+
         # Date field
         elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
             validator_min = common_args.pop('min', None)

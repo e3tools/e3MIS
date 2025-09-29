@@ -343,7 +343,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         page.page.properties[fieldName] = fieldSchema;
       } else {
-        page.page.properties[fieldName] = {type: fieldType};
+        page.page.properties[fieldName] = {type: fieldType, validators: {} };
       }
 
       // Add to options
