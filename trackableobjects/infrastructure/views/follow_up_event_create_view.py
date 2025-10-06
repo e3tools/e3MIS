@@ -26,7 +26,7 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
         kwargs = super().get_form_kwargs()
         kwargs.update({
             "user": self.request.user,
-            "trackable_object": self.kwargs['pk'],
+            "trackable_object": self.kwargs.get('pk', None),
         })
         return kwargs
 
