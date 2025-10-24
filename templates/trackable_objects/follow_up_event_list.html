@@ -18,6 +18,15 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
+                <div class="card-header">
+                    <div class="col-md-12">
+                        {% if user.is_superuser or user|has_group:"Admin" %}
+                        <div class="btn-group pull-right">
+                            <a class="btn btn-primary" href="{% url 'trackableobjects:follow_up_event_object_create' %}">{% translate 'Create' %} {% translate 'Follow Events' %}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
                 <div class="card-body table-responsive">
                     <table id="table-subprojects" class="table table-striped">
                         <thead>
@@ -42,7 +51,7 @@
                                 </td>
                                 <td>{{ follow_up_event.name }}</td>
                                 <td>{{ follow_up_event.description }}</td>
-                                <td>{{ follow_up_event.trackable_object.name }}</td>
+                                <td>{{ follow_up_event.trackable_objects_names }}</td>
                             </tr>
                         {% endfor %}
                         </tbody>

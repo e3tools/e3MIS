@@ -91,9 +91,12 @@
                         <select class="form-control" id="field-type-input">
                             <option value="string">Text</option>
                             <option value="number">Number</option>
+                            <option value="bool">Boolean</option>
                             <option value="enum">Dropdown</option>
+                            <option value="multi">Multiselect</option>
                             <option value="date">Date</option>
                             <option value="file">File</option>
+                            <option value="geolocation">Location</option>
                         </select>
                     </div>
                     <div class="form-group" id="enum-options-group" style="display: none;">
@@ -112,6 +115,129 @@
                             </label>
                         </div>
                     </div>
+                    
+                    <!-- Text Field Restrictions (show only for string type) -->
+                    <div class="form-group" id="text-restrictions-group" style="display: none;">
+                        <label class="font-weight-bold">Text Restrictions</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="min-length-input">Min Length</label>
+                                <input type="number" class="form-control" id="min-length-input"
+                                       placeholder="Minimum characters">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="max-length-input">Max Length</label>
+                                <input type="number" class="form-control" id="max-length-input"
+                                       placeholder="Maximum characters">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Number Field Restrictions (show only for number/integer type) -->
+                    <div class="form-group" id="number-restrictions-group" style="display: none;">
+                        <label class="font-weight-bold">Number Restrictions</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="min-number-input">Min Value</label>
+                                <input type="number" class="form-control" id="min-number-input"
+                                       placeholder="Minimum value" step="any">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="max-number-input">Max Value</label>
+                                <input type="number" class="form-control" id="max-number-input"
+                                       placeholder="Maximum value" step="any">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date Field Restrictions (show only for date type) -->
+                    <div class="form-group" id="date-restrictions-group" style="display: none;">
+                        <label class="font-weight-bold">Date Restrictions</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="min-date-input">Min Date</label>
+                                <input type="date" class="form-control" id="min-date-input">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="max-date-input">Max Date</label>
+                                <input type="date" class="form-control" id="max-date-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trackable Object Restrictions (show only for trackable_object type) -->
+                    <div class="form-group" id="trackable-object-restrictions-group" style="display: none;">
+                        <label class="font-weight-bold">Trackable Object Restrictions</label>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="trackable-object-restriction-input">Type</label>
+                                <select class="form-control" id="trackable-object-restriction-input">
+                                    {% for trackable_object in trackable_objects %}
+                                        <option value="{{ trackable_object.id }}">{{ trackable_object.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label>Pull only from assigned administrative levels?</label><br>
+                                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                    <label class="btn btn-outline-danger" id="btn-trackable-object-adm-lvl-no">
+                                        <input type="radio" name="trackable-objects-options" value="no"> No
+                                    </label>
+                                    <label class="btn btn-outline-success active" id="btn-trackable-object-adm-lvl-yes">
+                                        <input type="radio" name="trackable-objects-options" value="yes" checked> Yes
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Conditional Display -->
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="enable-conditional">
+                            <label class="custom-control-label font-weight-bold" for="enable-conditional">
+                                <i class="fas fa-eye"></i> Conditional Display
+                            </label>
+                            <small class="form-text text-muted">Show this field only when another field meets a
+                                condition</small>
+                        </div>
+                    </div>
+
+                    <div id="conditional-display-group" style="display: none;">
+                        <div class="card card-light mb-3">
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label for="conditional-field-select">Show this field when:</label>
+                                    <select class="form-control" id="conditional-field-select">
+                                        <option value="">Select a field...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" id="conditional-operator-group-form">
+                                    <label for="conditional-operator-select">Operator</label>
+                                    <select class="form-control" id="conditional-operator-select">
+                                        <option value="equals">Equals (=)</option>
+                                        <option value="not_equals">Not Equals (≠)</option>
+                                        <option value="contains">Contains</option>
+                                        <option value="greater_than">Greater Than (>)</option>
+                                        <option value="less_than">Less Than (<)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="conditional-value-input">Value</label>
+                                    <input type="text" class="form-control" id="conditional-value-input"
+                                           placeholder="Enter value">
+                                    <select class="form-control" id="conditional-value-select" style="display: none;">
+                                        <option value="">Select a value...</option>
+                                    </select>
+                                    <small class="form-text text-muted">The field will only show when this condition is
+                                        met</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
 
                 <div class="modal-footer">

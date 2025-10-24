@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+$(document).ready(function () {
   const SchemaForm = {
     formSchema: {
       form: [
@@ -17,8 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
     currentPageIndex: 0,
 
     init() {
-      this.pageContainer = document.getElementById("pages-container");
-      this.configTextarea = document.getElementById("config_schema");
+      this.pageContainer = $("#pages-container");
+      this.configTextarea = $("#config_schema");
 
       // Load existing schema if available
       this.loadExistingSchema();
@@ -27,63 +27,177 @@ document.addEventListener("DOMContentLoaded", function () {
       this.renderAllPages();
 
       // Handle + Add Page
-      document.getElementById("add-page-btn").addEventListener("click", () => {
+      $("#add-page-btn").on("click", () => {
         this.addPage();
       });
 
       // Handle + Add Field
-      document.getElementById("add-text-field").addEventListener("click", () => {
-        document.getElementById("field-name-input").value = "";
-        document.getElementById("field-type-input").value = "string";
-        document.getElementById("enum-options-input").value = "";
-        document.getElementById("enum-options-group").style.display = "none";
-        document.getElementById("btn-required-yes").classList.add("active");
-        document.getElementById("btn-required-no").classList.remove("active");
-        document.getElementById("field-label-input").value = "";
-        document.getElementById("field-help-input").value = "";
+      $("#add-text-field").on("click", () => {
+        this.resetFieldModal();
+        this.populateConditionalFieldOptions();
         $('#addFieldModal').modal('show');
       });
 
       // Show/hide enum input based on type
-      document.getElementById("field-type-input").addEventListener("change", function () {
-        const showEnum = this.value === "enum";
-        document.getElementById("enum-options-group").style.display = showEnum ? "block" : "none";
+      $("#field-type-input").on("change", () => {
+        this.toggleFieldTypeOptions();
+      });
+
+      // Handle conditional display toggle
+      $("#enable-conditional").on("change", (e) => {
+        const conditionalGroup = $("#conditional-display-group");
+        conditionalGroup.toggle(e.target.checked);
+      });
+
+      // Handle conditional field selection to populate values
+      $("#conditional-field-select").on("change", () => {
+
+        $("#conditional-operator-group-form").show();
+        this.populateConditionalValues();
       });
 
       // Handle Save Field
-      document.getElementById("save-field-btn").addEventListener("click", () => {
-        const fieldName = document.getElementById("field-name-input").value.trim();
-        const fieldType = document.getElementById("field-type-input").value;
-        const isRequired = document.getElementById("btn-required-yes").classList.contains("active");
-
-        if (!fieldName) {
-          alert("Field name cannot be empty.");
-          return;
-        }
-
-        const currentPage = this.formSchema.form[this.currentPageIndex];
-        if (fieldName in currentPage.page.properties) {
-          alert("Field name already exists in this page.");
-          return;
-        }
-
-        this.addField(fieldName, fieldType, isRequired);
-        $('#addFieldModal').modal('hide');
+      $("#save-field-btn").on("click", () => {
+        this.saveField();
       });
 
       // Optional debug
-      const form = document.querySelector("form");
-      if (form) {
-        form.addEventListener("submit", () => {
+      const form = $("form");
+      if (form.length) {
+        form.on("submit", () => {
           console.log("Submitting schema:", this.formSchema);
           this.updateSchemaTextarea();
         });
       }
     },
 
+    resetFieldModal() {
+      $("#field-name-input").val("");
+      $("#field-type-input").val("string");
+      $("#enum-options-input").val("");
+      $("#field-label-input").val("");
+      $("#field-help-input").val("");
+
+      // Reset validation fields
+      $("#min-length-input").val("");
+      $("#max-length-input").val("");
+      $("#min-number-input").val("");
+      $("#max-number-input").val("");
+      $("#min-date-input").val("");
+      $("#max-date-input").val("");
+
+      // Reset conditional fields
+      $("#enable-conditional").prop("checked", false);
+      $("#conditional-display-group").hide();
+      $("#conditional-field-select").val("");
+      $("#conditional-operator-select").val("equals");
+      $("#conditional-value-input").val("").attr("type", "text");
+      $("#conditional-value-select").val("").hide();
+
+      $("#btn-required-yes").addClass("active");
+      $("#btn-required-no").removeClass("active");
+
+      this.toggleFieldTypeOptions();
+    },
+
+    populateConditionalFieldOptions() {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const select = $("#conditional-field-select");
+
+      // Clear existing options
+      select.empty().append('<option value="">Select a field...</option>');
+
+      // Add all existing fields as options
+      const properties = page.page.properties || {};
+      for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+        const label = page.options.fields[fieldName]?.label || fieldName;
+        select.append($('<option>', {
+          value: fieldName,
+          text: `${label} (${fieldName})`
+        }));
+      }
+    },
+
+    populateConditionalValues() {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const selectedField = $("#conditional-field-select").val();
+      const valueInput = $("#conditional-value-input");
+      const valueSelect = $("#conditional-value-select");
+
+      if (!selectedField) {
+        valueInput.attr('type', 'text').show();
+        valueSelect.hide();
+        return;
+      }
+
+      const fieldSchema = page.page.properties[selectedField];
+
+      // If field has enum or multi values, show dropdown
+      if (fieldSchema.enum || fieldSchema.multi) {
+        const options = fieldSchema.enum || fieldSchema.multi;
+        valueSelect.empty().append('<option value="">Select a value...</option>');
+
+        options.forEach(opt => {
+          valueSelect.append($('<option>', {
+            value: opt,
+            text: opt
+          }));
+        });
+
+        valueInput.hide();
+        valueSelect.show();
+      }
+      // If field is a date, change input type to date
+      else if (fieldSchema.format === "date" || fieldSchema.type === "date") {
+        valueInput.attr('type', 'date').val('').show();
+        valueSelect.hide();
+      }
+      // If field is a number or integer, change input type to number
+      else if (fieldSchema.type === "number" || fieldSchema.type === "integer") {
+        valueInput.attr('type', 'number').val('').show();
+        valueSelect.hide();
+      }
+      // If field is a boolean, show yes/no dropdown
+      else if (fieldSchema.type === "bool") {
+        valueSelect.empty()
+          .append('<option value="">Select...</option>')
+          .append('<option value="true">Yes</option>')
+          .append('<option value="false">No</option>');
+
+        $("#conditional-operator-group-form").hide();
+        valueInput.hide();
+        valueSelect.show();
+      }
+      // Default: text input
+      else {
+        valueInput.attr('type', 'text').val('').show();
+        valueSelect.hide();
+      }
+    },
+
+    saveField() {
+      const fieldName = $("#field-name-input").val().trim();
+      const fieldType = $("#field-type-input").val();
+      const isRequired = $("#btn-required-yes").hasClass("active");
+
+      if (!fieldName) {
+        alert("Field name cannot be empty.");
+        return;
+      }
+
+      const currentPage = this.formSchema.form[this.currentPageIndex];
+      if (fieldName in currentPage.page.properties) {
+        alert("Field name already exists in this page.");
+        return;
+      }
+
+      this.addField(fieldName, fieldType, isRequired);
+      $('#addFieldModal').modal('hide');
+    },
+
     loadExistingSchema() {
       // Check if there's existing schema data in the textarea
-      const existingSchemaValue = this.configTextarea.value.trim();
+      const existingSchemaValue = this.configTextarea.val().trim();
 
       if (existingSchemaValue) {
         try {
@@ -185,8 +299,45 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     },
 
+    toggleFieldTypeOptions() {
+      const fieldType = $("#field-type-input").val();
+      const trackableObjectRestrictionsGroup = $("#trackable-object-restrictions-group");
+      const enumOptionsGroup = $("#enum-options-group");
+      const textRestrictionsGroup = $("#text-restrictions-group");
+      const numberRestrictionsGroup = $("#number-restrictions-group");
+      const dateRestrictionsGroup = $("#date-restrictions-group");
+
+      // Hide all restriction groups first
+      trackableObjectRestrictionsGroup.hide();
+      enumOptionsGroup.hide();
+      textRestrictionsGroup.hide();
+      numberRestrictionsGroup.hide();
+      dateRestrictionsGroup.hide();
+
+      // Show relevant restriction group based on field type
+      switch (fieldType) {
+        case "enum":
+        case "multi":
+          enumOptionsGroup.show();
+          break;
+        case "string":
+          textRestrictionsGroup.show();
+          break;
+        case "number":
+        case "integer":
+          numberRestrictionsGroup.show();
+          break;
+        case "date":
+          dateRestrictionsGroup.show();
+          break;
+        case "trackable_object":
+          trackableObjectRestrictionsGroup.show();
+          break;
+      }
+    },
+
     updateSchemaTextarea() {
-      this.configTextarea.value = JSON.stringify(this.formSchema);
+      this.configTextarea.val(JSON.stringify(this.formSchema));
     },
 
     addPage() {
@@ -214,10 +365,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Handle dropdown (enum)
       if (fieldType === "enum") {
-        const rawOptions = document.getElementById("enum-options-input").value.trim();
+        const rawOptions = $("#enum-options-input").val().trim();
         const enumOptions = rawOptions
-          ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
-          : [];
+            ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
+            : [];
 
         if (enumOptions.length === 0) {
           alert("You must provide at least one dropdown option.");
@@ -228,20 +379,127 @@ document.addEventListener("DOMContentLoaded", function () {
           type: "string",
           enum: enumOptions
         };
-      } else if (fieldType === "date") {
+      } else if (fieldType === "multi") {
+        const rawOptions = $("#enum-options-input").val().trim();
+        const enumOptions = rawOptions
+            ? rawOptions.split(",").map(opt => opt.trim()).filter(opt => opt)
+            : [];
+
+        if (enumOptions.length === 0) {
+          alert("You must provide at least one multiselect option.");
+          return;
+        }
+
         page.page.properties[fieldName] = {
           type: "string",
-          format: "date" // ✅ JSON Schema convention for date
+          multi: enumOptions
         };
+      } else if (fieldType === "date") {
+        const fieldSchema = {
+          type: "string",
+          format: "date",
+          validators: {}
+        };
+
+        // Add date restrictions
+        const minDate = $("#min-date-input").val().trim();
+        const maxDate = $("#max-date-input").val().trim();
+
+        if (minDate) {
+          fieldSchema.validators.min = minDate;
+        }
+        if (maxDate) {
+          fieldSchema.validators.max = maxDate;
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
+      } else if (fieldType === "string") {
+        const fieldSchema = { type: fieldType, validators: {} };
+
+        // Add string length restrictions
+        const minLength = $("#min-length-input").val().trim();
+        const maxLength = $("#max-length-input").val().trim();
+
+        if (minLength && !isNaN(minLength)) {
+          fieldSchema.validators.min_length = parseInt(minLength);
+        }
+        if (maxLength && !isNaN(maxLength)) {
+          fieldSchema.validators.max_length = parseInt(maxLength);
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
+      } else if (fieldType === "number" || fieldType === "integer") {
+        const fieldSchema = { type: fieldType, validators: {} };
+
+        // Add number restrictions
+        const minNumber = $("#min-number-input").val().trim();
+        const maxNumber = $("#max-number-input").val().trim();
+
+        if (minNumber && !isNaN(minNumber)) {
+          fieldSchema.validators.min_value = parseFloat(minNumber);
+        }
+        if (maxNumber && !isNaN(maxNumber)) {
+          fieldSchema.validators.max_value = parseFloat(maxNumber);
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
+      } else if ( fieldType === "trackable_object" ){
+        const fieldSchema = { type: fieldType, validators: {} };
+
+        const administrative_level_restriction = $("#btn-trackable-object-adm-lvl-yes").hasClass("active");
+        const trackable_object_type = $("#trackable-object-restriction-input").val().trim();
+
+        if (administrative_level_restriction && !isNaN(administrative_level_restriction)) {
+          fieldSchema.validators.administrative_level_restriction = administrative_level_restriction;
+        }
+        if (trackable_object_type && !isNaN(trackable_object_type)) {
+          fieldSchema.validators.trackable_object_id = trackable_object_type;
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
       } else {
-        page.page.properties[fieldName] = { type: fieldType };
+        page.page.properties[fieldName] = {type: fieldType, validators: {} };
       }
 
       // Add to options
-      page.options.fields[fieldName] = {
-        label: document.getElementById("field-label-input").value.trim() || fieldName,
-        help: document.getElementById("field-help-input").value.trim()
+      const fieldOptions = {
+        label: $("#field-label-input").val().trim() || fieldName,
+        help: $("#field-help-input").val().trim()
       };
+
+      // Add conditional display logic
+      const enableConditional = $("#enable-conditional").is(":checked");
+      if (enableConditional) {
+        const conditionalField = $("#conditional-field-select").val();
+        const conditionalOperator = $("#conditional-operator-select").val();
+
+        // Get value from either input or select
+        let conditionalValue;
+        if ($("#conditional-value-select").is(":visible")) {
+          conditionalValue = $("#conditional-value-select").val();
+        } else {
+          conditionalValue = $("#conditional-value-input").val().trim();
+        }
+
+        if (!conditionalField) {
+          alert("Please select a field for the conditional display.");
+          return;
+        }
+
+        if (!conditionalValue) {
+          alert("Please enter a value for the conditional display.");
+          return;
+        }
+
+        fieldOptions.dependencies = {
+          [conditionalField]: {
+            operator: conditionalOperator,
+            value: conditionalValue
+          }
+        };
+      }
+
+      page.options.fields[fieldName] = fieldOptions;
 
       // Add to required
       if (isRequired) {
@@ -260,31 +518,28 @@ document.addEventListener("DOMContentLoaded", function () {
     },
 
     renderAllPages() {
-      this.pageContainer.innerHTML = "";
+      this.pageContainer.empty();
 
       this.formSchema.form.forEach((page, index) => {
         // Create page card
-        const card = document.createElement("div");
-        card.className = "card card-secondary";
+        const card = $("<div>").addClass("card card-secondary");
 
         // Header with page switch
-        const cardHeader = document.createElement("div");
-        cardHeader.className = "card-header d-flex justify-content-between align-items-center";
-        cardHeader.innerHTML = `
-          <h3 class="card-title mb-0" style="cursor:pointer">
-            Page ${index + 1}${index === this.currentPageIndex ? " <small>(active)</small>" : ""}
-          </h3>
-        `;
-        cardHeader.onclick = () => this.switchToPage(index);
-        card.appendChild(cardHeader);
+        const cardHeader = $("<div>")
+          .addClass("card-header d-flex justify-content-between align-items-center")
+          .html(`
+            <h3 class="card-title mb-0" style="cursor:pointer">
+              Page ${index + 1}${index === this.currentPageIndex ? " <small>(active)</small>" : ""}
+            </h3>
+          `)
+          .on("click", () => this.switchToPage(index));
+
+        card.append(cardHeader);
 
         // Only render body for active page
         if (index === this.currentPageIndex) {
-          const cardBody = document.createElement("div");
-          cardBody.className = "card-body";
-
-          const ul = document.createElement("ul");
-          ul.className = "list-group";
+          const cardBody = $("<div>").addClass("card-body");
+          const ul = $("<ul>").addClass("list-group");
 
           const properties = page.page.properties || {};
           let counter = 0;
@@ -294,39 +549,52 @@ document.addEventListener("DOMContentLoaded", function () {
             const isRequired = page.page.required.includes(fieldName);
             const type = this.getFieldTypeDisplay(fieldSchema);
             const enumValues = fieldSchema.enum ? ` [${fieldSchema.enum.join(", ")}]` : '';
+            const multiValues = fieldSchema.multi ? ` [${fieldSchema.multi.join(", ")}]` : '';
+            const restrictionsText = this.getFieldRestrictionsText(fieldSchema);
+            const conditionalText = this.getConditionalDisplayText(page, fieldName);
             const label = page.options.fields[fieldName]?.label || fieldName;
             const help = page.options.fields[fieldName]?.help || "";
 
-            const li = document.createElement("li");
-            li.className = "list-group-item";
+            let is_identifier_html = ''
 
-            li.innerHTML = `
+            const li = $("<li>").addClass("list-group-item");
+
+            if (type === 'string' && enumValues === '' && multiValues === '') {
+              is_identifier_html = `
+              <div class="custom-control custom-radio">
+                <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
+                <label class="custom-control-label" for="identifierRadio${counter}">Use as identifier</label>
+              </div>`
+            }
+
+            li.html(`
               <div class="d-flex justify-content-between align-items-center">
                 <div>
                   <strong>${label}</strong>
                   <small class="text-muted d-block">
-                    (${type})${enumValues} ${isRequired ? '[required]' : ''}
+                    (${type})${enumValues}${multiValues}${restrictionsText} ${isRequired ? '[required]' : ''}
                   </small>
+                  ${conditionalText ? `<small class="text-info d-block"><i class="fas fa-eye"></i> ${conditionalText}</small>` : ""}
                   ${help ? `<small class="text-muted d-block">${help}</small>` : ""}
                 </div>
-                <div class="custom-control custom-radio">
-                  <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
-                  <label class="custom-control-label" for="identifierRadio${counter}">Use as identifier</label>
-                </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="SchemaForm.removeField('${fieldName}')">
+                ${is_identifier_html ? `${is_identifier_html}` : ""}
+                <button type="button" class="btn btn-sm btn-danger" data-field-name="${fieldName}">
                   <i class="fas fa-trash-alt"></i> Remove
                 </button>
               </div>
-            `;
+            `);
 
-            ul.appendChild(li);
+            // Attach event listener for remove button
+            li.find("button").on("click", () => this.removeField(fieldName));
+
+            ul.append(li);
           }
 
-          cardBody.appendChild(ul);
-          card.appendChild(cardBody);
+          cardBody.append(ul);
+          card.append(cardBody);
         }
 
-        this.pageContainer.appendChild(card);
+        this.pageContainer.append(card);
       });
 
       this.updateSchemaTextarea();
@@ -341,6 +609,60 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         return fieldSchema.type || "string";
       }
+    },
+
+    getFieldRestrictionsText(fieldSchema) {
+      const restrictions = [];
+
+      // String length restrictions
+      if (fieldSchema.validators?.min_length !== undefined || fieldSchema.validators?.max_length !== undefined) {
+        let lengthText = " length: ";
+        if (fieldSchema.validators.min_length !== undefined && fieldSchema.validators.max_length !== undefined) {
+          lengthText += `${fieldSchema.validators.min_length}-${fieldSchema.validators.max_length}`;
+        } else if (fieldSchema.validators.min_length !== undefined) {
+          lengthText += `min ${fieldSchema.validators.min_length}`;
+        } else {
+          lengthText += `max ${fieldSchema.validators.max_length}`;
+        }
+        restrictions.push(lengthText);
+      }
+
+      // Number restrictions
+      if (fieldSchema.validators?.minimum !== undefined || fieldSchema.validators?.maximum !== undefined) {
+        let rangeText = " range: ";
+        if (fieldSchema.validators.minimum !== undefined && fieldSchema.validators.maximum !== undefined) {
+          rangeText += `${fieldSchema.validators.minimum}-${fieldSchema.validators.maximum}`;
+        } else if (fieldSchema.validators.minimum !== undefined) {
+          rangeText += `min ${fieldSchema.validators.minimum}`;
+        } else {
+          rangeText += `max ${fieldSchema.validators.maximum}`;
+        }
+        restrictions.push(rangeText);
+      }
+
+      return restrictions.join("");
+    },
+
+    getConditionalDisplayText(page, fieldName) {
+      const fieldOptions = page.options.fields[fieldName];
+      if (!fieldOptions || !fieldOptions.dependencies) {
+        return "";
+      }
+
+      const deps = fieldOptions.dependencies;
+      const depFieldName = Object.keys(deps)[0];
+      const depConfig = deps[depFieldName];
+      const depLabel = page.options.fields[depFieldName]?.label || depFieldName;
+
+      const operatorText = {
+        'equals': '=',
+        'not_equals': '≠',
+        'contains': 'contains',
+        'greater_than': '>',
+        'less_than': '<'
+      };
+
+      return `Show when "${depLabel}" ${operatorText[depConfig.operator]} "${depConfig.value}"`;
     }
   };
 

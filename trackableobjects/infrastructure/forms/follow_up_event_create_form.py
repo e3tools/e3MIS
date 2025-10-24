@@ -12,11 +12,17 @@ class FollowUpEventForm(forms.ModelForm):
     is_one_off = forms.BooleanField(widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
                                     label=_('One time'), help_text=_(
             'Check mark to denote that the form can only have one set of responses'), required=False)
+    is_active = forms.BooleanField(widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+                                   label=_('Active'), help_text=_(
+            'Check mark to denote this Follow Up Event will be visible for field agents.'), required=False)
     groups = forms.ModelMultipleChoiceField(queryset=Group.objects.all(), label=_('Groups'))
+    trackable_objects = forms.ModelMultipleChoiceField(queryset=TrackableObject.objects.all(),
+                                                       label=_('Trackable Objects'))
 
     class Meta:
         model = FollowUpEvent
-        fields = ['name', 'description', 'jsonForm', 'dependencies', 'groups', 'is_one_off']
+        fields = ['name', 'description', 'jsonForm', 'dependencies', 'groups',
+                  'trackable_objects', 'is_one_off', 'is_active']
 
     def __init__(self, *args, **kwargs):
         self.trackable_object = TrackableObject.objects.filter(id=kwargs.pop('trackable_object', None)).first()
@@ -25,7 +31,10 @@ class FollowUpEventForm(forms.ModelForm):
 
         super().__init__(*args, **kwargs)
 
-        qs = FollowUpEvent.objects.filter(trackable_object=self.trackable_object)
+        if self.trackable_object is not None:
+            self.fields['trackable_objects'].initial = self.trackable_object
+
+        qs = FollowUpEvent.objects.filter(trackable_objects=self.trackable_object)
         self.fields['dependencies'].queryset = qs
 
     def save(self, commit=True):

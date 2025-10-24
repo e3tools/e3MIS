@@ -67,6 +67,9 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
+            if isinstance(cleaned_data[key], TrackableObjectInstance):
+                cleaned_data[key] = cleaned_data[key].id
+
         if self.instance is None:
             self.instance = self.model(
                 follow_up_event=self.object,
@@ -80,13 +83,13 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             self.instance.trackable_object_instance = trackable_object_instance
         self.instance.save()
 
-        # if form.files is not None:
-        #     for key, value in form.files.items():
-        #         Attachment.objects.create(
-        #             subproject_form_response=instance,
-        #             field_name=key,
-        #             file=value,
-        #         )
+        if form.files is not None:
+            for key, value in form.files.items():
+                Attachment.objects.create(
+                    follow_up_event_response=self.instance,
+                    field_name=key,
+                    file=value,
+                )
 
         messages.success(self.request, _('Your Follow Up Event was successfully created or updated.'))
 
@@ -149,7 +152,10 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                 ]
             }
 
-        form_class = parse_custom_jsonschema(schema_json, page_index=0)
+        form_class = parse_custom_jsonschema(
+            schema_json, page_index=0,
+            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit)
+        )
 
         return form_class(**self.get_form_kwargs())
 
@@ -193,3 +199,16 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             'trackableobjects:mobile:follow_up_event_detail',
             args=[self.instance.trackable_object_instance.id, self.instance.follow_up_event.id]
         )
+
+    def get_descendants(self, administrative_unit):
+        descendants = list()
+
+        def recurse(node):
+            if node.children.exists():
+                for child in node.children.all():
+                    recurse(child)
+            else:
+                descendants.append(node.id)
+
+        recurse(administrative_unit)
+        return descendants

@@ -68,13 +68,14 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         instance.save()
         instance.administrative_units.add(*post_dict.pop('administrative_units'))
 
-        # if form.files is not None:
-        #     for key, value in form.files.items():
-        #         Attachment.objects.create(
-        #             subproject_form_response=instance,
-        #             field_name=key,
-        #             file=value,
-        #         )
+        if form.files is not None:
+            for key, value in form.files.items():
+                Attachment.objects.create(
+                    trackable_object_instance=instance,
+                    field_name=key,
+                    file=value,
+                )
+
         messages.success(self.request, f"Successfully created {self.object.name} instance.")
 
         return HttpResponseRedirect(
@@ -137,7 +138,10 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
                 ]
             }
 
-        form_class = parse_custom_jsonschema(schema_json, page_index=0)
+        form_class = parse_custom_jsonschema(
+            schema_json, page_index=0,
+            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit)
+        )
 
         return form_class(**self.get_form_kwargs())
 

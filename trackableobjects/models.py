@@ -26,17 +26,23 @@ class FollowUpEvent(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     identifier_field = models.CharField(max_length=255, null=True, blank=True)
-    trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE, related_name="follow_up_events", )
+    trackable_objects = models.ManyToManyField(TrackableObject, related_name="follow_up_events", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
     is_one_off = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="follow_up_events",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
 
     def __str__(self):
         return self.name
+
+    @property
+    def trackable_objects_names(self):
+        names = [obj.name for obj in self.trackable_objects.all()]
+        return ", ".join(names)
 
 
 class FollowUpEventDependency(models.Model):
