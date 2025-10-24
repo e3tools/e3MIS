@@ -152,7 +152,10 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                 ]
             }
 
-        form_class = parse_custom_jsonschema(schema_json, page_index=0)
+        form_class = parse_custom_jsonschema(
+            schema_json, page_index=0,
+            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit)
+        )
 
         return form_class(**self.get_form_kwargs())
 
@@ -196,3 +199,16 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             'trackableobjects:mobile:follow_up_event_detail',
             args=[self.instance.trackable_object_instance.id, self.instance.follow_up_event.id]
         )
+
+    def get_descendants(self, administrative_unit):
+        descendants = list()
+
+        def recurse(node):
+            if node.children.exists():
+                for child in node.children.all():
+                    recurse(child)
+            else:
+                descendants.append(node.id)
+
+        recurse(administrative_unit)
+        return descendants
