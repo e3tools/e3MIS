@@ -79,7 +79,10 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         messages.success(self.request, f"Successfully created {self.object.name} instance.")
 
         return HttpResponseRedirect(
-            reverse_lazy('trackableobjects:mobile:trackable_object_instance_registration_list', args=[self.object.id])
+            reverse_lazy(
+                'trackableobjects:mobile:trackable_object_instance_registration_list',
+                args=[self.object.trackable_object.id]
+            )
         )
 
     def form_invalid(self, form):
@@ -110,6 +113,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
                 })
 
         context['administrative_units'] = response_list
+        context['trackable_object'] = self.object
 
         return context
 

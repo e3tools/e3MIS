@@ -110,6 +110,17 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             context['trackable_object_instance'] = TrackableObjectInstance.objects.filter(id=self.kwargs['trackable_instance']).first()
         else:
             context['trackable_object_instance'] = FollowUpEventResponse.objects.filter(id=self.kwargs['response']).first().trackable_object_instance
+
+        if context['follow_up_event'].is_one_off:
+            context['back_url'] = reverse_lazy(
+                'trackableobjects:mobile:follow_up_event_list', args=[context['trackable_object_instance'].id]
+            )
+        else:
+            context['back_url'] = reverse_lazy(
+                'trackableobjects:mobile:follow_up_event_detail',
+                args=[context['trackable_object_instance'].id, context['follow_up_event'].id]
+            )
+
         return context
 
     def get_initial(self):

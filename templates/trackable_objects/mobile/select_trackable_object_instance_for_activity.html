@@ -31,6 +31,9 @@
                     <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
                         {{ object.name }} {% translate 'instances' %}
                     </h4>
+                    <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}" class="text-right" style="font-size:1.4rem;">
+                        <i class="fas fa-home"></i>
+                    </a>
                 </div>
                 <div class="card-body">
                     <div class="row justify-content-center">
