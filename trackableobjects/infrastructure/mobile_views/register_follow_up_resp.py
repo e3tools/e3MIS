@@ -67,6 +67,9 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
+            if isinstance(cleaned_data[key], TrackableObjectInstance):
+                cleaned_data[key] = cleaned_data[key].id
+
         if self.instance is None:
             self.instance = self.model(
                 follow_up_event=self.object,

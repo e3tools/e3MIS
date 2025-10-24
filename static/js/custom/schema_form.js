@@ -301,12 +301,14 @@ $(document).ready(function () {
 
     toggleFieldTypeOptions() {
       const fieldType = $("#field-type-input").val();
+      const trackableObjectRestrictionsGroup = $("#trackable-object-restrictions-group");
       const enumOptionsGroup = $("#enum-options-group");
       const textRestrictionsGroup = $("#text-restrictions-group");
       const numberRestrictionsGroup = $("#number-restrictions-group");
       const dateRestrictionsGroup = $("#date-restrictions-group");
 
       // Hide all restriction groups first
+      trackableObjectRestrictionsGroup.hide();
       enumOptionsGroup.hide();
       textRestrictionsGroup.hide();
       numberRestrictionsGroup.hide();
@@ -327,6 +329,9 @@ $(document).ready(function () {
           break;
         case "date":
           dateRestrictionsGroup.show();
+          break;
+        case "trackable_object":
+          trackableObjectRestrictionsGroup.show();
           break;
       }
     },
@@ -435,6 +440,20 @@ $(document).ready(function () {
         }
         if (maxNumber && !isNaN(maxNumber)) {
           fieldSchema.validators.max_value = parseFloat(maxNumber);
+        }
+
+        page.page.properties[fieldName] = fieldSchema;
+      } else if ( fieldType === "trackable_object" ){
+        const fieldSchema = { type: fieldType, validators: {} };
+
+        const administrative_level_restriction = $("#btn-trackable-object-adm-lvl-yes").hasClass("active");
+        const trackable_object_type = $("#trackable-object-restriction-input").val().trim();
+
+        if (administrative_level_restriction && !isNaN(administrative_level_restriction)) {
+          fieldSchema.validators.administrative_level_restriction = administrative_level_restriction;
+        }
+        if (trackable_object_type && !isNaN(trackable_object_type)) {
+          fieldSchema.validators.trackable_object_id = trackable_object_type;
         }
 
         page.page.properties[fieldName] = fieldSchema;

@@ -108,6 +108,7 @@
                             <option value="date">Date</option>
                             <option value="file">File</option>
                             <option value="geolocation">Location</option>
+                            <option value="trackable_object">Trackable Object</option>
                         </select>
                     </div>
                     <div class="form-group" id="enum-options-group" style="display: none;">
@@ -172,6 +173,32 @@
                             <div class="col-md-6">
                                 <label for="max-date-input">Max Date</label>
                                 <input type="date" class="form-control" id="max-date-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trackable Object Restrictions (show only for trackable_object type) -->
+                    <div class="form-group" id="trackable-object-restrictions-group" style="display: none;">
+                        <label class="font-weight-bold">Trackable Object Restrictions</label>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="trackable-object-restriction-input">Type</label>
+                                <select class="form-control" id="trackable-object-restriction-input">
+                                    {% for trackable_object in trackable_objects %}
+                                        <option value="{{ trackable_object.id }}">{{ trackable_object.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label>Pull only from assigned administrative levels?</label><br>
+                                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                    <label class="btn btn-outline-danger" id="btn-trackable-object-adm-lvl-no">
+                                        <input type="radio" name="trackable-objects-options" value="no"> No
+                                    </label>
+                                    <label class="btn btn-outline-success active" id="btn-trackable-object-adm-lvl-yes">
+                                        <input type="radio" name="trackable-objects-options" value="yes" checked> Yes
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>

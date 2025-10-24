@@ -2,6 +2,7 @@ from django import forms
 from django.utils.translation import gettext as _
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from trackableobjects.models import TrackableObjectInstance
 import json
 
 
@@ -42,7 +43,7 @@ class ButtonField(forms.Field):
         return bool(value)
 
 
-def parse_custom_jsonschema(schema_json, page_index=0):
+def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=[]):
     form_def = schema_json['form'][page_index]
     page_schema = form_def['page']
     options = form_def.get('options', {}).get('fields', {})
@@ -102,6 +103,21 @@ def parse_custom_jsonschema(schema_json, page_index=0):
             fields[field_name] = forms.MultipleChoiceField(
                 choices=choices,
                 widget=forms.SelectMultiple(attrs=widget_attrs),
+                **common_args
+            )
+
+        # TrackableObject (multi)
+        elif field_schema.get('type') == 'trackable_object':
+            administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
+            queryset = TrackableObjectInstance.objects.filter(
+                trackable_object__id=validators.get('trackable_object_id', None)
+            )
+            if administrative_level_restriction == 'true':
+                queryset = queryset.filter(administrative_units__id__in=administrative_level_ids)
+            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+            fields[field_name] = forms.ModelChoiceField(
+                queryset=queryset,
+                widget=forms.Select(attrs=widget_attrs),
                 **common_args
             )
 
