@@ -81,7 +81,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         return HttpResponseRedirect(
             reverse_lazy(
                 'trackableobjects:mobile:trackable_object_instance_registration_list',
-                args=[self.object.trackable_object.id]
+                args=[self.object.id]
             )
         )
 
