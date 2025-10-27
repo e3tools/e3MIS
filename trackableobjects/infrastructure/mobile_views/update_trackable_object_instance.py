@@ -71,7 +71,12 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
         #             file=value,
         #         )
 
-        return HttpResponseRedirect(reverse_lazy('trackableobjects:mobile:select-trackable-object'))
+        return HttpResponseRedirect(
+            reverse_lazy(
+                'trackableobjects:mobile:trackable_object_instance_registration_list',
+                args=[self.object.trackable_object.id]
+            )
+        )
 
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {
@@ -104,6 +109,8 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
         context['administrative_units'] = response_list
         context['selected_administrative_units'] = context['object'].administrative_units.all().values_list('id',
                                                                                                             flat=True)
+
+        context['trackable_object'] = self.object.trackable_object
         return context
 
     def get_initial(self):

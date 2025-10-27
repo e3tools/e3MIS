@@ -16,8 +16,10 @@ class TrackableObjectCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateVi
     success_url = reverse_lazy("trackableobjects:trackable_object_list")
 
     def get_context_data(self, **kwargs):
-        kwargs.update({'trackable_objects': self.model.objects.all()})
-        kwargs.update({'groups': Group.objects.all()})
+        kwargs.update({
+            'trackable_objects': self.model.objects.all(),
+            'groups': Group.objects.all()
+        })
         return super().get_context_data(**kwargs)
 
     def form_valid(self, form):

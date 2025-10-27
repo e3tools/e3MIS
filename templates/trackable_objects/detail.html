@@ -54,7 +54,7 @@
         <div class="card-body">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <h4 class="mb-0">{% translate 'Follow up event' %}</h4>
-            <a href="{% url 'trackableobjects:follow_up_event_object_create' object.pk %}" class="btn btn-primary">
+            <a href="{% url 'trackableobjects:trackable_object_follow_up_event_object_create' object.pk %}" class="btn btn-primary">
               <i class="fas fa-plus"></i> {% translate 'Create follow up event' %}
             </a>
           </div>

@@ -87,6 +87,44 @@
         </div>
       </div>
 
+      <!-- Responses -->
+      <div class="card">
+        <div class="card-body">
+          <h4 class="mb-2">{% translate 'Trackable Objects' %}</h4>
+          <div class="table-responsive">
+            <table id="table-subprojects" class="table table-striped mb-0">
+              <thead>
+                <tr>
+                  <th class="text-nowrap">{% translate 'Actions' %}</th>
+                  <th>{% translate 'Name' %}</th>
+                  <th class="text-nowrap">{% translate 'Description' %}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for trackable_object in object.trackable_objects.all %}
+                  <tr>
+                    <td class="text-nowrap">
+                      <div class="btn-group">
+                        <a href="{% url 'trackableobjects:trackable_object_detail' trackable_object.id %}"
+                           class="btn btn-sm btn-info" title="{% translate 'Details' %}">
+                          <i class="fas fa-info-circle"></i>
+                        </a>
+                      </div>
+                    </td>
+                    <td>{{ trackable_object.name }}</td>
+                    <td>{{ trackable_object.description }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="text-muted">{% translate 'No responses yet.' %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- RIGHT: high-importance form (sticky) -->

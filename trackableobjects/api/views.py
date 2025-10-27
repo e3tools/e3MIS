@@ -46,7 +46,7 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
                     }
 
                     sub_qs_1 = FollowUpEvent.objects.filter(
-                        trackable_object__id=node['trackable_object__id'],
+                        trackable_objects__id=node['trackable_object__id'],
                         is_one_off=True
                     )
                     sub_qs_2 = FollowUpEventResponse.objects.filter(
