@@ -15,6 +15,7 @@ $(document).ready(function () {
       ]
     },
     currentPageIndex: 0,
+    editingFieldName: null, // Track which field is being edited
 
     init() {
       this.pageContainer = $("#pages-container");
@@ -33,6 +34,7 @@ $(document).ready(function () {
 
       // Handle + Add Field
       $("#add-text-field").on("click", () => {
+        this.editingFieldName = null; // Clear editing state
         this.resetFieldModal();
         this.populateConditionalFieldOptions();
         $('#addFieldModal').modal('show');
@@ -51,7 +53,6 @@ $(document).ready(function () {
 
       // Handle conditional field selection to populate values
       $("#conditional-field-select").on("change", () => {
-
         $("#conditional-operator-group-form").show();
         this.populateConditionalValues();
       });
@@ -97,6 +98,10 @@ $(document).ready(function () {
       $("#btn-required-yes").addClass("active");
       $("#btn-required-no").removeClass("active");
 
+      // Update modal title
+      $("#addFieldModalLabel").text("Add New Field");
+      $("#save-field-btn").text("Add Field");
+
       this.toggleFieldTypeOptions();
     },
 
@@ -107,14 +112,16 @@ $(document).ready(function () {
       // Clear existing options
       select.empty().append('<option value="">Select a field...</option>');
 
-      // Add all existing fields as options
+      // Add all existing fields as options (excluding the field being edited)
       const properties = page.page.properties || {};
       for (const [fieldName, fieldSchema] of Object.entries(properties)) {
-        const label = page.options.fields[fieldName]?.label || fieldName;
-        select.append($('<option>', {
-          value: fieldName,
-          text: `${label} (${fieldName})`
-        }));
+        if (fieldName !== this.editingFieldName) {
+          const label = page.options.fields[fieldName]?.label || fieldName;
+          select.append($('<option>', {
+            value: fieldName,
+            text: `${label} (${fieldName})`
+          }));
+        }
       }
     },
 
@@ -175,8 +182,96 @@ $(document).ready(function () {
       }
     },
 
+    editField(fieldName) {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const fieldSchema = page.page.properties[fieldName];
+      const fieldOptions = page.options.fields[fieldName];
+
+      // Set editing state
+      this.editingFieldName = fieldName;
+
+      // Populate basic field info
+      $("#field-name-input").val(fieldName).prop('disabled', true); // Disable field name when editing
+      $("#field-label-input").val(fieldOptions.label || "");
+      $("#field-help-input").val(fieldOptions.help || "");
+
+      // Determine and set field type
+      let fieldType = fieldSchema.type;
+      if (fieldSchema.enum) {
+        fieldType = "enum";
+        $("#enum-options-input").val(fieldSchema.enum.join(", "));
+      } else if (fieldSchema.multi) {
+        fieldType = "multi";
+        $("#enum-options-input").val(fieldSchema.multi.join(", "));
+      } else if (fieldSchema.format === "date") {
+        fieldType = "date";
+      }
+      $("#field-type-input").val(fieldType);
+
+      // Set required status
+      const isRequired = page.page.required.includes(fieldName);
+      if (isRequired) {
+        $("#btn-required-yes").addClass("active");
+        $("#btn-required-no").removeClass("active");
+      } else {
+        $("#btn-required-no").addClass("active");
+        $("#btn-required-yes").removeClass("active");
+      }
+
+      // Populate validation fields based on type
+      if (fieldSchema.validators) {
+        // String restrictions
+        $("#min-length-input").val(fieldSchema.validators.min_length || "");
+        $("#max-length-input").val(fieldSchema.validators.max_length || "");
+
+        // Number restrictions
+        $("#min-number-input").val(fieldSchema.validators.min_value || "");
+        $("#max-number-input").val(fieldSchema.validators.max_value || "");
+
+        // Date restrictions
+        $("#min-date-input").val(fieldSchema.validators.min || "");
+        $("#max-date-input").val(fieldSchema.validators.max || "");
+      }
+
+      // Populate conditional display
+      if (fieldOptions.dependencies) {
+        $("#enable-conditional").prop("checked", true);
+        $("#conditional-display-group").show();
+
+        const depFieldName = Object.keys(fieldOptions.dependencies)[0];
+        const depConfig = fieldOptions.dependencies[depFieldName];
+
+        this.populateConditionalFieldOptions();
+        $("#conditional-field-select").val(depFieldName);
+        $("#conditional-operator-select").val(depConfig.operator);
+
+        // Trigger change to populate values dropdown
+        this.populateConditionalValues();
+
+        // Set the conditional value
+        if ($("#conditional-value-select").is(":visible")) {
+          $("#conditional-value-select").val(depConfig.value);
+        } else {
+          $("#conditional-value-input").val(depConfig.value);
+        }
+      } else {
+        $("#enable-conditional").prop("checked", false);
+        $("#conditional-display-group").hide();
+      }
+
+      // Show appropriate restriction groups
+      this.toggleFieldTypeOptions();
+
+      // Update modal title and button text
+      $("#addFieldModalLabel").text("Edit Field");
+      $("#save-field-btn").text("Update Field");
+
+      // Show modal
+      $('#addFieldModal').modal('show');
+    },
+
     saveField() {
-      const fieldName = $("#field-name-input").val().trim();
+      let fieldName = $("#field-name-input").val().trim();
       const fieldType = $("#field-type-input").val();
       const isRequired = $("#btn-required-yes").hasClass("active");
 
@@ -186,13 +281,37 @@ $(document).ready(function () {
       }
 
       const currentPage = this.formSchema.form[this.currentPageIndex];
-      if (fieldName in currentPage.page.properties) {
+
+      // Check if field name already exists (but allow if we're editing that same field)
+      if (fieldName in currentPage.page.properties && fieldName !== this.editingFieldName) {
         alert("Field name already exists in this page.");
         return;
       }
 
-      this.addField(fieldName, fieldType, isRequired);
+      // If editing, save the position and remove the old field
+      let fieldPosition = null;
+      if (this.editingFieldName) {
+        const fieldNames = Object.keys(currentPage.page.properties);
+        fieldPosition = fieldNames.indexOf(this.editingFieldName);
+        this.removeFieldSilently(this.editingFieldName);
+      }
+
+      // Add/update the field
+      this.addField(fieldName, fieldType, isRequired, fieldPosition);
+
+      // Re-enable field name input and clear editing state
+      $("#field-name-input").prop('disabled', false);
+      this.editingFieldName = null;
+
       $('#addFieldModal').modal('hide');
+    },
+
+    removeFieldSilently(fieldName) {
+      // Remove field without re-rendering (used during edit)
+      const page = this.formSchema.form[this.currentPageIndex];
+      delete page.page.properties[fieldName];
+      delete page.options.fields[fieldName];
+      page.page.required = page.page.required.filter(f => f !== fieldName);
     },
 
     loadExistingSchema() {
@@ -360,8 +479,12 @@ $(document).ready(function () {
       this.renderAllPages();
     },
 
-    addField(fieldName, fieldType, isRequired) {
+    addField(fieldName, fieldType, isRequired, insertAtPosition = null) {
       const page = this.formSchema.form[this.currentPageIndex];
+
+      // Build the field schema
+      let newFieldSchema;
+      let newFieldOptions;
 
       // Handle dropdown (enum)
       if (fieldType === "enum") {
@@ -375,7 +498,7 @@ $(document).ready(function () {
           return;
         }
 
-        page.page.properties[fieldName] = {
+        newFieldSchema = {
           type: "string",
           enum: enumOptions
         };
@@ -390,12 +513,12 @@ $(document).ready(function () {
           return;
         }
 
-        page.page.properties[fieldName] = {
+        newFieldSchema = {
           type: "string",
           multi: enumOptions
         };
       } else if (fieldType === "date") {
-        const fieldSchema = {
+        newFieldSchema = {
           type: "string",
           format: "date",
           validators: {}
@@ -406,63 +529,55 @@ $(document).ready(function () {
         const maxDate = $("#max-date-input").val().trim();
 
         if (minDate) {
-          fieldSchema.validators.min = minDate;
+          newFieldSchema.validators.min = minDate;
         }
         if (maxDate) {
-          fieldSchema.validators.max = maxDate;
+          newFieldSchema.validators.max = maxDate;
         }
-
-        page.page.properties[fieldName] = fieldSchema;
       } else if (fieldType === "string") {
-        const fieldSchema = { type: fieldType, validators: {} };
+        newFieldSchema = { type: fieldType, validators: {} };
 
         // Add string length restrictions
         const minLength = $("#min-length-input").val().trim();
         const maxLength = $("#max-length-input").val().trim();
 
         if (minLength && !isNaN(minLength)) {
-          fieldSchema.validators.min_length = parseInt(minLength);
+          newFieldSchema.validators.min_length = parseInt(minLength);
         }
         if (maxLength && !isNaN(maxLength)) {
-          fieldSchema.validators.max_length = parseInt(maxLength);
+          newFieldSchema.validators.max_length = parseInt(maxLength);
         }
-
-        page.page.properties[fieldName] = fieldSchema;
       } else if (fieldType === "number" || fieldType === "integer") {
-        const fieldSchema = { type: fieldType, validators: {} };
+        newFieldSchema = { type: fieldType, validators: {} };
 
         // Add number restrictions
         const minNumber = $("#min-number-input").val().trim();
         const maxNumber = $("#max-number-input").val().trim();
 
         if (minNumber && !isNaN(minNumber)) {
-          fieldSchema.validators.min_value = parseFloat(minNumber);
+          newFieldSchema.validators.min_value = parseFloat(minNumber);
         }
         if (maxNumber && !isNaN(maxNumber)) {
-          fieldSchema.validators.max_value = parseFloat(maxNumber);
+          newFieldSchema.validators.max_value = parseFloat(maxNumber);
         }
-
-        page.page.properties[fieldName] = fieldSchema;
       } else if ( fieldType === "trackable_object" ){
-        const fieldSchema = { type: fieldType, validators: {} };
+        newFieldSchema = { type: fieldType, validators: {} };
 
         const administrative_level_restriction = $("#btn-trackable-object-adm-lvl-yes").hasClass("active");
         const trackable_object_type = $("#trackable-object-restriction-input").val().trim();
 
         if (administrative_level_restriction && !isNaN(administrative_level_restriction)) {
-          fieldSchema.validators.administrative_level_restriction = administrative_level_restriction;
+          newFieldSchema.validators.administrative_level_restriction = administrative_level_restriction;
         }
         if (trackable_object_type && !isNaN(trackable_object_type)) {
-          fieldSchema.validators.trackable_object_id = trackable_object_type;
+          newFieldSchema.validators.trackable_object_id = trackable_object_type;
         }
-
-        page.page.properties[fieldName] = fieldSchema;
       } else {
-        page.page.properties[fieldName] = {type: fieldType, validators: {} };
+        newFieldSchema = {type: fieldType, validators: {} };
       }
 
-      // Add to options
-      const fieldOptions = {
+      // Build field options
+      newFieldOptions = {
         label: $("#field-label-input").val().trim() || fieldName,
         help: $("#field-help-input").val().trim()
       };
@@ -491,7 +606,7 @@ $(document).ready(function () {
           return;
         }
 
-        fieldOptions.dependencies = {
+        newFieldOptions.dependencies = {
           [conditionalField]: {
             operator: conditionalOperator,
             value: conditionalValue
@@ -499,21 +614,175 @@ $(document).ready(function () {
         };
       }
 
-      page.options.fields[fieldName] = fieldOptions;
+      // If insertAtPosition is specified, insert at that position
+      if (insertAtPosition !== null && insertAtPosition >= 0) {
+        // Get all current field names
+        const fieldNames = Object.keys(page.page.properties);
+
+        // Create new objects with proper order
+        const newProperties = {};
+        const newFields = {};
+
+        fieldNames.forEach((name, index) => {
+          if (index === insertAtPosition) {
+            // Insert the new/edited field at this position
+            newProperties[fieldName] = newFieldSchema;
+            newFields[fieldName] = newFieldOptions;
+          }
+          newProperties[name] = page.page.properties[name];
+          newFields[name] = page.options.fields[name];
+        });
+
+        // If position is at the end, add it now
+        if (insertAtPosition >= fieldNames.length) {
+          newProperties[fieldName] = newFieldSchema;
+          newFields[fieldName] = newFieldOptions;
+        }
+
+        page.page.properties = newProperties;
+        page.options.fields = newFields;
+      } else {
+        // Add at the end (default behavior for new fields)
+        page.page.properties[fieldName] = newFieldSchema;
+        page.options.fields[fieldName] = newFieldOptions;
+      }
 
       // Add to required
       if (isRequired) {
-        page.page.required.push(fieldName);
+        if (!page.page.required.includes(fieldName)) {
+          page.page.required.push(fieldName);
+        }
+      } else {
+        // Remove from required if it was previously required
+        page.page.required = page.page.required.filter(f => f !== fieldName);
       }
 
       this.renderAllPages();
     },
 
     removeField(fieldName) {
+      // Confirm before removing
       const page = this.formSchema.form[this.currentPageIndex];
+      const fieldLabel = page.options.fields[fieldName]?.label || fieldName;
+
+      if (!confirm(`Are you sure you want to remove the field "${fieldLabel}"?`)) {
+        return;
+      }
+
+      // Check if any other fields depend on this field
+      const dependentFields = [];
+      for (const [otherFieldName, otherFieldOptions] of Object.entries(page.options.fields)) {
+        if (otherFieldName !== fieldName && otherFieldOptions.dependencies) {
+          if (Object.keys(otherFieldOptions.dependencies).includes(fieldName)) {
+            dependentFields.push(otherFieldOptions.label || otherFieldName);
+          }
+        }
+      }
+
+      if (dependentFields.length > 0) {
+        const proceed = confirm(
+          `Warning: The following fields have conditional display rules that depend on "${fieldLabel}":\n\n` +
+          `${dependentFields.join(", ")}\n\n` +
+          `These conditional rules will be removed. Continue?`
+        );
+
+        if (!proceed) {
+          return;
+        }
+
+        // Remove dependencies from other fields
+        for (const [otherFieldName, otherFieldOptions] of Object.entries(page.options.fields)) {
+          if (otherFieldName !== fieldName && otherFieldOptions.dependencies) {
+            if (Object.keys(otherFieldOptions.dependencies).includes(fieldName)) {
+              delete otherFieldOptions.dependencies;
+            }
+          }
+        }
+      }
+
       delete page.page.properties[fieldName];
       delete page.options.fields[fieldName];
       page.page.required = page.page.required.filter(f => f !== fieldName);
+      this.renderAllPages();
+    },
+
+    duplicateField(fieldName) {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const fieldSchema = page.page.properties[fieldName];
+      const fieldOptions = page.options.fields[fieldName];
+      const isRequired = page.page.required.includes(fieldName);
+
+      // Generate a unique name for the duplicated field
+      let newFieldName = `${fieldName}_copy`;
+      let counter = 1;
+      while (newFieldName in page.page.properties) {
+        counter++;
+        newFieldName = `${fieldName}_copy${counter}`;
+      }
+
+      // Deep clone the field schema and options
+      page.page.properties[newFieldName] = JSON.parse(JSON.stringify(fieldSchema));
+      page.options.fields[newFieldName] = JSON.parse(JSON.stringify(fieldOptions));
+
+      // Update label to indicate it's a copy
+      const originalLabel = fieldOptions.label || fieldName;
+      page.options.fields[newFieldName].label = `${originalLabel} (Copy)`;
+
+      // Add to required array if original was required
+      if (isRequired) {
+        page.page.required.push(newFieldName);
+      }
+
+      this.renderAllPages();
+
+      // Show a notification
+      alert(`Field duplicated as "${newFieldName}". You can edit it to customize.`);
+    },
+
+    moveFieldUp(fieldName) {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const fieldNames = Object.keys(page.page.properties);
+      const currentIndex = fieldNames.indexOf(fieldName);
+
+      if (currentIndex > 0) {
+        // Swap with previous field
+        this.swapFields(currentIndex, currentIndex - 1);
+      }
+    },
+
+    moveFieldDown(fieldName) {
+      const page = this.formSchema.form[this.currentPageIndex];
+      const fieldNames = Object.keys(page.page.properties);
+      const currentIndex = fieldNames.indexOf(fieldName);
+
+      if (currentIndex < fieldNames.length - 1) {
+        // Swap with next field
+        this.swapFields(currentIndex, currentIndex + 1);
+      }
+    },
+
+    swapFields(index1, index2) {
+      const page = this.formSchema.form[this.currentPageIndex];
+
+      // Get all field names in current order
+      const fieldNames = Object.keys(page.page.properties);
+
+      // Swap positions in the array
+      [fieldNames[index1], fieldNames[index2]] = [fieldNames[index2], fieldNames[index1]];
+
+      // Rebuild the properties and fields objects in the new order
+      const newProperties = {};
+      const newFields = {};
+
+      fieldNames.forEach(fieldName => {
+        newProperties[fieldName] = page.page.properties[fieldName];
+        newFields[fieldName] = page.options.fields[fieldName];
+      });
+
+      // Update the page with reordered fields
+      page.page.properties = newProperties;
+      page.options.fields = newFields;
+
       this.renderAllPages();
     },
 
@@ -542,9 +811,11 @@ $(document).ready(function () {
           const ul = $("<ul>").addClass("list-group");
 
           const properties = page.page.properties || {};
+          const fieldNames = Object.keys(properties);
           let counter = 0;
 
-          for (const [fieldName, fieldSchema] of Object.entries(properties)) {
+          fieldNames.forEach((fieldName, fieldIndex) => {
+            const fieldSchema = properties[fieldName];
             counter += 1;
             const isRequired = page.page.required.includes(fieldName);
             const type = this.getFieldTypeDisplay(fieldSchema);
@@ -567,9 +838,24 @@ $(document).ready(function () {
               </div>`
             }
 
+            // Show move up/down buttons if there are multiple fields
+            const showMoveButtons = fieldNames.length > 1;
+            const moveButtonsHtml = showMoveButtons ? `
+              <div class="btn-group btn-group-sm mr-1">
+                <button type="button" class="btn btn-secondary move-up-btn" data-field-name="${fieldName}" 
+                  ${fieldIndex === 0 ? 'disabled' : ''} title="Move Up">
+                  <i class="fas fa-arrow-up"></i>
+                </button>
+                <button type="button" class="btn btn-secondary move-down-btn" data-field-name="${fieldName}"
+                  ${fieldIndex === fieldNames.length - 1 ? 'disabled' : ''} title="Move Down">
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+              </div>
+            ` : '';
+
             li.html(`
               <div class="d-flex justify-content-between align-items-center">
-                <div>
+                <div class="flex-grow-1">
                   <strong>${label}</strong>
                   <small class="text-muted d-block">
                     (${type})${enumValues}${multiValues}${restrictionsText} ${isRequired ? '[required]' : ''}
@@ -577,18 +863,33 @@ $(document).ready(function () {
                   ${conditionalText ? `<small class="text-info d-block"><i class="fas fa-eye"></i> ${conditionalText}</small>` : ""}
                   ${help ? `<small class="text-muted d-block">${help}</small>` : ""}
                 </div>
-                ${is_identifier_html ? `${is_identifier_html}` : ""}
-                <button type="button" class="btn btn-sm btn-danger" data-field-name="${fieldName}">
-                  <i class="fas fa-trash-alt"></i> Remove
-                </button>
+                <div class="d-flex align-items-center">
+                  ${is_identifier_html ? `<div class="mr-2">${is_identifier_html}</div>` : ""}
+                  ${moveButtonsHtml}
+                  <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-secondary duplicate-field-btn" data-field-name="${fieldName}" title="Duplicate">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <button type="button" class="btn btn-info edit-field-btn" data-field-name="${fieldName}" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-danger remove-field-btn" data-field-name="${fieldName}" title="Remove">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             `);
 
-            // Attach event listener for remove button
-            li.find("button").on("click", () => this.removeField(fieldName));
+            // Attach event listeners
+            li.find(".edit-field-btn").on("click", () => this.editField(fieldName));
+            li.find(".remove-field-btn").on("click", () => this.removeField(fieldName));
+            li.find(".duplicate-field-btn").on("click", () => this.duplicateField(fieldName));
+            li.find(".move-up-btn").on("click", () => this.moveFieldUp(fieldName));
+            li.find(".move-down-btn").on("click", () => this.moveFieldDown(fieldName));
 
             ul.append(li);
-          }
+          });
 
           cardBody.append(ul);
           card.append(cardBody);
