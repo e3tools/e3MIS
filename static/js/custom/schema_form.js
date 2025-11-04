@@ -657,7 +657,23 @@ $(document).ready(function () {
         page.page.required = page.page.required.filter(f => f !== fieldName);
       }
 
+      // Add order tracking to field options
+      this.updateFieldOrder();
+
       this.renderAllPages();
+    },
+
+    updateFieldOrder() {
+      // Update the order property for all fields in the current page
+      const page = this.formSchema.form[this.currentPageIndex];
+      const fieldNames = Object.keys(page.page.properties);
+
+      fieldNames.forEach((fieldName, index) => {
+        if (!page.options.fields[fieldName]) {
+          page.options.fields[fieldName] = {};
+        }
+        page.options.fields[fieldName].order = index;
+      });
     },
 
     removeField(fieldName) {
@@ -782,6 +798,9 @@ $(document).ready(function () {
       // Update the page with reordered fields
       page.page.properties = newProperties;
       page.options.fields = newFields;
+
+      // Update order tracking after swap
+      this.updateFieldOrder();
 
       this.renderAllPages();
     },

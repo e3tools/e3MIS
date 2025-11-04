@@ -56,20 +56,22 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         'file': forms.FileField,
     }
 
-    fields = {}
     required_fields = set(page_schema.get('required', []))
+    field_list = []  # Store fields with their order for sorting
 
     for field_name, field_schema in page_schema.get('properties', {}).items():
         meta = options.get(field_name, {})
         label = meta.get('label', field_name)
         help_text = meta.get('help', '')
+        order = meta.get('order', 999)  # Default order if not specified
+
         common_args = {
             'label': label,
             'help_text': help_text,
             'required': field_name in required_fields,
         }
 
-        # Get validators and remove them from common_args to avoid conflicts
+        # Get validators
         validators = field_schema.get('validators', {})
 
         # Handle dependencies (conditional display)
@@ -77,20 +79,19 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         widget_attrs = {}
 
         if dependencies:
-            # Add data attributes for conditional display
-            # Format: data-depends-on="field_name" data-depends-operator="equals" data-depends-value="value"
             for dep_field, dep_config in dependencies.items():
                 widget_attrs['data-depends-on'] = dep_field
                 widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
                 widget_attrs['data-depends-value'] = dep_config.get('value', '')
-                # Initially hide the field (will be shown by JS if condition is met)
                 widget_attrs['data-conditional'] = 'true'
+
+        field_instance = None
 
         # Dropdown (enum)
         if field_schema.get('type') == 'string' and 'enum' in field_schema:
             choices = [(opt, opt) for opt in field_schema['enum']]
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
-            fields[field_name] = forms.ChoiceField(
+            field_instance = forms.ChoiceField(
                 choices=choices,
                 widget=forms.Select(attrs=widget_attrs),
                 **common_args
@@ -100,7 +101,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         elif field_schema.get('type') == 'string' and 'multi' in field_schema:
             choices = [(opt, opt) for opt in field_schema['multi']]
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
-            fields[field_name] = forms.MultipleChoiceField(
+            field_instance = forms.MultipleChoiceField(
                 choices=choices,
                 widget=forms.SelectMultiple(attrs=widget_attrs),
                 **common_args
@@ -115,7 +116,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
             if administrative_level_restriction == 'true':
                 queryset = queryset.filter(administrative_units__id__in=administrative_level_ids)
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
-            fields[field_name] = forms.ModelChoiceField(
+            field_instance = forms.ModelChoiceField(
                 queryset=queryset,
                 widget=forms.Select(attrs=widget_attrs),
                 **common_args
@@ -123,7 +124,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
 
         # Boolean
         elif field_schema.get('type') == 'bool':
-            fields[field_name] = forms.BooleanField(
+            field_instance = forms.BooleanField(
                 widget=forms.CheckboxInput(attrs=widget_attrs),
                 **common_args
             )
@@ -142,7 +143,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 date_attrs['max'] = validators_max
             date_attrs.update(widget_attrs)
 
-            fields[field_name] = forms.DateField(
+            field_instance = forms.DateField(
                 widget=forms.DateInput(attrs=date_attrs),
                 **common_args
             )
@@ -150,21 +151,21 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         elif field_schema.get('type') == 'file':
             file_attrs = {'type': 'file', 'class': 'custom-file-input'}
             file_attrs.update(widget_attrs)
-            fields[field_name] = forms.FileField(
+            field_instance = forms.FileField(
                 widget=forms.FileInput(attrs=file_attrs),
                 **common_args
             )
 
         elif field_schema.get('type') == 'geolocation':
-            fields['get_geoloc'] = ButtonField(
+            field_list.append((order, 'get_geoloc', ButtonField(
                 widget=ButtonWidget(
                     label=_('Use my location'),
                     attrs={"class": "btn btn-secondary btn-use-location"}
                 ), **common_args
-            )
+            )))
             hidden_attrs = {'class': 'coordinates'}
             hidden_attrs.update(widget_attrs)
-            fields[field_name] = forms.CharField(
+            field_instance = forms.CharField(
                 widget=forms.HiddenInput(attrs=hidden_attrs),
                 **common_args
             )
@@ -181,7 +182,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 number_attrs['max'] = validators['max_value']
             number_attrs.update(widget_attrs)
 
-            fields[field_name] = field_class(
+            field_instance = field_class(
                 widget=forms.NumberInput(attrs=number_attrs),
                 **common_args
             )
@@ -195,7 +196,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 text_attrs['maxlength'] = validators['max_length']
             text_attrs.update(widget_attrs)
 
-            fields[field_name] = forms.CharField(
+            field_instance = forms.CharField(
                 widget=forms.TextInput(attrs=text_attrs),
                 **common_args
             )
@@ -204,9 +205,17 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
             field_type = field_schema.get('type', 'string')
             field_class = field_map.get(field_type, forms.CharField)
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
-            fields[field_name] = field_class(
+            field_instance = field_class(
                 widget=forms.TextInput(attrs=widget_attrs),
                 **common_args
             )
+
+        # Add to list with order
+        if field_instance:
+            field_list.append((order, field_name, field_instance))
+
+    # Sort by order and create fields dict
+    field_list.sort(key=lambda x: x[0])
+    fields = {field_name: field_instance for _, field_name, field_instance in field_list}
 
     return type(f"DynamicFormPage{page_index}", (forms.Form,), fields)
