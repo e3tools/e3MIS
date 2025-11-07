@@ -16,10 +16,12 @@ $(document).ready(function () {
     },
     currentPageIndex: 0,
     editingFieldName: null, // Track which field is being edited
+    identifierField: null,
 
     init() {
       this.pageContainer = $("#pages-container");
       this.configTextarea = $("#config_schema");
+      this.identifierField = this.configTextarea.data("identifier");
 
       // Load existing schema if available
       this.loadExistingSchema();
@@ -846,13 +848,20 @@ $(document).ready(function () {
             const help = page.options.fields[fieldName]?.help || "";
 
             let is_identifier_html = ''
+            let is_identifier_field = ''
 
             const li = $("<li>").addClass("list-group-item");
+
+            if ( this.identifierField === fieldName ) {
+              is_identifier_field = 'checked';
+            } else {
+              is_identifier_field = '';
+            }
 
             if (type === 'string' && enumValues === '' && multiValues === '') {
               is_identifier_html = `
               <div class="custom-control custom-radio">
-                <input type="radio" id="identifierRadio${counter}" name="identifier_field" class="custom-control-input" value="${fieldName}">
+                <input type="radio" id="identifierRadio${counter}" ${is_identifier_field} name="identifier_field" class="custom-control-input" value="${fieldName}">
                 <label class="custom-control-label" for="identifierRadio${counter}">Use as identifier</label>
               </div>`
             }

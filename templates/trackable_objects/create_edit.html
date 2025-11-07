@@ -47,7 +47,9 @@
                 </div>
 
                 <!-- Hidden JSON field -->
-                <textarea id="config_schema" name="jsonForm" hidden>{{ object.jsonForm|safe }}</textarea>
+                <textarea id="config_schema" name="jsonForm"
+                          data-identifier="{{ object.identifier_field }}"
+                          hidden>{{ object.jsonForm|safe }}</textarea>
 
             </div>
             <div class="card-footer">
