@@ -3,6 +3,7 @@ from django.utils.translation import gettext as _
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from trackableobjects.models import TrackableObjectInstance
+from administrativelevels.models import AdministrativeUnit
 import json
 
 
@@ -107,7 +108,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 **common_args
             )
 
-        # TrackableObject (multi)
+        # TrackableObject
         elif field_schema.get('type') == 'trackable_object':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
             queryset = TrackableObjectInstance.objects.filter(
@@ -121,6 +122,20 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 widget=forms.Select(attrs=widget_attrs),
                 **common_args
             )
+
+        # AdministrativeLevel
+        elif field_schema.get('type') == 'administrative_level':
+            administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
+            queryset = AdministrativeUnit.objects.all()
+            if administrative_level_restriction == 'true':
+                queryset = queryset.filter(id__in=administrative_level_ids)
+            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+            field_instance = forms.ModelChoiceField(
+                queryset=queryset,
+                widget=forms.Select(attrs=widget_attrs),
+                **common_args
+            )
+            field_instance.label_from_instance = lambda obj: obj.hierarchy_name
 
         # Boolean
         elif field_schema.get('type') == 'bool':
