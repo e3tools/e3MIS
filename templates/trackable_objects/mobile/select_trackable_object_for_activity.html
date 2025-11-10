@@ -22,13 +22,16 @@
     <div class="col-12">
         <div class="card card-primary mt-3 mb-3 shadow">
             <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
-                <a onclick="window.history.go(-1); return false;" 
+                <a href="{% url 'trackableobjects:mobile:index' %}"
                    class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
                     {% translate 'Submit Activity' %}
                 </h4>
+                <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
+                    <i class="fas fa-home"></i>
+                </a>
             </div>
             <div class="card-body">
                 {% for trackable_object in trackable_objects %}
