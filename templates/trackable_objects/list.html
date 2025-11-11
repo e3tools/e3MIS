@@ -45,6 +45,17 @@
                                            class="btn btn-default btn-flat">
                                             <i class="fas fa-info"></i>
                                         </a>
+
+                                        <!-- Trigger inside the group -->
+                                        <button type="button"
+                                                class="btn btn-default btn-flat"
+                                                data-toggle="modal"
+                                                data-target="#confirmDeleteModal"
+                                                data-url="{% url 'trackableobjects:trackable_object_delete' trackable_object.pk %}"
+                                                data-name="{{ trackable_object.name }}"
+                                                title="Delete">
+                                            <i class="fas fa-trash text-danger"></i>
+                                        </button>
                                     </div>
                                 </td>
                                 <td>{{ trackable_object.name }}</td>
@@ -54,6 +65,36 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block modals %}
+    <!-- Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog"
+         aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmDeleteLabel">Confirm deletion</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    This action cannot be undone. Delete "<span class="object-name"></span>"?
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                    <form method="post" action="" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+
             </div>
         </div>
     </div>
@@ -81,6 +122,16 @@
             });
             $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();
+            });
+
+            $('#confirmDeleteModal').on('show.bs.modal', function (event) {
+                let button = $(event.relatedTarget);
+                let url = button.data('url');
+                let name = button.data('name');
+
+                let modal = $(this);
+                modal.find('form').attr('action', url);
+                modal.find('.object-name').text(name || 'this item');
             });
         });
     </script>
