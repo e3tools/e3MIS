@@ -44,7 +44,17 @@ class ButtonField(forms.Field):
         return bool(value)
 
 
-def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=[]):
+def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=[], parent_form_data=None):
+    """
+    Parse JSON schema and create Django form.
+
+    Args:
+        schema_json: The form schema
+        page_index: Current page index
+        administrative_level_ids: List of admin level IDs for filtering
+        parent_form_data: Dictionary containing parent form responses for cross-form conditionals
+                         Format: {'field_name': value, 'another_field': value, ...}
+    """
     form_def = schema_json['form'][page_index]
     page_schema = form_def['page']
     options = form_def.get('options', {}).get('fields', {})
@@ -81,10 +91,28 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
 
         if dependencies:
             for dep_field, dep_config in dependencies.items():
+                # Check if this is a cross-form dependency
+                is_parent_dependency = dep_config.get('is_parent_form', False)
+
                 widget_attrs['data-depends-on'] = dep_field
                 widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
                 widget_attrs['data-depends-value'] = dep_config.get('value', '')
                 widget_attrs['data-conditional'] = 'true'
+                widget_attrs['data-is-parent-form'] = 'true' if is_parent_dependency else 'false'
+
+                # If it's a parent form dependency, and we have parent data, evaluate immediately
+                if is_parent_dependency and parent_form_data:
+                    parent_value = parent_form_data.get(dep_field)
+                    should_show = evaluate_condition(
+                        parent_value,
+                        dep_config.get('operator', 'equals'),
+                        dep_config.get('value', '')
+                    )
+
+                    # If condition is not met, hide the field initially
+                    if not should_show:
+                        widget_attrs['style'] = 'display: none;'
+                        widget_attrs['data-initially-hidden'] = 'true'
 
         field_instance = None
 
@@ -234,3 +262,56 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
     fields = {field_name: field_instance for _, field_name, field_instance in field_list}
 
     return type(f"DynamicFormPage{page_index}", (forms.Form,), fields)
+
+
+def evaluate_condition(field_value, operator, expected_value):
+    """
+    Evaluate a conditional expression.
+
+    Args:
+        field_value: The actual value from the form
+        operator: The comparison operator (equals, not_equals, contains, greater_than, less_than, between)
+        expected_value: The expected value to compare against
+
+    Returns:
+        bool: True if condition is met, False otherwise
+    """
+    # Handle None/empty values
+    if field_value is None or field_value == '':
+        return False
+
+    # Convert to string for comparison if needed
+    field_value_str = str(field_value)
+    expected_value_str = str(expected_value)
+
+    if operator == 'equals':
+        return field_value_str == expected_value_str
+
+    elif operator == 'not_equals':
+        return field_value_str != expected_value_str
+
+    elif operator == 'contains':
+        return expected_value_str in field_value_str
+
+    elif operator == 'greater_than':
+        try:
+            return float(field_value) > float(expected_value)
+        except (ValueError, TypeError):
+            return False
+
+    elif operator == 'less_than':
+        try:
+            return float(field_value) < float(expected_value)
+        except (ValueError, TypeError):
+            return False
+
+    elif operator == 'between':
+        # Expected format: "min,max"
+        try:
+            min_val, max_val = expected_value.split(',')
+            field_val = float(field_value)
+            return float(min_val) <= field_val <= float(max_val)
+        except (ValueError, TypeError, AttributeError):
+            return False
+
+    return False

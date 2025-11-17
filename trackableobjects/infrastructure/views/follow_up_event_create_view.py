@@ -1,4 +1,5 @@
-from django.views.generic.edit import CreateView, FormView
+import json
+from django.views.generic.edit import CreateView, UpdateView
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.utils.translation import gettext as _
@@ -14,11 +15,52 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
     template_name = "trackable_objects/follow_up_event_create_edit.html"
 
     def get_context_data(self, **kwargs):
-        kwargs.update({
+        context = super().get_context_data(**kwargs)
+
+        context.update({
             'follow_up_event_objects': self.model.objects.all(),
             'trackable_objects': TrackableObject.objects.all(),
         })
-        return super().get_context_data(**kwargs)
+
+        # NEW: Pass ALL available schemas for dynamic loading
+        context['all_follow_up_event_schemas_json'] = self.get_all_follow_up_event_schemas_json()
+        context['all_trackable_object_schemas_json'] = self.get_all_trackable_object_schemas_json()
+
+        return context
+
+    def get_all_follow_up_event_schemas_json(self):
+        """
+        Get ALL FollowUpEvent schemas as a JSON object
+        Key: FollowUpEvent ID, Value: {id, name, schema}
+        """
+        schemas = {}
+
+        for event in FollowUpEvent.objects.all():
+            if event.jsonForm:
+                schemas[str(event.id)] = {
+                    'id': event.id,
+                    'name': event.name,
+                    'schema': event.jsonForm
+                }
+
+        return json.dumps(schemas)
+
+    def get_all_trackable_object_schemas_json(self):
+        """
+        Get ALL TrackableObject schemas as a JSON object
+        Key: TrackableObject ID, Value: {id, name, schema}
+        """
+        schemas = {}
+
+        for obj in TrackableObject.objects.all():
+            if obj.jsonForm:
+                schemas[str(obj.id)] = {
+                    'id': obj.id,
+                    'name': obj.name,
+                    'schema': obj.jsonForm
+                }
+
+        return json.dumps(schemas)
 
     def form_valid(self, form):
         response = super().form_valid(form)

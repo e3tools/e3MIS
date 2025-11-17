@@ -55,24 +55,33 @@
 {% block extrajs %}
 <script src="{% static 'AdminLTE/plugins/bs-custom-file-input/bs-custom-file-input.js' %}"></script>
 <script type="text/javascript">
-    $(Document).ready(function () {
+    $(document).ready(function () {
         
         bsCustomFileInput.init();
+        
+        // Load parent form data if available (passed from the view)
+        let parentFormData = {};
+        {% if parent_form_data_json %}
+            parentFormData = {{ parent_form_data_json|safe }};
+            console.log("📥 Parent form data loaded:", parentFormData);
+        {% endif %}
         
         // Initialize conditional display on page load
         initConditionalDisplay();
         
         // Re-evaluate whenever any form field changes
-        $('form').on('change', 'input, select, textarea', function() {
+        $('form').on('change keyup', 'input, select, textarea', function() {
             evaluateAllConditionalFields();
         });
     
         function initConditionalDisplay() {
-            // Hide all conditional fields initially
+            console.log("🚀 Initializing conditional display logic");
+            
+            // Initially hide all conditional fields
             $('[data-conditional="true"]').each(function() {
                 const $field = $(this);
                 const $formGroup = $field.closest('.form-group');
-                $formGroup.hide();
+                // Don't hide initially - let evaluation determine visibility
             });
     
             // Evaluate all conditions on load
@@ -87,40 +96,94 @@
                 const dependsOn = $field.data('depends-on');
                 const operator = $field.data('depends-operator');
                 const expectedValue = String($field.data('depends-value'));
+                const isParentForm = $field.data('is-parent-form') === 'true' || $field.data('is-parent-form') === true;
     
-                // Find the field this depends on
-                const $dependentField = $(`[name="${dependsOn}"]`);
-                
-                if ($dependentField.length === 0) {
-                    console.warn(`Dependent field "${dependsOn}" not found`);
+                if (!dependsOn) {
+                    console.warn("Field has conditional flag but no depends-on value");
                     return;
                 }
     
-                // Get the current value of the dependent field
                 let actualValue;
-                if ($dependentField.attr('type') === 'checkbox') {
-                    actualValue = $dependentField.is(':checked') ? 'true' : 'false';
-                } else if ($dependentField.attr('type') === 'radio') {
-                    actualValue = $dependentField.filter(':checked').val() || '';
+                
+                // Get value from parent form or current form
+                if (isParentForm) {
+                    // Get value from parent form data
+                    actualValue = parentFormData[dependsOn];
+                    console.log(`🔍 Checking parent form field "${dependsOn}": ${actualValue}`);
+                    
+                    if (actualValue === undefined || actualValue === null) {
+                        console.warn(`⚠️ Parent form field "${dependsOn}" not found in parent data`);
+                        $formGroup.hide();
+                        return;
+                    }
                 } else {
-                    actualValue = $dependentField.val() || '';
+                    // Get value from current form
+                    const $dependentField = $(`[name="${dependsOn}"]`);
+                    
+                    if ($dependentField.length === 0) {
+                        console.warn(`⚠️ Dependent field "${dependsOn}" not found in current form`);
+                        $formGroup.hide();
+                        return;
+                    }
+                    
+                    // Get the current value of the dependent field
+                    actualValue = getFieldValue($dependentField);
+                    console.log(`🔍 Checking current form field "${dependsOn}": ${actualValue}`);
                 }
     
                 // Evaluate the condition
                 const shouldShow = evaluateCondition(String(actualValue), operator, expectedValue);
+                
+                console.log(`📊 Condition result for ${$field.attr('name') || 'field'}: ${shouldShow}`);
+                console.log(`   - Depends on: ${dependsOn} (${isParentForm ? 'parent form' : 'current form'})`);
+                console.log(`   - Operator: ${operator}`);
+                console.log(`   - Expected: ${expectedValue}`);
+                console.log(`   - Actual: ${actualValue}`);
     
-                // Show or hide the form group
+                // Show or hide the form group with animation
                 if (shouldShow) {
                     $formGroup.slideDown(200);
+                    // Re-enable required validation if needed
+                    if ($field.data('originally-required')) {
+                        $field.prop('required', true);
+                    }
                 } else {
                     $formGroup.slideUp(200);
-                    // Clear the value when hiding (optional)
+                    // Disable required validation when hidden
+                    if ($field.prop('required')) {
+                        $field.data('originally-required', true);
+                        $field.prop('required', false);
+                    }
+                    // Clear the value when hiding
                     clearFieldValue($field);
                 }
             });
         }
+        
+        /**
+         * Get the value of a field (handles different input types)
+         */
+        function getFieldValue($field) {
+            if ($field.is(':checkbox')) {
+                return $field.is(':checked') ? 'true' : 'false';
+            } else if ($field.is(':radio')) {
+                return $field.filter(':checked').val() || '';
+            } else if ($field.is('select[multiple]')) {
+                return $field.val() || [];
+            } else {
+                return $field.val() || '';
+            }
+        }
     
+        /**
+         * Evaluate a conditional expression
+         */
         function evaluateCondition(actualValue, operator, expectedValue) {
+            // Handle empty/null values
+            if (actualValue === 'undefined' || actualValue === 'null' || actualValue === '') {
+                return false;
+            }
+            
             switch(operator) {
                 case 'equals':
                     return actualValue === expectedValue;
@@ -132,16 +195,43 @@
                     return actualValue.toLowerCase().includes(expectedValue.toLowerCase());
                 
                 case 'greater_than':
-                    return parseFloat(actualValue) > parseFloat(expectedValue);
+                    try {
+                        return parseFloat(actualValue) > parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
                 
                 case 'less_than':
-                    return parseFloat(actualValue) < parseFloat(expectedValue);
+                    try {
+                        return parseFloat(actualValue) < parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
                 
                 case 'greater_or_equal':
-                    return parseFloat(actualValue) >= parseFloat(expectedValue);
+                    try {
+                        return parseFloat(actualValue) >= parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
                 
                 case 'less_or_equal':
-                    return parseFloat(actualValue) <= parseFloat(expectedValue);
+                    try {
+                        return parseFloat(actualValue) <= parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
+                
+                case 'between':
+                    // Expected format: "min,max"
+                    try {
+                        const [minVal, maxVal] = expectedValue.split(',').map(v => parseFloat(v.trim()));
+                        const fieldVal = parseFloat(actualValue);
+                        return fieldVal >= minVal && fieldVal <= maxVal;
+                    } catch(e) {
+                        console.error(`Error evaluating 'between' condition:`, e);
+                        return false;
+                    }
                 
                 default:
                     console.warn(`Unknown operator: ${operator}`);
@@ -149,6 +239,9 @@
             }
         }
     
+        /**
+         * Clear the value of a field
+         */
         function clearFieldValue($field) {
             const fieldType = $field.attr('type');
             
@@ -160,7 +253,19 @@
                 $field.val('');
             }
         }
-                
+        
+        // Expose functions globally if needed for debugging
+        window.FormConditionalDisplay = {
+            evaluateAllConditionalFields: evaluateAllConditionalFields,
+            evaluateCondition: evaluateCondition,
+            setParentFormData: function(data) {
+                parentFormData = data;
+                console.log("📥 Parent form data updated:", parentFormData);
+                evaluateAllConditionalFields();
+            }
+        };
+        
+        console.log("✅ Conditional display initialization complete");
     });
 </script>
 {% endblock %}

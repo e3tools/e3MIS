@@ -20,7 +20,7 @@
                     <!-- Form is_one_off input -->
                     {% bootstrap_field form.is_one_off form_group_class="col-md-3 col-6 mt-4" label_class="form-check-input" %}
                     
-                    <!-- Form is_one_off input -->
+                    <!-- Form is_active input -->
                     {% bootstrap_field form.is_active form_group_class="col-md-3 col-6 mt-4" label_class="form-check-input" %}
                 </div>
                 
@@ -42,7 +42,7 @@
 
                 <!-- Page and field controls -->
                 <div class="form-group mt-3">
-                    <!-- TODO add page is dissabled for now must enable it once we are ready with the form parser -->
+                    <!-- TODO add page is disabled for now must enable it once we are ready with the form parser -->
                     <label>Pages</label><br>
                     <button type="button" class="btn btn-sm btn-primary mb-2" id="add-page-btn" disabled>
                         <i class="fas fa-plus"></i> Add Page
@@ -74,7 +74,7 @@
     <!-- Add Field Modal -->
     <div class="modal fade" id="addFieldModal" tabindex="-1" role="dialog" aria-labelledby="addFieldModalLabel"
          aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
 
                 <div class="modal-header bg-primary">
@@ -104,6 +104,7 @@
                         <select class="form-control" id="field-type-input">
                             <option value="string">Text</option>
                             <option value="number">Number</option>
+                            <option value="integer">Integer</option>
                             <option value="bool">Boolean</option>
                             <option value="enum">Dropdown</option>
                             <option value="multi">Multiselect</option>
@@ -225,7 +226,13 @@
                                     <label for="conditional-field-select">Show this field when:</label>
                                     <select class="form-control" id="conditional-field-select">
                                         <option value="">Select a field...</option>
+                                        <!-- Options will be populated dynamically by JavaScript -->
+                                        <!-- Will include both "Current Form" and "Parent Form" optgroups -->
                                     </select>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Fields from parent forms (TrackableObjects or parent FollowUpEvents) are shown in a separate group
+                                    </small>
                                 </div>
 
                                 <div class="form-group" id="conditional-operator-group-form">
@@ -236,18 +243,23 @@
                                         <option value="contains">Contains</option>
                                         <option value="greater_than">Greater Than (>)</option>
                                         <option value="less_than">Less Than (<)</option>
+                                        <option value="between">Between</option>
                                     </select>
+                                    <small class="form-text text-muted">
+                                        <strong>Between</strong> operator: Enter value as "min,max" (e.g., "1,5" for values between 1 and 5)
+                                    </small>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="conditional-value-input">Value</label>
                                     <input type="text" class="form-control" id="conditional-value-input"
-                                           placeholder="Enter value">
+                                           placeholder="Enter value (e.g., 'Yes' or '1,5' for between)">
                                     <select class="form-control" id="conditional-value-select" style="display: none;">
                                         <option value="">Select a value...</option>
                                     </select>
-                                    <small class="form-text text-muted">The field will only show when this condition is
-                                        met</small>
+                                    <small class="form-text text-muted">
+                                        The field will only show when this condition is met. For "between", use format: min,max
+                                    </small>
                                 </div>
                             </div>
                         </div>
@@ -267,4 +279,24 @@
 
 {% block extrajs %}
     <script src="{% static 'js/custom/schema_form.js' %}"></script>
+    
+    <script>
+        // Load ALL available FollowUpEvent schemas for dynamic loading
+        {% if all_follow_up_event_schemas_json %}
+            window.allFollowUpEventSchemas = {{ all_follow_up_event_schemas_json|safe }};
+            console.log("📋 All FollowUpEvent schemas loaded:", Object.keys(window.allFollowUpEventSchemas).length);
+        {% else %}
+            window.allFollowUpEventSchemas = {};
+            console.log("ℹ️ No FollowUpEvent schemas available");
+        {% endif %}
+
+        // Load ALL available TrackableObject schemas for dynamic loading
+        {% if all_trackable_object_schemas_json %}
+            window.allTrackableObjectSchemas = {{ all_trackable_object_schemas_json|safe }};
+            console.log("📋 All TrackableObject schemas loaded:", Object.keys(window.allTrackableObjectSchemas).length);
+        {% else %}
+            window.allTrackableObjectSchemas = {};
+            console.log("ℹ️ No TrackableObject schemas available");
+        {% endif %}
+    </script>
 {% endblock %}
