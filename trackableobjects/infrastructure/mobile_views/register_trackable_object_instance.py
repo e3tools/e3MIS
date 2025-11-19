@@ -60,7 +60,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
-            if isinstance(cleaned_data[key], TrackableObjectInstance):
+            if isinstance(cleaned_data[key], TrackableObjectInstance) or isinstance(cleaned_data[key], AdministrativeUnit):
                 cleaned_data[key] = cleaned_data[key].id
 
         instance = self.model(
