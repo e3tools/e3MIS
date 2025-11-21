@@ -1,4 +1,5 @@
 import datetime
+import json
 from django.views.generic.edit import CreateView
 from django.template.response import TemplateResponse
 from django.http import HttpResponseRedirect
@@ -98,18 +99,22 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {
             'form': form,
-            'custom_form': self.get_custom_form(),  # ensure custom form is re-included on error
+            'custom_form': self.get_custom_form(),
             'object': self.object,
+            'parent_form_data_json': self.get_parent_form_data_json(),
         })
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
         context['follow_up_event'] = FollowUpEvent.objects.filter(id=self.kwargs['follow_up_event']).first()
+
         if 'trackable_instance' in self.kwargs:
-            context['trackable_object_instance'] = TrackableObjectInstance.objects.filter(id=self.kwargs['trackable_instance']).first()
+            context['trackable_object_instance'] = TrackableObjectInstance.objects.filter(
+                id=self.kwargs['trackable_instance']).first()
         else:
-            context['trackable_object_instance'] = FollowUpEventResponse.objects.filter(id=self.kwargs['response']).first().trackable_object_instance
+            context['trackable_object_instance'] = FollowUpEventResponse.objects.filter(
+                id=self.kwargs['response']).first().trackable_object_instance
 
         if context['follow_up_event'].is_one_off:
             context['back_url'] = reverse_lazy(
@@ -121,7 +126,64 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                 args=[context['trackable_object_instance'].id, context['follow_up_event'].id]
             )
 
+        # NEW: Add parent form data to context
+        context['parent_form_data_json'] = self.get_parent_form_data_json()
+
         return context
+
+    def get_parent_form_data(self):
+        """
+        Collect parent form data from:
+        1. TrackableObjectInstance (parent form)
+        2. Parent FollowUpEvent responses (if any dependencies exist)
+
+        Returns a dictionary of field_name: value pairs
+        """
+        parent_form_data = {}
+
+        # Get the trackable object instance
+        if 'trackable_instance' in self.kwargs:
+            trackable_object_instance = TrackableObjectInstance.objects.filter(
+                id=self.kwargs['trackable_instance']
+            ).first()
+        elif 'response' in self.kwargs:
+            response = FollowUpEventResponse.objects.filter(id=self.kwargs['response']).first()
+            trackable_object_instance = response.trackable_object_instance if response else None
+        else:
+            trackable_object_instance = None
+
+        # Collect data from TrackableObjectInstance
+        if trackable_object_instance and trackable_object_instance.jsonForm:
+            parent_form_data.update(trackable_object_instance.jsonForm)
+
+        # Collect data from parent FollowUpEvent responses
+        follow_up_event = self.object
+        if follow_up_event:
+            # Get parent dependencies (events this event depends on)
+            parent_dependencies = follow_up_event.dependencies_children.all()
+
+            for dependency in parent_dependencies:
+                parent_event = dependency.parent
+
+                # Get the most recent response for this parent event
+                if trackable_object_instance:
+                    parent_response = FollowUpEventResponse.objects.filter(
+                        follow_up_event=parent_event,
+                        trackable_object_instance=trackable_object_instance
+                    ).order_by('-created_at').first()
+
+                    if parent_response and parent_response.jsonForm:
+                        # Merge parent response data
+                        parent_form_data.update(parent_response.jsonForm)
+
+        return parent_form_data
+
+    def get_parent_form_data_json(self):
+        """
+        Get parent form data as JSON string for template
+        """
+        parent_data = self.get_parent_form_data()
+        return json.dumps(serialize_for_json(parent_data))
 
     def get_initial(self):
         """Return the initial data to use for forms on this view."""
@@ -163,9 +225,14 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                 ]
             }
 
+        # NEW: Pass parent form data to the parser
+        parent_form_data = self.get_parent_form_data()
+
         form_class = parse_custom_jsonschema(
-            schema_json, page_index=0,
-            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit)
+            schema_json,
+            page_index=0,
+            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit),
+            parent_form_data=parent_form_data  # NEW: Pass parent data
         )
 
         return form_class(**self.get_form_kwargs())

@@ -29,6 +29,7 @@ urlpatterns = [
 
 urlpatterns += i18n_patterns(
     path('admin/', admin.site.urls),
+    path('api/v1/', include('api.urls')),
     path('', include('authorization.urls')),
     path('administrative-levels/', include('administrativelevels.urls')),
     path('subprojects/', include('subprojects.urls')),

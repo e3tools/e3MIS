@@ -44,7 +44,17 @@ class ButtonField(forms.Field):
         return bool(value)
 
 
-def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=[]):
+def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=[], parent_form_data=None):
+    """
+    Parse JSON schema and create Django form.
+
+    Args:
+        schema_json: The form schema
+        page_index: Current page index
+        administrative_level_ids: List of admin level IDs for filtering
+        parent_form_data: Dictionary containing parent form responses for cross-form conditionals
+                         Format: {'field_name': value, 'another_field': value, ...}
+    """
     form_def = schema_json['form'][page_index]
     page_schema = form_def['page']
     options = form_def.get('options', {}).get('fields', {})
@@ -80,11 +90,66 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         widget_attrs = {}
 
         if dependencies:
-            for dep_field, dep_config in dependencies.items():
-                widget_attrs['data-depends-on'] = dep_field
-                widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
-                widget_attrs['data-depends-value'] = dep_config.get('value', '')
+            # NEW: Handle multiple conditions
+            if 'conditions' in dependencies:
+                conditions = dependencies['conditions']
+
+                # Evaluate all conditions
+                if parent_form_data:
+                    results = []
+                    for condition in conditions:
+                        dep_field = condition.get('field')
+                        is_parent_dependency = condition.get('is_parent_form', False)
+
+                        if is_parent_dependency:
+                            parent_value = parent_form_data.get(dep_field)
+                            result = evaluate_condition(
+                                parent_value,
+                                condition.get('operator', 'equals'),
+                                condition.get('value', '')
+                            )
+                            results.append(result)
+                        else:
+                            # For current form dependencies, we can't evaluate at render time
+                            # Let JavaScript handle it
+                            results.append(None)
+
+                    # Evaluate combined logic
+                    final_result = evaluate_multiple_conditions(conditions, results)
+
+                    # If condition is not met, hide the field initially
+                    if final_result is False:
+                        widget_attrs['style'] = 'display: none;'
+                        widget_attrs['data-initially-hidden'] = 'true'
+
+                # Set data attributes for JavaScript evaluation
                 widget_attrs['data-conditional'] = 'true'
+                widget_attrs['data-conditions'] = json.dumps(conditions)
+
+            else:
+                # OLD: Single condition (backward compatibility)
+                for dep_field, dep_config in dependencies.items():
+                    is_parent_dependency = dep_config.get('is_parent_form', False)
+
+                    widget_attrs['data-depends-on'] = dep_field
+                    widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
+                    widget_attrs['data-depends-value'] = dep_config.get('value', '')
+                    widget_attrs['data-conditional'] = 'true'
+                    widget_attrs['data-is-parent-form'] = 'true' if is_parent_dependency else 'false'
+
+                    # If it's a parent form dependency and we have parent data, evaluate immediately
+                    if is_parent_dependency and parent_form_data:
+                        parent_value = parent_form_data.get(dep_field)
+                        should_show = evaluate_condition(
+                            parent_value,
+                            dep_config.get('operator', 'equals'),
+                            dep_config.get('value', '')
+                        )
+
+                        # If condition is not met, hide the field initially
+                        if not should_show:
+                            widget_attrs['style'] = 'display: none;'
+                            widget_attrs['data-initially-hidden'] = 'true'
 
         field_instance = None
 
@@ -152,10 +217,23 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 'type': 'date',
                 'class': 'form-control'
             }
+
+            # Handle "today" as a dynamic value
+            import datetime
+            today_str = datetime.date.today().isoformat()
+
             if validator_min:
-                date_attrs['min'] = validator_min
+                if validator_min.lower() == 'today':
+                    date_attrs['min'] = today_str
+                else:
+                    date_attrs['min'] = validator_min
+
             if validators_max:
-                date_attrs['max'] = validators_max
+                if validators_max.lower() == 'today':
+                    date_attrs['max'] = today_str
+                else:
+                    date_attrs['max'] = validators_max
+
             date_attrs.update(widget_attrs)
 
             field_instance = forms.DateField(
@@ -234,3 +312,91 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
     fields = {field_name: field_instance for _, field_name, field_instance in field_list}
 
     return type(f"DynamicFormPage{page_index}", (forms.Form,), fields)
+
+
+def evaluate_multiple_conditions(conditions, results):
+    """
+    Evaluate multiple conditions with AND/OR logic.
+
+    Args:
+        conditions: List of condition objects with 'logic' property
+        results: List of boolean results for each condition
+
+    Returns:
+        bool: Final result after applying all logic operators
+    """
+    if not conditions or not results:
+        return True
+
+    # Filter out None results (from current form conditions we can't evaluate)
+    # If any result is None, we can't determine the final result server-side
+    if None in results:
+        return None
+
+    # Start with first condition result
+    final_result = results[0]
+
+    # Apply each logic operator
+    for i in range(len(conditions) - 1):
+        logic = conditions[i].get('logic', 'AND')
+        next_result = results[i + 1]
+
+        if logic == 'AND':
+            final_result = final_result and next_result
+        elif logic == 'OR':
+            final_result = final_result or next_result
+
+    return final_result
+
+
+def evaluate_condition(field_value, operator, expected_value):
+    """
+    Evaluate a conditional expression.
+
+    Args:
+        field_value: The actual value from the form
+        operator: The comparison operator (equals, not_equals, contains, greater_than, less_than, between)
+        expected_value: The expected value to compare against
+
+    Returns:
+        bool: True if condition is met, False otherwise
+    """
+    # Handle None/empty values
+    if field_value is None or field_value == '':
+        return False
+
+    # Convert to string for comparison if needed
+    field_value_str = str(field_value)
+    expected_value_str = str(expected_value)
+
+    if operator == 'equals':
+        return field_value_str == expected_value_str
+
+    elif operator == 'not_equals':
+        return field_value_str != expected_value_str
+
+    elif operator == 'contains':
+        return expected_value_str in field_value_str
+
+    elif operator == 'greater_than':
+        try:
+            return float(field_value) > float(expected_value)
+        except (ValueError, TypeError):
+            return False
+
+    elif operator == 'less_than':
+        try:
+            return float(field_value) < float(expected_value)
+        except (ValueError, TypeError):
+            return False
+
+    elif operator == 'between':
+        # Expected format: "min,max"
+        try:
+            min_val, max_val = expected_value.split(',')
+            field_val = float(field_value)
+            return float(min_val) <= field_val <= float(max_val)
+        except (ValueError, TypeError, AttributeError):
+            return False
+
+    return False
