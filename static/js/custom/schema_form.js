@@ -18,6 +18,7 @@ $(document).ready(function () {
         editingFieldName: null,
         identifierField: null,
         parentFormFields: [], // Store parent form fields for cross-form conditionals
+        currentConditions: [], // Track conditions being edited for multiple conditions
         allFollowUpEventSchemas: {}, // Cache of all FollowUpEvent schemas
         allTrackableObjectSchemas: {}, // Cache of all TrackableObject schemas
 
@@ -38,10 +39,10 @@ $(document).ready(function () {
             // Initial render
             this.renderAllPages();
 
-            // NEW: Watch for changes in Dependencies field
+            // Watch for changes in Dependencies field
             this.watchDependenciesField();
 
-            // NEW: Watch for changes in Trackable Objects field
+            // Watch for changes in Trackable Objects field
             this.watchTrackableObjectsField();
 
             // Handle + Add Page
@@ -77,6 +78,11 @@ $(document).ready(function () {
             // Handle Save Field
             $("#save-field-btn").on("click", () => {
                 this.saveField();
+            });
+
+            // Handle Add Condition button
+            $("#add-condition-btn").on("click", () => {
+                this.addNewCondition();
             });
 
             // Optional debug
@@ -290,11 +296,8 @@ $(document).ready(function () {
             // Reset conditional fields
             $("#enable-conditional").prop("checked", false);
             $("#conditional-display-group").hide();
-            $("#conditional-field-select").val("");
-            $("#conditional-form-source").val("current");
-            $("#conditional-operator-select").val("equals");
-            $("#conditional-value-input").val("").attr("type", "text");
-            $("#conditional-value-select").val("").hide();
+            this.currentConditions = [];
+            this.renderConditionsList();
 
             $("#btn-required-yes").addClass("active");
             $("#btn-required-no").removeClass("active");
@@ -304,6 +307,226 @@ $(document).ready(function () {
             $("#save-field-btn").text("Add Field");
 
             this.toggleFieldTypeOptions();
+        },
+
+        renderConditionsList() {
+            const container = $("#conditions-list");
+            container.empty();
+
+            if (this.currentConditions.length === 0) {
+                container.html('<p class="text-muted"><em>No conditions added yet. Click "Add Condition" below.</em></p>');
+                return;
+            }
+
+            this.currentConditions.forEach((condition, index) => {
+                const conditionCard = this.createConditionCard(condition, index);
+                container.append(conditionCard);
+
+                // Add AND/OR selector if not the last condition
+                if (index < this.currentConditions.length - 1) {
+                    const logicSelector = this.createLogicSelector(index);
+                    container.append(logicSelector);
+                }
+            });
+
+            // Update the logic preview
+            this.updateLogicPreview();
+        },
+
+        createConditionCard(condition, index) {
+            const formSource = condition.is_parent_form ? "Parent Form" : "Current Form";
+            const operatorDisplay = {
+                'equals': '=',
+                'not_equals': '≠',
+                'contains': 'contains',
+                'greater_than': '>',
+                'less_than': '<',
+                'between': 'between'
+            }[condition.operator] || condition.operator;
+
+            const card = $('<div>', {
+                class: 'condition-card card card-light mb-2',
+                'data-index': index
+            });
+
+            const cardBody = $('<div>', {
+                class: 'card-body p-2'
+            });
+
+            cardBody.html(`
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="flex-grow-1">
+            <strong>${index + 1}.</strong>
+            <span class="badge badge-info">${formSource}</span>
+            <span class="ml-1">"${condition.field_label || condition.field}"</span>
+            <span class="badge badge-secondary ml-1">${operatorDisplay}</span>
+            <span class="ml-1">"${condition.value}"</span>
+          </div>
+          <div>
+            <button type="button" class="btn btn-sm btn-warning edit-condition-btn" data-index="${index}" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-danger delete-condition-btn" data-index="${index}" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `);
+
+            card.append(cardBody);
+
+            // Attach event handlers
+            card.find('.edit-condition-btn').on('click', () => this.editCondition(index));
+            card.find('.delete-condition-btn').on('click', () => this.deleteCondition(index));
+
+            return card;
+        },
+
+        createLogicSelector(index) {
+            const currentLogic = this.currentConditions[index].logic || 'AND';
+
+            const selector = $('<div>', {
+                class: 'logic-selector text-center mb-2'
+            });
+
+            selector.html(`
+        <div class="btn-group btn-group-sm" role="group">
+          <button type="button" class="btn btn-outline-primary logic-btn ${currentLogic === 'AND' ? 'active' : ''}" data-index="${index}" data-logic="AND">
+            AND
+          </button>
+          <button type="button" class="btn btn-outline-success logic-btn ${currentLogic === 'OR' ? 'active' : ''}" data-index="${index}" data-logic="OR">
+            OR
+          </button>
+        </div>
+      `);
+
+            selector.find('.logic-btn').on('click', (e) => {
+                const $btn = $(e.currentTarget);
+                const idx = $btn.data('index');
+                const logic = $btn.data('logic');
+
+                this.currentConditions[idx].logic = logic;
+
+                // Update button states
+                $btn.siblings().removeClass('active');
+                $btn.addClass('active');
+
+                this.updateLogicPreview();
+            });
+
+            return selector;
+        },
+
+        updateLogicPreview() {
+            const preview = $("#logic-preview");
+
+            if (this.currentConditions.length === 0) {
+                preview.hide();
+                return;
+            }
+
+            if (this.currentConditions.length === 1) {
+                preview.html('<small class="text-muted">Show field when condition 1 is true</small>').show();
+                return;
+            }
+
+            let logicText = '(';
+            this.currentConditions.forEach((condition, index) => {
+                logicText += `Condition${index + 1}`;
+                if (index < this.currentConditions.length - 1) {
+                    logicText += ` ${condition.logic || 'AND'} `;
+                }
+            });
+            logicText += ')';
+
+            preview.html(`<small class="text-info"><strong>Logic:</strong> ${logicText}</small>`).show();
+        },
+
+        addNewCondition() {
+
+            // Get values from the condition form
+            const selectedOption = $("#conditional-field-select option:selected");
+            const field = selectedOption.val();
+            const fieldLabel = selectedOption.text();
+            const formSource = selectedOption.data('form-source');
+            const operator = $("#conditional-operator-select").val();
+
+            let value;
+            if ($("#conditional-value-select").is(":visible")) {
+                value = $("#conditional-value-select").val();
+            } else {
+                value = $("#conditional-value-input").val().trim();
+            }
+
+            // Validate
+            if (!field) {
+                alert("Please select a field.");
+                return false;
+            }
+
+            if (!value) {
+                alert("Please enter a value.");
+                return false;
+            }
+
+            // Create condition object
+            const condition = {
+                field: field,
+                field_label: fieldLabel,
+                operator: operator,
+                value: value,
+                is_parent_form: formSource === 'parent',
+                logic: 'AND' // Default logic for connecting to next condition
+            };
+
+            // Add to conditions array
+            this.currentConditions.push(condition);
+
+            // Clear the condition form
+            $("#conditional-field-select").val('');
+            $("#conditional-operator-select").val('equals');
+            $("#conditional-value-input").val('');
+            $("#conditional-value-select").val('').hide();
+            $("#conditional-value-input").show();
+
+            // Re-render conditions list
+            this.renderConditionsList();
+
+            return true;
+        },
+
+        editCondition(index) {
+            const condition = this.currentConditions[index];
+
+            // Populate the condition form with existing values
+            $("#conditional-field-select").val(condition.field);
+
+            // Trigger change to populate values dropdown
+            this.populateConditionalValues();
+
+            $("#conditional-operator-select").val(condition.operator);
+
+            if ($("#conditional-value-select").is(":visible")) {
+                $("#conditional-value-select").val(condition.value);
+            } else {
+                $("#conditional-value-input").val(condition.value);
+            }
+
+            // Remove the condition (it will be re-added when user clicks Add)
+            this.currentConditions.splice(index, 1);
+            this.renderConditionsList();
+
+            // Scroll to condition form
+            $("#conditional-form-section")[0].scrollIntoView({behavior: 'smooth'});
+        },
+
+        deleteCondition(index) {
+            if (!confirm(`Are you sure you want to delete condition ${index + 1}?`)) {
+                return;
+            }
+
+            this.currentConditions.splice(index, 1);
+            this.renderConditionsList();
         },
 
         populateConditionalFieldOptions() {
@@ -459,8 +682,7 @@ $(document).ready(function () {
             // Set editing state
             this.editingFieldName = fieldName;
 
-            // Populate basic field info
-            $("#field-name-input").val(fieldName).prop('disabled', true); // Disable field name when editing
+            $("#field-name-input").val(fieldName).prop('disabled', true);
             $("#field-label-input").val(fieldOptions.label || "");
             $("#field-help-input").val(fieldOptions.help || "");
 
@@ -502,27 +724,41 @@ $(document).ready(function () {
                 $("#max-date-input").val(fieldSchema.validators.max || "");
             }
 
-            // Populate conditional display
-            if (fieldOptions.dependencies) {
+            // Load multiple conditions
+            this.currentConditions = [];
+            if (fieldOptions.dependencies && fieldOptions.dependencies.conditions) {
+                // New format: multiple conditions
+                fieldOptions.dependencies.conditions.forEach(cond => {
+                    this.currentConditions.push({
+                        field: cond.field,
+                        field_label: this.getFieldLabelForCondition(cond.field, cond.is_parent_form),
+                        operator: cond.operator,
+                        value: cond.value,
+                        is_parent_form: cond.is_parent_form,
+                        logic: cond.logic
+                    });
+                });
+
                 $("#enable-conditional").prop("checked", true);
                 $("#conditional-display-group").show();
-
+                this.renderConditionsList();
+            } else if (fieldOptions.dependencies) {
+                // OLD format: single condition (for backward compatibility)
                 const depFieldName = Object.keys(fieldOptions.dependencies)[0];
                 const depConfig = fieldOptions.dependencies[depFieldName];
 
-                this.populateConditionalFieldOptions();
-                $("#conditional-field-select").val(depFieldName);
-                $("#conditional-operator-select").val(depConfig.operator);
+                this.currentConditions = [{
+                    field: depFieldName,
+                    field_label: this.getFieldLabelForCondition(depFieldName, depConfig.is_parent_form),
+                    operator: depConfig.operator,
+                    value: depConfig.value,
+                    is_parent_form: depConfig.is_parent_form,
+                    logic: 'AND'
+                }];
 
-                // Trigger change to populate values dropdown
-                this.populateConditionalValues();
-
-                // Set the conditional value
-                if ($("#conditional-value-select").is(":visible")) {
-                    $("#conditional-value-select").val(depConfig.value);
-                } else {
-                    $("#conditional-value-input").val(depConfig.value);
-                }
+                $("#enable-conditional").prop("checked", true);
+                $("#conditional-display-group").show();
+                this.renderConditionsList();
             } else {
                 $("#enable-conditional").prop("checked", false);
                 $("#conditional-display-group").hide();
@@ -537,6 +773,16 @@ $(document).ready(function () {
 
             // Show modal
             $('#addFieldModal').modal('show');
+        },
+
+        getFieldLabelForCondition(fieldName, isParentForm) {
+            if (isParentForm) {
+                const parentField = this.parentFormFields.find(f => f.name === fieldName);
+                return parentField ? parentField.label : fieldName;
+            } else {
+                const page = this.formSchema.form[this.currentPageIndex];
+                return page.options.fields[fieldName]?.label || fieldName;
+            }
         },
 
         saveField() {
@@ -679,7 +925,7 @@ $(document).ready(function () {
             // Method to programmatically set the schema
             if (this.isValidSchema(schema)) {
                 this.formSchema = schema;
-                this.currentPageIndex = 0; // Reset to first page
+                this.currentPageIndex = 0;
                 this.renderAllPages();
                 console.log("Schema set successfully:", this.formSchema);
             } else {
@@ -845,37 +1091,17 @@ $(document).ready(function () {
                 help: $("#field-help-input").val().trim()
             };
 
-            // Add conditional display logic
+            // Handle multiple conditions
             const enableConditional = $("#enable-conditional").is(":checked");
-            if (enableConditional) {
-                const selectedOption = $("#conditional-field-select option:selected");
-                const conditionalField = selectedOption.val();
-                const formSource = selectedOption.data('form-source');
-                const conditionalOperator = $("#conditional-operator-select").val();
-
-                let conditionalValue;
-                if ($("#conditional-value-select").is(":visible")) {
-                    conditionalValue = $("#conditional-value-select").val();
-                } else {
-                    conditionalValue = $("#conditional-value-input").val().trim();
-                }
-
-                if (!conditionalField) {
-                    alert("Please select a field for the conditional display.");
-                    return;
-                }
-
-                if (!conditionalValue) {
-                    alert("Please enter a value for the conditional display.");
-                    return;
-                }
-
+            if (enableConditional && this.currentConditions.length > 0) {
                 newFieldOptions.dependencies = {
-                    [conditionalField]: {
-                        operator: conditionalOperator,
-                        value: conditionalValue,
-                        is_parent_form: formSource === 'parent'
-                    }
+                    conditions: this.currentConditions.map(cond => ({
+                        field: cond.field,
+                        operator: cond.operator,
+                        value: cond.value,
+                        is_parent_form: cond.is_parent_form,
+                        logic: cond.logic
+                    }))
                 };
             }
 
@@ -1210,7 +1436,6 @@ $(document).ready(function () {
                 restrictions.push(lengthText);
             }
 
-            // Number restrictions
             if (fieldSchema.validators?.minimum !== undefined || fieldSchema.validators?.maximum !== undefined) {
                 let rangeText = " range: ";
                 if (fieldSchema.validators.minimum !== undefined && fieldSchema.validators.maximum !== undefined) {
@@ -1233,19 +1458,49 @@ $(document).ready(function () {
             }
 
             const deps = fieldOptions.dependencies;
+
+            // Handle multiple conditions
+            if (deps.conditions && Array.isArray(deps.conditions)) {
+                let text = "Show when: ";
+                deps.conditions.forEach((cond, index) => {
+                    const formSource = cond.is_parent_form ? "Parent Form" : "Current Form";
+                    const fieldLabel = this.getFieldLabelForCondition(cond.field, cond.is_parent_form);
+
+                    const operatorText = {
+                        'equals': '=',
+                        'not_equals': '≠',
+                        'contains': 'contains',
+                        'greater_than': '>',
+                        'less_than': '<',
+                        'between': 'between'
+                    }[cond.operator] || cond.operator;
+
+                    text += `[${formSource}] "${fieldLabel}" ${operatorText} "${cond.value}"`;
+
+                    if (index < deps.conditions.length - 1) {
+                        text += ` ${cond.logic} `;
+                    }
+                });
+                return text;
+            }
+
+            // Handle single condition (backward compatibility)
             const depFieldName = Object.keys(deps)[0];
             const depConfig = deps[depFieldName];
-            const depLabel = page.options.fields[depFieldName]?.label || depFieldName;
+            const isParentForm = depConfig.is_parent_form === true;
+            const formSource = isParentForm ? "Parent Form" : "Current Form";
+            const depLabel = this.getFieldLabelForCondition(depFieldName, isParentForm);
 
             const operatorText = {
                 'equals': '=',
                 'not_equals': '≠',
                 'contains': 'contains',
                 'greater_than': '>',
-                'less_than': '<'
-            };
+                'less_than': '<',
+                'between': 'between'
+            }[depConfig.operator] || depConfig.operator;
 
-            return `Show when "${depLabel}" ${operatorText[depConfig.operator]} "${depConfig.value}"`;
+            return `Show when [${formSource}] "${depLabel}" ${operatorText} "${depConfig.value}"`;
         }
     };
 

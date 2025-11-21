@@ -90,29 +90,66 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         widget_attrs = {}
 
         if dependencies:
-            for dep_field, dep_config in dependencies.items():
-                # Check if this is a cross-form dependency
-                is_parent_dependency = dep_config.get('is_parent_form', False)
+            # NEW: Handle multiple conditions
+            if 'conditions' in dependencies:
+                conditions = dependencies['conditions']
 
-                widget_attrs['data-depends-on'] = dep_field
-                widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
-                widget_attrs['data-depends-value'] = dep_config.get('value', '')
-                widget_attrs['data-conditional'] = 'true'
-                widget_attrs['data-is-parent-form'] = 'true' if is_parent_dependency else 'false'
+                # Evaluate all conditions
+                if parent_form_data:
+                    results = []
+                    for condition in conditions:
+                        dep_field = condition.get('field')
+                        is_parent_dependency = condition.get('is_parent_form', False)
 
-                # If it's a parent form dependency, and we have parent data, evaluate immediately
-                if is_parent_dependency and parent_form_data:
-                    parent_value = parent_form_data.get(dep_field)
-                    should_show = evaluate_condition(
-                        parent_value,
-                        dep_config.get('operator', 'equals'),
-                        dep_config.get('value', '')
-                    )
+                        if is_parent_dependency:
+                            parent_value = parent_form_data.get(dep_field)
+                            result = evaluate_condition(
+                                parent_value,
+                                condition.get('operator', 'equals'),
+                                condition.get('value', '')
+                            )
+                            results.append(result)
+                        else:
+                            # For current form dependencies, we can't evaluate at render time
+                            # Let JavaScript handle it
+                            results.append(None)
+
+                    # Evaluate combined logic
+                    final_result = evaluate_multiple_conditions(conditions, results)
 
                     # If condition is not met, hide the field initially
-                    if not should_show:
+                    if final_result is False:
                         widget_attrs['style'] = 'display: none;'
                         widget_attrs['data-initially-hidden'] = 'true'
+
+                # Set data attributes for JavaScript evaluation
+                widget_attrs['data-conditional'] = 'true'
+                widget_attrs['data-conditions'] = json.dumps(conditions)
+
+            else:
+                # OLD: Single condition (backward compatibility)
+                for dep_field, dep_config in dependencies.items():
+                    is_parent_dependency = dep_config.get('is_parent_form', False)
+
+                    widget_attrs['data-depends-on'] = dep_field
+                    widget_attrs['data-depends-operator'] = dep_config.get('operator', 'equals')
+                    widget_attrs['data-depends-value'] = dep_config.get('value', '')
+                    widget_attrs['data-conditional'] = 'true'
+                    widget_attrs['data-is-parent-form'] = 'true' if is_parent_dependency else 'false'
+
+                    # If it's a parent form dependency and we have parent data, evaluate immediately
+                    if is_parent_dependency and parent_form_data:
+                        parent_value = parent_form_data.get(dep_field)
+                        should_show = evaluate_condition(
+                            parent_value,
+                            dep_config.get('operator', 'equals'),
+                            dep_config.get('value', '')
+                        )
+
+                        # If condition is not met, hide the field initially
+                        if not should_show:
+                            widget_attrs['style'] = 'display: none;'
+                            widget_attrs['data-initially-hidden'] = 'true'
 
         field_instance = None
 
@@ -180,10 +217,23 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 'type': 'date',
                 'class': 'form-control'
             }
+
+            # Handle "today" as a dynamic value
+            import datetime
+            today_str = datetime.date.today().isoformat()
+
             if validator_min:
-                date_attrs['min'] = validator_min
+                if validator_min.lower() == 'today':
+                    date_attrs['min'] = today_str
+                else:
+                    date_attrs['min'] = validator_min
+
             if validators_max:
-                date_attrs['max'] = validators_max
+                if validators_max.lower() == 'today':
+                    date_attrs['max'] = today_str
+                else:
+                    date_attrs['max'] = validators_max
+
             date_attrs.update(widget_attrs)
 
             field_instance = forms.DateField(
@@ -262,6 +312,41 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
     fields = {field_name: field_instance for _, field_name, field_instance in field_list}
 
     return type(f"DynamicFormPage{page_index}", (forms.Form,), fields)
+
+
+def evaluate_multiple_conditions(conditions, results):
+    """
+    Evaluate multiple conditions with AND/OR logic.
+
+    Args:
+        conditions: List of condition objects with 'logic' property
+        results: List of boolean results for each condition
+
+    Returns:
+        bool: Final result after applying all logic operators
+    """
+    if not conditions or not results:
+        return True
+
+    # Filter out None results (from current form conditions we can't evaluate)
+    # If any result is None, we can't determine the final result server-side
+    if None in results:
+        return None
+
+    # Start with first condition result
+    final_result = results[0]
+
+    # Apply each logic operator
+    for i in range(len(conditions) - 1):
+        logic = conditions[i].get('logic', 'AND')
+        next_result = results[i + 1]
+
+        if logic == 'AND':
+            final_result = final_result and next_result
+        elif logic == 'OR':
+            final_result = final_result or next_result
+
+    return final_result
 
 
 def evaluate_condition(field_value, operator, expected_value):
