@@ -682,7 +682,7 @@ $(document).ready(function () {
             // Set editing state
             this.editingFieldName = fieldName;
 
-            $("#field-name-input").val(fieldName).prop('disabled', true);
+            $("#field-name-input").val(fieldName);
             $("#field-label-input").val(fieldOptions.label || "");
             $("#field-help-input").val(fieldOptions.help || "");
 
