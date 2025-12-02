@@ -42,6 +42,12 @@
                             <tr>
                                 <td>
                                     <div class="btn-group">
+                                        <!-- Update Info (functional) -->
+                                        <a href="{% url 'trackableobjects:follow_up_event_object_edit' follow_up_event.pk %}"
+                                           class="btn btn-default btn-flat">
+                                            <i class="fas fa-pencil-alt text-primary"></i>
+                                        </a>
+
                                         <!-- Detail Info (functional) -->
                                         <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
                                            class="btn btn-default btn-flat">
