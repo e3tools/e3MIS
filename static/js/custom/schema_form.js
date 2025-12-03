@@ -75,6 +75,23 @@ $(document).ready(function () {
                 this.populateConditionalValues();
             });
 
+            // Auto-slugify field name based on field label
+            $("#field-label-input").on("input", () => {
+                const label = $("#field-label-input").val();
+                const slugified = this.slugify(label);
+                $("#field-name-input").val(slugified);
+            });
+
+            // Restrict field name to slug-type values only
+            $("#field-name-input").on("input", (e) => {
+                const input = $(e.target);
+                const value = input.val();
+                const slugified = this.slugify(value);
+                if (value !== slugified) {
+                    input.val(slugified);
+                }
+            });
+
             // Handle Save Field
             $("#save-field-btn").on("click", () => {
                 this.saveField();
@@ -1501,6 +1518,19 @@ $(document).ready(function () {
             }[depConfig.operator] || depConfig.operator;
 
             return `Show when [${formSource}] "${depLabel}" ${operatorText} "${depConfig.value}"`;
+        },
+
+        slugify(text) {
+            // Convert text to slug format (lowercase, replace spaces with underscores, remove special chars)
+            return text
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '_')           // Replace spaces with underscores
+                .replace(/[^\w\-]+/g, '')       // Remove all non-word chars except hyphens
+                .replace(/\_\_+/g, '_')         // Replace multiple underscores with single underscore
+                .replace(/^-+/, '')             // Trim hyphens from start
+                .replace(/-+$/, '');            // Trim hyphens from end
         }
     };
 
