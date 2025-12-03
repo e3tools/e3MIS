@@ -1226,6 +1226,7 @@ $(document).ready(function () {
             const fieldSchema = page.page.properties[fieldName];
             const fieldOptions = page.options.fields[fieldName];
             const isRequired = page.page.required.includes(fieldName);
+            const originalLabel = fieldOptions.label || fieldName;
 
             // Generate a unique name for the duplicated field
             let newFieldName = `${fieldName}_copy`;
@@ -1235,12 +1236,16 @@ $(document).ready(function () {
                 newFieldName = `${fieldName}_copy${counter}`;
             }
 
+            // Ask for confirmation before duplicating
+            if (!confirm(`Duplicate field "${originalLabel}"?\n\nThe new field will be named "${newFieldName}" and can be edited afterward.`)) {
+                return;
+            }
+
             // Deep clone the field schema and options
             page.page.properties[newFieldName] = JSON.parse(JSON.stringify(fieldSchema));
             page.options.fields[newFieldName] = JSON.parse(JSON.stringify(fieldOptions));
 
             // Update label to indicate it's a copy
-            const originalLabel = fieldOptions.label || fieldName;
             page.options.fields[newFieldName].label = `${originalLabel} (Copy)`;
 
             // Add to required array if original was required
@@ -1249,9 +1254,6 @@ $(document).ready(function () {
             }
 
             this.renderAllPages();
-
-            // Show a notification
-            alert(`Field duplicated as "${newFieldName}". You can edit it to customize.`);
         },
 
         moveFieldUp(fieldName) {
