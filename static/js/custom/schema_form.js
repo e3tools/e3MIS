@@ -75,6 +75,23 @@ $(document).ready(function () {
                 this.populateConditionalValues();
             });
 
+            // Auto-slugify field name based on field label
+            $("#field-label-input").on("input", () => {
+                const label = $("#field-label-input").val();
+                const slugified = this.slugify(label);
+                $("#field-name-input").val(slugified);
+            });
+
+            // Restrict field name to slug-type values only
+            $("#field-name-input").on("input", (e) => {
+                const input = $(e.target);
+                const value = input.val();
+                const slugified = this.slugify(value);
+                if (value !== slugified) {
+                    input.val(slugified);
+                }
+            });
+
             // Handle Save Field
             $("#save-field-btn").on("click", () => {
                 this.saveField();
@@ -682,7 +699,7 @@ $(document).ready(function () {
             // Set editing state
             this.editingFieldName = fieldName;
 
-            $("#field-name-input").val(fieldName).prop('disabled', true);
+            $("#field-name-input").val(fieldName);
             $("#field-label-input").val(fieldOptions.label || "");
             $("#field-help-input").val(fieldOptions.help || "");
 
@@ -1209,6 +1226,7 @@ $(document).ready(function () {
             const fieldSchema = page.page.properties[fieldName];
             const fieldOptions = page.options.fields[fieldName];
             const isRequired = page.page.required.includes(fieldName);
+            const originalLabel = fieldOptions.label || fieldName;
 
             // Generate a unique name for the duplicated field
             let newFieldName = `${fieldName}_copy`;
@@ -1218,12 +1236,16 @@ $(document).ready(function () {
                 newFieldName = `${fieldName}_copy${counter}`;
             }
 
+            // Ask for confirmation before duplicating
+            if (!confirm(`Duplicate field "${originalLabel}"?\n\nThe new field will be named "${newFieldName}" and can be edited afterward.`)) {
+                return;
+            }
+
             // Deep clone the field schema and options
             page.page.properties[newFieldName] = JSON.parse(JSON.stringify(fieldSchema));
             page.options.fields[newFieldName] = JSON.parse(JSON.stringify(fieldOptions));
 
             // Update label to indicate it's a copy
-            const originalLabel = fieldOptions.label || fieldName;
             page.options.fields[newFieldName].label = `${originalLabel} (Copy)`;
 
             // Add to required array if original was required
@@ -1232,9 +1254,6 @@ $(document).ready(function () {
             }
 
             this.renderAllPages();
-
-            // Show a notification
-            alert(`Field duplicated as "${newFieldName}". You can edit it to customize.`);
         },
 
         moveFieldUp(fieldName) {
@@ -1501,6 +1520,19 @@ $(document).ready(function () {
             }[depConfig.operator] || depConfig.operator;
 
             return `Show when [${formSource}] "${depLabel}" ${operatorText} "${depConfig.value}"`;
+        },
+
+        slugify(text) {
+            // Convert text to slug format (lowercase, replace spaces with underscores, remove special chars)
+            return text
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '_')           // Replace spaces with underscores
+                .replace(/[^\w\-]+/g, '')       // Remove all non-word chars except hyphens
+                .replace(/\_\_+/g, '_')         // Replace multiple underscores with single underscore
+                .replace(/^-+/, '')             // Trim hyphens from start
+                .replace(/-+$/, '');            // Trim hyphens from end
         }
     };
 

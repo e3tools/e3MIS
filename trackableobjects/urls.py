@@ -8,6 +8,7 @@ from trackableobjects.infrastructure.views.trackable_object_delete_view import T
 from trackableobjects.infrastructure.views.response_detail_view import TrackableObjectInstanceDetailView
 from trackableobjects.infrastructure.views.follow_up_event_create_view import FollowUpEventCreateView
 from trackableobjects.infrastructure.views.follow_up_event_detail_view import FollowUpEventDetailView
+from trackableobjects.infrastructure.views.follow_up_event_edit_view import FollowUpEventUpdateView
 from trackableobjects.infrastructure.views.follow_up_event_delete_view import FollowUpEventDeleteView
 from trackableobjects.infrastructure.views.follow_up_event_responses_detail_view import FollowUpEventResponseDetailView
 from trackableobjects.infrastructure.views.follow_up_event_list_view import FollowUpEventListView
@@ -42,6 +43,7 @@ urlpatterns = [
          name='trackable_object_follow_up_event_object_create'),
     path('follow-up-event/create/', FollowUpEventCreateView.as_view(), name='follow_up_event_object_create'),
     path('follow-up-event/<int:pk>/delete/', FollowUpEventDeleteView.as_view(), name='follow_up_event_object_delete'),
+    path('follow-up-event/<int:pk>/edit/', FollowUpEventUpdateView.as_view(), name='follow_up_event_object_edit'),
     path('follow-up-event/response/<int:pk>/', FollowUpEventResponseDetailView.as_view(),
          name='follow_up_event_response_detail'),
     path('api/', include('trackableobjects.api.urls')),
