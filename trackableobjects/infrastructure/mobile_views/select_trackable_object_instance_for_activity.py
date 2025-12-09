@@ -43,7 +43,7 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
 
             child = {
                 'id': administrative_unit.id,
-                'name': administrative_unit.name,
+                'name': administrative_unit.hierarchy_name,
                 'pending_responses': result,
                 'trackable_instances_count': base_instances.count() or ''
             }

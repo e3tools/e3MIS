@@ -97,13 +97,13 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
             flag = False
             for node in response_list:
                 if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
-                    node['children'].append({'id': administrative_unit.id, 'name': administrative_unit.name})
+                    node['children'].append({'id': administrative_unit.id, 'name': administrative_unit.hierarchy_name})
                     flag = True
             if not flag:
                 response_list.append({
                     'parent_id': administrative_unit.parent.id,
                     'name': administrative_unit.parent.name,
-                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.name}]
+                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.hierarchy_name}]
                 })
 
         context['administrative_units'] = response_list
