@@ -210,13 +210,35 @@
                     </div>
 
                     <div id="conditional-display-group" style="display: none;">
-                        <div class="card card-light mb-3">
+                        <!-- Conditions List -->
+                        <div class="card card-secondary mb-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Conditions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="conditions-list">
+                                    <p class="text-muted"><em>No conditions added yet. Click "Add Condition" below.</em></p>
+                                </div>
+                                <div id="logic-preview" class="mt-2" style="display: none;"></div>
+                            </div>
+                        </div>
+
+                        <!-- Add/Edit Condition Form -->
+                        <div class="card card-light mb-3" id="conditional-form-section">
+                            <div class="card-header">
+                                <h3 class="card-title">Add Condition</h3>
+                            </div>
                             <div class="card-body">
                                 <div class="form-group">
                                     <label for="conditional-field-select">Show this field when:</label>
                                     <select class="form-control" id="conditional-field-select">
                                         <option value="">Select a field...</option>
+                                        <!-- Options will be populated dynamically by JavaScript -->
                                     </select>
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i>
+                                        Fields from parent forms are shown in a separate group
+                                    </small>
                                 </div>
 
                                 <div class="form-group" id="conditional-operator-group-form">
@@ -227,19 +249,28 @@
                                         <option value="contains">Contains</option>
                                         <option value="greater_than">Greater Than (>)</option>
                                         <option value="less_than">Less Than (<)</option>
+                                        <option value="between">Between</option>
                                     </select>
+                                    <small class="form-text text-muted">
+                                        <strong>Between</strong> operator: Enter value as "min,max" (e.g., "1,5" for values between 1 and 5)
+                                    </small>
                                 </div>
 
                                 <div class="form-group">
                                     <label for="conditional-value-input">Value</label>
                                     <input type="text" class="form-control" id="conditional-value-input"
-                                           placeholder="Enter value">
+                                           placeholder="Enter value (e.g., 'Yes' or '1,5' for between)">
                                     <select class="form-control" id="conditional-value-select" style="display: none;">
                                         <option value="">Select a value...</option>
                                     </select>
-                                    <small class="form-text text-muted">The field will only show when this condition is
-                                        met</small>
+                                    <small class="form-text text-muted">
+                                        The field will show when this condition is met
+                                    </small>
                                 </div>
+
+                                <button type="button" class="btn btn-success btn-sm" id="add-condition-btn">
+                                    <i class="fas fa-plus"></i> Add Condition
+                                </button>
                             </div>
                         </div>
                     </div>

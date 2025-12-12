@@ -857,6 +857,7 @@ $(document).ready(function () {
                     // Validate the schema structure
                     if (this.isValidSchema(parsedSchema)) {
                         this.formSchema = parsedSchema;
+                        this.sortFieldsByOrder();
                         console.log("✅ Successfully loaded existing schema:", this.formSchema);
                         console.log("Number of pages:", this.formSchema.form.length);
                     } else {
@@ -876,6 +877,7 @@ $(document).ready(function () {
                 try {
                     if (this.isValidSchema(window.existingSchema)) {
                         this.formSchema = window.existingSchema;
+                        this.sortFieldsByOrder();
                         console.log("✅ Loaded schema from window.existingSchema:", this.formSchema);
                     }
                 } catch (error) {
@@ -1172,6 +1174,36 @@ $(document).ready(function () {
                     page.options.fields[fieldName] = {};
                 }
                 page.options.fields[fieldName].order = index;
+            });
+        },
+
+        sortFieldsByOrder() {
+            this.formSchema.form.forEach((page, pageIndex) => {
+                const properties = page.page.properties || {};
+                const fields = page.options.fields || {};
+
+                // Get all field names with their order
+                const fieldNames = Object.keys(properties);
+
+                // Sort field names based on their order property
+                fieldNames.sort((a, b) => {
+                    const orderA = fields[a]?.order !== undefined ? fields[a].order : 999;
+                    const orderB = fields[b]?.order !== undefined ? fields[b].order : 999;
+                    return orderA - orderB;
+                });
+
+                // Rebuild properties and fields objects in sorted order
+                const sortedProperties = {};
+                const sortedFields = {};
+
+                fieldNames.forEach(fieldName => {
+                    sortedProperties[fieldName] = properties[fieldName];
+                    sortedFields[fieldName] = fields[fieldName];
+                });
+
+                // Update the page with sorted fields
+                page.page.properties = sortedProperties;
+                page.options.fields = sortedFields;
             });
         },
 
