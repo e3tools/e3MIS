@@ -13,8 +13,8 @@
             <div class="card">
                 <div class="card-header">
                     <div class="col-12">
-                        <a class="btn btn-primary pull-right field-agent-modal-show" data-first-name="" 
-                           data-last-name="" data-email="" data-administrative-unit="" data-id=""
+                        <a class="btn btn-primary pull-right field-agent-modal-show" data-first-name=""
+                           data-last-name="" data-email="" data-administrative-unit="" data-groups="" data-id=""
                         >{% translate 'Create' %} {% translate 'Field agent' %}</a>
                     </div>
                 </div>
@@ -41,6 +41,7 @@
                                             data-last-name="{{ field_angent.last_name }}"
                                             data-email="{{ field_angent.email }}"
                                             data-administrative-unit="{{ field_angent.administrative_unit.id }}"
+                                            data-groups="{% for group in field_angent.groups.all %}{{ group.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
                                             data-id="{{ field_angent.id }}"
                                             class="btn btn-default btn-flat field-agent-modal-show">
                                       <i class="fas fa-pencil-alt text-primary"></i>
@@ -82,6 +83,11 @@
                         <div class="row">
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.email %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.groups %}
                             </div>
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.administrative_unit %}
@@ -128,6 +134,18 @@
                 $("#id_last_name").val($(this).data("last-name"));
                 $("#id_email").val($(this).data("email"));
                 $("#id_administrative_unit").val($(this).data("administrative-unit")).change();
+
+                // Initialize groups multiselect
+                var groupsData = $(this).data("groups");
+                if (groupsData) {
+                    var groupIds = groupsData.toString().split(',').filter(function(id) {
+                        return id !== '';
+                    });
+                    $("#id_groups").val(groupIds).change();
+                } else {
+                    $("#id_groups").val([]).change();
+                }
+
                 $('#fieldAgentModal').modal('show');
             });
             

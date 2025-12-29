@@ -6,11 +6,12 @@ from django.contrib import messages
 from django.utils.translation import gettext as _
 from django.urls import reverse_lazy
 
+from src.permissions import IsStaffMemberMixin
 from authorization.models import CustomUser
 from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm
 
 
-class FieldAngentListView(LoginRequiredMixin, FormMixin, ListView):
+class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, ListView):
     template_name = 'auth/field_agent_list.html'
     queryset = CustomUser.objects.filter(is_field_agent=True)
     form_class = CreateFieldAgentForm
