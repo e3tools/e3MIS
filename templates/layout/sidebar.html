@@ -81,6 +81,15 @@
                         <p>{% translate "Follow up events" %}</p>
                     </a>
                 </li>
+                {% if user.is_staff %}
+                    <li class="nav-item">
+                        <a href="{% url 'authorization:field_agent_list' %}"
+                           class="nav-link {% if url_name == 'field_agent_list' %}active{% endif %}">
+                            <i class="nav-icon fas fa-tags"></i>
+                            <p>{% translate "Field agents" %}</p>
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
             {% endwith %}
         </nav>
