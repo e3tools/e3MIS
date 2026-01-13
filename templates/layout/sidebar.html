@@ -89,6 +89,31 @@
                             <p>{% translate "Field agents" %}</p>
                         </a>
                     </li>
+                    <li class="nav-item {% if url_name == 'administrative_levels_list' or url_name == 'administrative_unit_root' or url_name == 'administrative_unit_detail' %}menu-open{% endif %}">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-map"></i>
+                            <p>
+                                {% translate "Administrative levels" %}
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{% url 'administrativelevels:administrative_levels_list' %}"
+                                   class="nav-link {% if url_name == 'administrative_levels_list' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-cogs"></i>
+                                    <p>{% translate "Management" %}</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'administrativelevels:administrative_unit_root' %}"
+                                   class="nav-link {% if url_name == 'administrative_unit_root' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-map-marked-alt"></i>
+                                    <p>{% translate "Administrative units" %}</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 {% endif %}
             </ul>
             {% endwith %}
