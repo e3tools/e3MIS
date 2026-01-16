@@ -1,0 +1,195 @@
+{% extends 'layout/base.html' %}
+{% load static i18n bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            {% if administrative_unit %}
+                <!-- Unit Information Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            {{ administrative_unit.name }}
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-sm btn-primary edit-unit-modal-show"
+                                    data-id="{{ administrative_unit.id }}"
+                                    data-name="{{ administrative_unit.name }}">
+                                <i class="fas fa-pencil-alt"></i> {% translate 'Edit Name' %}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-3">{% translate 'Level' %}</dt>
+                            <dd class="col-sm-9">{{ administrative_unit.level.name }}</dd>
+
+                            <dt class="col-sm-3">{% translate 'Parent' %}</dt>
+                            <dd class="col-sm-9">
+                                {% if administrative_unit.parent %}
+                                    <a href="{% url 'administrativelevels:administrative_unit_detail' administrative_unit.parent.pk %}">
+                                        {{ administrative_unit.parent.name }}
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'administrativelevels:administrative_unit_root' %}">
+                                        <i class="fas fa-level-up-alt"></i> {% translate 'Root Level' %}
+                                    </a>
+                                {% endif %}
+                            </dd>
+
+                            <dt class="col-sm-3">{% translate 'Hierarchy' %}</dt>
+                            <dd class="col-sm-9">{{ administrative_unit.hierarchy_name }}</dd>
+
+                            <dt class="col-sm-3">{% translate 'Children Count' %}</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge badge-info">{{ children|length }}</span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Children Card -->
+            <div class="card {% if administrative_unit %}mt-3{% endif %}">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        {% if administrative_unit %}
+                            {% translate 'Child Units' %}
+                        {% else %}
+                            <i class="fas fa-globe"></i> {% translate 'Root Administrative Units' %}
+                        {% endif %}
+                    </h3>
+                    <div class="card-tools">
+                        {% if can_add_children %}
+                            <button type="button" class="btn btn-sm btn-success add-child-modal-show">
+                                <i class="fas fa-plus"></i> {% translate 'Add Child' %}
+                            </button>
+                        {% elif not is_root_view %}
+                            <span class="text-muted">
+                                <i class="fas fa-info-circle"></i> {% translate 'No child levels available' %}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Level' %}</th>
+                            <th>{% translate 'Actions' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for child in children %}
+                            <tr>
+                                <td>{{ child.name }}</td>
+                                <td>{{ child.level.name }}</td>
+                                <td>
+                                    <a href="{% url 'administrativelevels:administrative_unit_detail' child.pk %}"
+                                       class="btn btn-sm btn-default">
+                                        <i class="fas fa-eye"></i> {% translate 'View' %}
+                                    </a>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">
+                                    {% if is_root_view %}
+                                        {% translate 'No root units found' %}
+                                    {% else %}
+                                        {% translate 'No child units found' %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+{% if administrative_unit %}
+    <!-- Edit Unit Name Modal -->
+    <div class="modal fade" id="editUnitModal" tabindex="-1" role="dialog"
+         aria-labelledby="editUnitModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="." method="post" id="editUnitForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{% translate 'Edit Unit Name' %}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="edit">
+
+                        <div class="form-group">
+                            {% bootstrap_field edit_form.name %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                        <input type="submit" class="btn btn-primary" value="{% translate 'Save' %}">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if can_add_children %}
+        <!-- Add Child Unit Modal -->
+        <div class="modal fade" id="addChildModal" tabindex="-1" role="dialog"
+             aria-labelledby="addChildModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <form action="." method="post" id="addChildForm">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{% translate 'Add Child Unit' %}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="add_child">
+
+                            <div class="form-group">
+                                {% bootstrap_field add_child_form.name %}
+                            </div>
+                            <div class="form-group">
+                                {% bootstrap_field add_child_form.level %}
+                            </div>
+                            {{ add_child_form.parent }}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                            <input type="submit" class="btn btn-success" value="{% translate 'Add' %}">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extrajs %}
+<script type="text/javascript">
+    $(document).ready(function () {
+        $(".edit-unit-modal-show").on("click", function () {
+            $('#editUnitModal').modal('show');
+        });
+
+        $(".add-child-modal-show").on("click", function () {
+            $('#addChildModal').modal('show');
+        });
+    });
+</script>
+{% endblock %}

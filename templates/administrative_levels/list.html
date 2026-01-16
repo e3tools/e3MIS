@@ -2,5 +2,156 @@
 {% load static i18n bootstrap4 %}
 
 {% block content %}
-    Welcome
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-primary pull-right administrative-level-modal-show"
+                                data-position="bottom" data-id="" data-name="" data-order="">
+                            {% translate 'Add Child Level' %}
+                        </button>
+                        <button type="button" class="btn btn-secondary pull-right mr-2 administrative-level-modal-show"
+                                data-position="top" data-id="" data-name="" data-order="">
+                            {% translate 'Add Parent Level' %}
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-administrative-levels" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Hierarchy Level' %}</th>
+                            <th>{% translate 'Units' %}</th>
+                            <th>{% translate 'Actions' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for level in administrative_levels %}
+                            <tr>
+                                <td>
+                                    {% if level.order > 1 %}
+                                        <span style="margin-left: {% widthratio level.order 1 20 %}px;">
+                                            <i class="fas fa-level-down-alt text-muted"></i> {{ level.name }}
+                                        </span>
+                                    {% else %}
+                                        <strong>{{ level.name }}</strong>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-info">{{ level.units_count }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button type="button"
+                                                class="btn btn-default btn-flat administrative-level-modal-show"
+                                                data-position="edit"
+                                                data-id="{{ level.id }}"
+                                                data-name="{{ level.name }}"
+                                                data-order="{{ level.order }}">
+                                            <i class="fas fa-pencil-alt text-primary"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">{% translate 'No administrative levels found' %}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="administrativeLevelModal" tabindex="-1" role="dialog"
+     aria-labelledby="administrativeLevelModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="." id="administrativeLevelForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-title">{% translate 'Administrative Level' %}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="administrative_level_id" id="id_administrative_level_id" value="">
+                    <input type="hidden" name="position" id="id_position" value="">
+                    <input type="hidden" name="order" id="id_order" value="">
+
+                    <div class="form-group">
+                        {% bootstrap_field form.name %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                    <input type="submit" class="btn btn-primary" value="{% translate 'Submit' %}">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+
+            let table = $('#table-administrative-levels').DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: "ltipr",
+                lengthMenu: [10, 50, 100],
+                pageLength: 10,
+                ordering: false,
+                paging: false,
+                searching: false,
+                info: false
+            });
+
+            $(".administrative-level-modal-show").on("click", function () {
+                let position = $(this).data("position");
+                let id = $(this).data("id");
+                let name = $(this).data("name");
+                let order = $(this).data("order");
+
+                $("#id_administrative_level_id").val(id);
+                $("#id_position").val(position);
+                $("#id_name").val(name);
+
+                if (position === "edit") {
+                    // Edit existing level
+                    $("#modal-title").text("{% translate 'Edit Administrative Level' %}");
+                    $("#id_order").val(order);
+                } else if (position === "top") {
+                    // Add parent level - find minimum order and subtract 1
+                    $("#modal-title").text("{% translate 'Add Parent Level' %}");
+                    let minOrder = 1;
+                    {% if administrative_levels %}
+                        minOrder = {{ administrative_levels.first.order }} - 1;
+                        if (minOrder < 1) minOrder = 0;
+                    {% endif %}
+                    $("#id_order").val(minOrder);
+                } else if (position === "bottom") {
+                    // Add child level - find maximum order and add 1
+                    $("#modal-title").text("{% translate 'Add Child Level' %}");
+                    let maxOrder = 1;
+                    {% if administrative_levels %}
+                        maxOrder = {{ administrative_levels.last.order }} + 1;
+                    {% endif %}
+                    $("#id_order").val(maxOrder);
+                }
+
+                $('#administrativeLevelModal').modal('show');
+            });
+        });
+    </script>
 {% endblock %}
