@@ -65,6 +65,10 @@
                             <button type="button" class="btn btn-sm btn-success add-child-modal-show">
                                 <i class="fas fa-plus"></i> {% translate 'Add Child' %}
                             </button>
+                        {% elif is_root_view and can_add_root %}
+                            <button type="button" class="btn btn-sm btn-success add-root-modal-show">
+                                <i class="fas fa-plus"></i> {% translate 'Add Root Unit' %}
+                            </button>
                         {% elif not is_root_view %}
                             <span class="text-muted">
                                 <i class="fas fa-info-circle"></i> {% translate 'No child levels available' %}
@@ -113,13 +117,43 @@
 {% endblock %}
 
 {% block modals %}
+{% if is_root_view and can_add_root %}
+    <!-- Add Root Unit Modal -->
+    <div class="modal fade" id="addRootModal" tabindex="-1" role="dialog"
+         aria-labelledby="addRootModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="{% url 'administrativelevels:administrative_unit_root' %}" method="post" id="addRootForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{% translate 'Add Root Unit' %}</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_root">
+
+                        <div class="form-group">
+                            {% bootstrap_field add_root_form.name %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                        <input type="submit" class="btn btn-success" value="{% translate 'Add' %}">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endif %}
 {% if administrative_unit %}
     <!-- Edit Unit Name Modal -->
     <div class="modal fade" id="editUnitModal" tabindex="-1" role="dialog"
          aria-labelledby="editUnitModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
-                <form action="." method="post" id="editUnitForm">
+                <form action="{% url 'administrativelevels:administrative_unit_detail' administrative_unit.id %}" method="post" id="editUnitForm">
                     <div class="modal-header">
                         <h5 class="modal-title">{% translate 'Edit Unit Name' %}</h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
@@ -149,7 +183,7 @@
              aria-labelledby="addChildModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
-                    <form action="." method="post" id="addChildForm">
+                    <form action="{% url 'administrativelevels:administrative_unit_detail' administrative_unit.id %}" method="post" id="addChildForm">
                         <div class="modal-header">
                             <h5 class="modal-title">{% translate 'Add Child Unit' %}</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
@@ -163,10 +197,6 @@
                             <div class="form-group">
                                 {% bootstrap_field add_child_form.name %}
                             </div>
-                            <div class="form-group">
-                                {% bootstrap_field add_child_form.level %}
-                            </div>
-                            {{ add_child_form.parent }}
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Cancel' %}</button>
@@ -189,6 +219,10 @@
 
         $(".add-child-modal-show").on("click", function () {
             $('#addChildModal').modal('show');
+        });
+
+        $(".add-root-modal-show").on("click", function () {
+            $('#addRootModal').modal('show');
         });
     });
 </script>
