@@ -7,6 +7,7 @@ from django.utils.translation import gettext as _
 from django.urls import reverse_lazy
 
 from src.permissions import IsStaffMemberMixin
+from administrativelevels.models import AdministrativeUnit, AdministrativeLevel
 from authorization.models import CustomUser
 from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm
 
@@ -30,6 +31,10 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
 
     def put(self, *args, **kwargs):
         return self.post(*args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        kwargs['administrative_levels'] = AdministrativeLevel.objects.all().order_by('order')
+        return super().get_context_data(**kwargs)
 
     def form_valid(self, form):
         """If the form is valid, redirect to the supplied URL."""

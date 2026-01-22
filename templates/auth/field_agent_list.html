@@ -90,7 +90,19 @@
                                 {% bootstrap_field form.groups %}
                             </div>
                             <div class="col-md-6 col-sm-12">
-                                {% bootstrap_field form.administrative_unit %}
+                                <label>{% translate 'Administrative unit' %}</label>
+                                <input type="hidden" name="administrative_unit" id="id_administrative_unit" value="">
+                                <div id="cascading-selects-container">
+                                    {% for level in administrative_levels %}
+                                    <div class="au-select-wrapper mb-2" data-level-order="{{ level.order }}" style="display: none;">
+                                        <select class="form-control au-cascade-select"
+                                                data-level-order="{{ level.order }}"
+                                                data-level-name="{{ level.name }}">
+                                            <option value="">-- {{ level.name }} --</option>
+                                        </select>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
                 </div>
@@ -107,6 +119,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
+            const select2Language = '{{ lang }}';
 
             let table = $('#table-field-agents').DataTable({
                 language: {
@@ -127,13 +140,183 @@
             $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();
             });
-            
+
+            // Cascading Administrative Unit Select Logic
+            const rootUrl = "{% url 'administrativelevels:api:administrative-unit-root' %}";
+            const childrenUrlTemplate = "{% url 'administrativelevels:api:administrative-level-children' pk=9999 %}";
+            const ancestorsUrlTemplate = "{% url 'administrativelevels:api:administrative-unit-ancestors' pk=9999 %}";
+
+            function getChildrenUrl(parentId) {
+                return childrenUrlTemplate.replace('9999', parentId);
+            }
+
+            function getAncestorsUrl(unitId) {
+                return ancestorsUrlTemplate.replace('9999', unitId);
+            }
+
+            function initSelect2(selectElement) {
+                if ($(selectElement).data('select2')) {
+                    $(selectElement).select2('destroy');
+                }
+                $(selectElement).select2({
+                    language: select2Language,
+                    dropdownParent: $('#fieldAgentModal'),
+                    width: '100%'
+                });
+            }
+
+            function resetCascadingSelects() {
+                $('.au-cascade-select').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('destroy');
+                    }
+                    const levelName = $(this).data('level-name');
+                    $(this).html('<option value="">-- ' + levelName + ' --</option>');
+                });
+                $('.au-select-wrapper').hide();
+                $('#id_administrative_unit').val('');
+            }
+
+            function showSelectForOrder(order) {
+                const wrapper = $('.au-select-wrapper[data-level-order="' + order + '"]');
+                wrapper.show();
+                const select = wrapper.find('.au-cascade-select');
+                initSelect2(select);
+            }
+
+            function hideSelectsAfterOrder(order) {
+                $('.au-select-wrapper').each(function() {
+                    if ($(this).data('level-order') > order) {
+                        const select = $(this).find('.au-cascade-select');
+                        if (select.data('select2')) {
+                            select.select2('destroy');
+                        }
+                        const levelName = select.data('level-name');
+                        select.html('<option value="">-- ' + levelName + ' --</option>');
+                        $(this).hide();
+                    }
+                });
+            }
+
+            function updateHiddenInput() {
+                // Find the last non-empty select value
+                let lastValue = '';
+                $('.au-select-wrapper:visible .au-cascade-select').each(function() {
+                    const val = $(this).val();
+                    if (val) {
+                        lastValue = val;
+                    }
+                });
+                $('#id_administrative_unit').val(lastValue);
+            }
+
+            function loadRootUnits(callback) {
+                $.ajax({
+                    url: rootUrl,
+                    success: function(data) {
+                        const firstSelect = $('.au-cascade-select[data-level-order="1"]');
+                        const levelName = firstSelect.data('level-name');
+                        firstSelect.html('<option value="">-- ' + levelName + ' --</option>');
+                        $.each(data, function() {
+                            firstSelect.append($("<option />").val(this.id).text(this.name));
+                        });
+                        showSelectForOrder(1);
+                        if (callback) callback();
+                    }
+                });
+            }
+
+            function loadChildren(parentId, targetOrder, callback) {
+                $.ajax({
+                    url: getChildrenUrl(parentId),
+                    success: function(data) {
+                        if (data.length > 0) {
+                            const targetSelect = $('.au-cascade-select[data-level-order="' + targetOrder + '"]');
+                            const levelName = targetSelect.data('level-name');
+                            targetSelect.html('<option value="">-- ' + levelName + ' --</option>');
+                            $.each(data, function() {
+                                targetSelect.append($("<option />").val(this.id).text(this.name));
+                            });
+                            showSelectForOrder(targetOrder);
+                        }
+                        if (callback) callback();
+                    }
+                });
+            }
+
+            // Handle cascading select change
+            $(document).on('change', '.au-cascade-select', function() {
+                const currentOrder = $(this).data('level-order');
+                const selectedValue = $(this).val();
+
+                // Hide all selects after this one
+                hideSelectsAfterOrder(currentOrder);
+
+                if (selectedValue) {
+                    // Load children for the next level
+                    loadChildren(selectedValue, currentOrder + 1);
+                }
+
+                // Update the hidden input
+                updateHiddenInput();
+            });
+
+            // Pre-populate selects for edit mode
+            function populateForEdit(administrativeUnitId) {
+                if (!administrativeUnitId) {
+                    loadRootUnits();
+                    return;
+                }
+
+                $.ajax({
+                    url: getAncestorsUrl(administrativeUnitId),
+                    success: function(response) {
+                        const chain = response.chain;
+
+                        // Load root units first, then populate chain
+                        loadRootUnits(function() {
+                            populateChainRecursive(chain, 0);
+                        });
+                    },
+                    error: function() {
+                        loadRootUnits();
+                    }
+                });
+            }
+
+            function populateChainRecursive(chain, index) {
+                if (index >= chain.length) {
+                    updateHiddenInput();
+                    return;
+                }
+
+                const item = chain[index];
+                const select = $('.au-cascade-select[data-level-order="' + item.level_order + '"]');
+                select.val(item.id).trigger('change.select2');
+
+                // If there's a next item in chain, load children and continue
+                if (index < chain.length - 1) {
+                    const nextItem = chain[index + 1];
+                    loadChildren(item.id, nextItem.level_order, function() {
+                        populateChainRecursive(chain, index + 1);
+                    });
+                } else {
+                    // Last item - try to load children (for potential further selection)
+                    loadChildren(item.id, item.level_order + 1);
+                    updateHiddenInput();
+                }
+            }
+
             $(".field-agent-modal-show").on("click", function () {
                 $("#id_field_agent").val($(this).data("id"));
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
                 $("#id_email").val($(this).data("email"));
-                $("#id_administrative_unit").val($(this).data("administrative-unit")).change();
+
+                // Reset and populate cascading selects
+                resetCascadingSelects();
+                const administrativeUnitId = $(this).data("administrative-unit");
+                populateForEdit(administrativeUnitId);
 
                 // Initialize groups multiselect
                 var groupsData = $(this).data("groups");
@@ -148,7 +331,7 @@
 
                 $('#fieldAgentModal').modal('show');
             });
-            
+
         });
     </script>
 {% endblock %}
