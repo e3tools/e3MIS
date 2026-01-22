@@ -15,7 +15,7 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
     template_name = 'auth/field_agent_list.html'
     queryset = CustomUser.objects.filter(is_field_agent=True)
     form_class = CreateFieldAgentForm
-    success_url = reverse_lazy('authorization:field_angent_list')
+    success_url = reverse_lazy('authorization:field_agent_list')
 
     def post(self, request, *args, **kwargs):
         """

@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from administrativelevels.models import AdministrativeUnit, AdministrativeLevel
-from administrativelevels.forms import AdministrativeUnitForm, AdministrativeUnitEditForm
+from administrativelevels.forms import AdministrativeUnitEditForm, AdministrativeUnitForm
 
 
 class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
@@ -24,8 +24,8 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
             # Form for editing the unit name
             context['edit_form'] = AdministrativeUnitEditForm(instance=unit)
 
-            # Form for adding a new child
-            context['add_child_form'] = AdministrativeUnitForm(parent_unit=unit)
+            # Form for adding a new child (only name, parent and level set automatically)
+            context['add_child_form'] = AdministrativeUnitForm()
 
             # Check if this unit can have children (if there's a next level)
             next_level_exists = AdministrativeLevel.objects.filter(order=unit.level.order + 1).exists()
@@ -35,21 +35,40 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
             context['administrative_unit'] = None
             context['children'] = AdministrativeUnit.objects.filter(parent__isnull=True).order_by('name')
             context['edit_form'] = None
-            context['add_child_form'] = None
-            context['can_add_children'] = False
             context['is_root_view'] = True
+
+            # Check if root level (order=1) exists to allow adding root units
+            root_level_exists = AdministrativeLevel.objects.filter(order=1).exists()
+            context['can_add_root'] = root_level_exists
+            context['add_root_form'] = AdministrativeUnitForm() if root_level_exists else None
 
         return context
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
+        action = request.POST.get('action')
 
         if not pk:
-            messages.error(request, 'Cannot perform this action on root view.')
+            # Root view - only allow adding root units
+            if action == 'add_root':
+                form = AdministrativeUnitForm(request.POST)
+                if form.is_valid():
+                    root_level = AdministrativeLevel.objects.filter(order=1).first()
+                    if root_level:
+                        unit = form.save(commit=False)
+                        unit.level = root_level
+                        unit.parent = None
+                        unit.save()
+                        messages.success(request, f'Root unit "{unit.name}" added successfully.')
+                    else:
+                        messages.error(request, 'No root level defined. Please create an administrative level with order 1.')
+                else:
+                    for field, errors in form.errors.items():
+                        for error in errors:
+                            messages.error(request, f'{field}: {error}')
             return redirect('administrativelevels:administrative_unit_root')
 
         unit = get_object_or_404(AdministrativeUnit, pk=pk)
-        action = request.POST.get('action')
 
         if action == 'edit':
             # Edit unit name
@@ -64,12 +83,17 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
 
         elif action == 'add_child':
             # Add new child unit
-            form = AdministrativeUnitForm(request.POST, parent_unit=unit)
+            form = AdministrativeUnitForm(request.POST)
             if form.is_valid():
-                child = form.save(commit=False)
-                child.parent = unit
-                child.save()
-                messages.success(request, f'Child unit "{child.name}" added successfully.')
+                child_level = AdministrativeLevel.objects.filter(order=unit.level.order + 1).first()
+                if child_level:
+                    child = form.save(commit=False)
+                    child.parent = unit
+                    child.level = child_level
+                    child.save()
+                    messages.success(request, f'Child unit "{child.name}" added successfully.')
+                else:
+                    messages.error(request, 'No child level defined for this unit.')
             else:
                 for field, errors in form.errors.items():
                     for error in errors:
