@@ -28,7 +28,7 @@ class AdministrativeUnit(models.Model):
 
     def save(self, *args, **kwargs):
         self.hierarchy_name = self.__get_hierarchy_name(self)
-        self.save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @classmethod
     def __get_hierarchy_name(cls, administrative_unit):

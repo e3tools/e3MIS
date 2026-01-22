@@ -7,7 +7,6 @@ from administrativelevels.models import AdministrativeUnit
 class AdministrativeUnitListParentView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         parent_id = kwargs.get('parent')
-        print(parent_id)
         if parent_id:
             levels = AdministrativeUnit.objects.filter(parent_id=parent_id)
         else:
