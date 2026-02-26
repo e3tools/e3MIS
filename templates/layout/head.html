@@ -55,6 +55,29 @@
             padding-left: 1rem; 
             padding-right: 1rem;
       }
+
+      .sidebar {
+            display: flex;
+            flex-direction: column;
+      }
+
+      .sidebar > nav.mt-2 {
+            flex: 1;
+            overflow-y: auto;
+      }
+
+      .toogle-sidebar-button {
+            flex-shrink: 0;
+            background-color: #ffffffb8;
+      }
+
+      .toogle-sidebar-button i:before {
+            content: "\f053";
+      }
+
+      .sidebar-collapse .toogle-sidebar-button i:before {
+            content: "\f054";
+      }
 </style>
 
 <script>
