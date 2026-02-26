@@ -1,6 +1,15 @@
 {% extends 'layout/base.html' %}
 {% load static bootstrap4 i18n %}
 
+{% block custom_title %}
+    <div class="col-sm-12 d-flex align-items-center">
+        <a href="{% url 'trackableobjects:trackable_object_list' %}" class="btn btn-default mr-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="m-0 main-title" style="color: #707070 !important;"><h2>{{ title | safe }}</h2></div>
+    </div>
+{% endblock %}
+
 {% block content %}
     <h2>Trackable Object Schema Editor</h2>
 

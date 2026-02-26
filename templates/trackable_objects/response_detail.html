@@ -1,6 +1,15 @@
 {% extends 'layout/base.html' %}
 {% load static i18n bootstrap4 %}
 
+{% block custom_title %}
+    <div class="col-sm-12 d-flex align-items-center">
+        <a onclick="window.history.back(); return false;" href="#" class="btn btn-default mr-3">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="m-0 main-title" style="color: #707070 !important;"><h2>{{ title | safe }}</h2></div>
+    </div>
+{% endblock %}
+
 {% block content %}
     <section class="content">
 

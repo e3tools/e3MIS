@@ -1,10 +1,14 @@
 from django.views.generic import ListView
+from django.utils.translation import gettext_lazy as _
 from trackableobjects.models import FollowUpEvent, TrackableObject
 
 
 class FollowUpEventListView(ListView):
     template_name = 'trackable_objects/follow_up_event_list.html'
     model = FollowUpEvent
+    extra_context = {
+        'title': _('Follow Up Events'),
+    }
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(object_list=object_list, **kwargs)

@@ -23,7 +23,7 @@
             <div class="card card-warning mt-4 mb-4 shadow">
                 <div class="card-header position-relative d-flex align-items-center justify-content-center"
                      style="min-height:56px;">
-                    <a onclick="window.history.go(-1); return false;" 
+                    <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}" 
                        class="btn btn-link position-absolute"
                        style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
                         <i class="fas fa-arrow-left"></i>
@@ -31,7 +31,7 @@
                     <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
                         {{ object.name }} {% translate 'instances' %}
                     </h4>
-                    <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}" class="text-right" style="font-size:1.4rem;">
+                    <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
                         <i class="fas fa-home"></i>
                     </a>
                 </div>
