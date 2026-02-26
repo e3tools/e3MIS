@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 from trackableobjects.models import FollowUpEvent, TrackableObject
 
 
-class FollowUpEventListView(ListView):
+class FollowUpEventListView(LoginRequiredMixin, ListView):
     template_name = 'trackable_objects/follow_up_event_list.html'
     model = FollowUpEvent
     extra_context = {
