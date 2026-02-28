@@ -29,12 +29,13 @@ class SubprojectFieldAgentCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        qs = AdministrativeUnit.objects.filter(
-            id__in=self.get_descendants(user.administrative_unit))
+        user_unit_ids = [id for unit in user.administrative_units.all() for id in self.get_descendants(unit)]
+        qs = AdministrativeUnit.objects.filter(id__in=user_unit_ids)
         self.fields['administrative_level'].queryset = qs
         self.fields['other_administrative_levels'].queryset = qs
-        if user and qs.filter(id=user.administrative_unit.id).exists():
-            self.fields['administrative_level'].initial = user.administrative_unit
+        first_user_unit = user.administrative_units.first()
+        if user and first_user_unit and qs.filter(id=first_user_unit.id).exists():
+            self.fields['administrative_level'].initial = first_user_unit
 
     def get_descendants(self, administrative_unit):
         descendants = list()

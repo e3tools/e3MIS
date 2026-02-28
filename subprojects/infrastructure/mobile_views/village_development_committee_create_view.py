@@ -16,6 +16,6 @@ class VillageDevelopmentCommitteeCreateView(IsFieldAgentUserMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        if self.request.user.administrative_unit is not None:
+        if self.request.user.administrative_units.exists():
             kwargs.update({"user": self.request.user})
         return kwargs

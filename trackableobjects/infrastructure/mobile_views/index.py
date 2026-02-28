@@ -19,7 +19,7 @@ class IndexTemplateView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=self.get_descendants(self.request.user.administrative_unit)
+            id__in=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
         ).values_list('id')
 
         qs = TrackableObjectInstance.objects.filter(
