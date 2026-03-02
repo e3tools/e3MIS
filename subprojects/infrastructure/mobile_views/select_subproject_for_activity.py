@@ -12,7 +12,7 @@ class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         self.user_groups = self.request.user.groups.all()
-        kwargs.update({'administrative_units': self.get_descendants(self.request.user.administrative_unit)})
+        kwargs.update({'administrative_units': [d for unit in self.request.user.administrative_units.all() for d in self.get_descendants(unit)]})
         kwargs.update({'trackable_objects': TrackableObject.objects.all()})
         return super().get_context_data(**kwargs)
 

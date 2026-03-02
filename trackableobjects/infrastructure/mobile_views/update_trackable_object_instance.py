@@ -90,7 +90,7 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
         context['custom_form'] = self.get_custom_form()
 
         administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=self.get_descendants(self.request.user.administrative_unit)).select_related('parent')
+            id__in=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]).select_related('parent')
 
         response_list = list()
         for administrative_unit in administrative_units_qs:

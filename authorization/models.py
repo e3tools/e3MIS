@@ -26,10 +26,9 @@ class CustomUser(AbstractUser):
     username = None
     email = models.EmailField('email address', unique=True)
     is_field_agent = models.BooleanField(default=False)
-    administrative_unit = models.ForeignKey(
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    administrative_units = models.ManyToManyField(
         'administrativelevels.AdministrativeUnit',
-        on_delete=models.CASCADE,
-        null=True,
         blank=True
     )
 

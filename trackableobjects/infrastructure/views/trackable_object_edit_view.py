@@ -1,6 +1,7 @@
 import json
 from django.views.generic.edit import UpdateView
 from django.urls import reverse_lazy
+from django.utils.translation import gettext as _
 from trackableobjects.models import TrackableObject
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -16,6 +17,7 @@ class TrackableObjectEditView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['title'] = '{} - {}'.format(self.object.name, _('Edit'))
         context.update({'custom_forms': self.model.objects.exclude(id=self.object.id)})
 
         context.update({'groups': Group.objects.all()})

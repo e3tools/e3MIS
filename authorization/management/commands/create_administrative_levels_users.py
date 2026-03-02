@@ -54,7 +54,7 @@ class Command(BaseCommand):
                 existing_user = User.objects.filter(email=email).first()
                 if not existing_user:
                     break
-                elif existing_user.administrative_unit == administrative_unit:
+                elif existing_user.administrative_units.filter(id=administrative_unit.id).exists():
                     self.stdout.write(self.style.WARNING(
                         f"User with email '{email}' and same administrative unit already exists. Skipping."
                     ))
@@ -77,10 +77,10 @@ class Command(BaseCommand):
             user = User(
                 email=email,
                 password=make_password(password),
-                administrative_unit=administrative_unit,
                 is_field_agent=True,
             )
             user.save()
+            user.administrative_units.add(administrative_unit)
             print(f"Created user: {user.email} for administrative level: {administrative_level.name} with password: {password}")
 
         self.stdout.write(self.style.SUCCESS(f"Users created with administrative level '{administrative_level.name}'"))

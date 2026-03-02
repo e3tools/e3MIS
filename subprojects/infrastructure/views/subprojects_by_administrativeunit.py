@@ -12,10 +12,10 @@ class AdministrativeUnitSubprojectsView(LoginRequiredMixin, IsStaffMemberMixin, 
     id_list = None
 
     def get_queryset(self):
-        user_unit = self.request.user.administrative_unit
+        all_ids = [id for unit in self.request.user.administrative_units.all() for id in self.get_children_ids(unit)]
 
         queryset = self.model._default_manager.filter(
-            administrative_level__id__in=self.get_children_ids(user_unit)
+            administrative_level__id__in=all_ids
         )
 
         ordering = self.get_ordering()
@@ -29,8 +29,9 @@ class AdministrativeUnitSubprojectsView(LoginRequiredMixin, IsStaffMemberMixin, 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['selects'] = self.get_admnistrative_unit_selects_structure()
-        context['initial_select_values'] = self.request.user.administrative_unit.children.all()
-        context['title'] = f"Subprojects of {self.request.user.administrative_unit.name}" if self.request.user.administrative_unit else "No Assigned Unit"
+        first_unit = self.request.user.administrative_units.first()
+        context['initial_select_values'] = first_unit.children.all() if first_unit else []
+        context['title'] = f"Subprojects of {first_unit.name}" if first_unit else "No Assigned Unit"
         return context
 
     def get_children_ids(self, administrative_unit):
@@ -50,5 +51,7 @@ class AdministrativeUnitSubprojectsView(LoginRequiredMixin, IsStaffMemberMixin, 
                 au_list = _get_administrative_unit_selects_structure(au.children.first(), au_list)
             return au_list
         select_list = list()
-        user_unit = self.request.user.administrative_unit
+        user_unit = self.request.user.administrative_units.first()
+        if not user_unit:
+            return select_list
         return _get_administrative_unit_selects_structure(user_unit, select_list)

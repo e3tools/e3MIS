@@ -13,13 +13,13 @@ class CustomUserAdmin(UserAdmin):
         ('Permissions',
          {'fields': ('is_staff', 'is_active', 'is_superuser', 'is_field_agent', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login',)}),
-        ('Administrative Unit', {'fields': ('administrative_unit',)}),
+        ('Administrative Units', {'fields': ('administrative_units',)}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
             'fields': ('email', 'password1', 'password2', 'is_staff', 'is_active', 'is_superuser', 'is_field_agent',
-                       'administrative_unit')}
+                       'administrative_units')}
          ),
     )
     search_fields = ('email',)

@@ -24,7 +24,7 @@ class VillageDevelopmentCommitteeCreateForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         qs = AdministrativeUnit.objects.filter(
-            id__in=self.get_descendants(user.administrative_unit))
+            id__in=[id for unit in user.administrative_units.all() for id in self.get_descendants(unit)])
         self.fields['village_neighborhood'].queryset = qs
 
     def get_descendants(self, administrative_unit):

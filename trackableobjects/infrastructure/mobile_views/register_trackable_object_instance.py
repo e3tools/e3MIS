@@ -99,7 +99,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
         administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=self.get_descendants(self.request.user.administrative_unit)).select_related('parent')
+            id__in=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]).select_related('parent')
 
         response_list = list()
         for administrative_unit in administrative_units_qs:
@@ -147,7 +147,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
 
         form_class = parse_custom_jsonschema(
             schema_json, page_index=0,
-            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit)
+            administrative_level_ids=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
         )
 
         return form_class(**self.get_form_kwargs())
