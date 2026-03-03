@@ -17,6 +17,9 @@ class FollowUpEventUpdateView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
     model = FollowUpEvent
     form_class = FollowUpEventForm
     template_name = "trackable_objects/follow_up_event_create_edit.html"
+    extra_context = {
+        'title': _('Edit Follow Up Event'),
+    }
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

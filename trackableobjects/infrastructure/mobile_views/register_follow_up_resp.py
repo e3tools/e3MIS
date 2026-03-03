@@ -231,7 +231,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         form_class = parse_custom_jsonschema(
             schema_json,
             page_index=0,
-            administrative_level_ids=self.get_descendants(self.request.user.administrative_unit),
+            administrative_level_ids=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)],
             parent_form_data=parent_form_data  # NEW: Pass parent data
         )
 

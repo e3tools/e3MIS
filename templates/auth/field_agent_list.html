@@ -14,7 +14,7 @@
                 <div class="card-header">
                     <div class="col-12">
                         <a class="btn btn-primary pull-right field-agent-modal-show" data-first-name=""
-                           data-last-name="" data-email="" data-administrative-unit="" data-groups="" data-id=""
+                           data-last-name="" data-email="" data-administrative-units="" data-groups="" data-id=""
                         >{% translate 'Create' %} {% translate 'Field agent' %}</a>
                     </div>
                 </div>
@@ -33,14 +33,14 @@
                             <tr id="subproject-{{ subproject.pk }}">
                                 <td>{{ field_angent.get_full_name }}</td>
                                 <td>{{ field_angent.email }}</td>
-                                <td>{{ field_angent.administrative_unit }}</td>
+                                <td>{% for au in field_angent.administrative_units.all %}{{ au.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                                 <td>
                                   <div class="btn-group">
                                     <button type="button"
                                             data-first-name="{{ field_angent.first_name }}"
                                             data-last-name="{{ field_angent.last_name }}"
                                             data-email="{{ field_angent.email }}"
-                                            data-administrative-unit="{{ field_angent.administrative_unit.id }}"
+                                            data-administrative-units="{% for au in field_angent.administrative_units.all %}{{ au.id }}::{{ au.hierarchy_name }}{% if not forloop.last %}|{% endif %}{% endfor %}"
                                             data-groups="{% for group in field_angent.groups.all %}{{ group.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
                                             data-id="{{ field_angent.id }}"
                                             class="btn btn-default btn-flat field-agent-modal-show">
@@ -82,6 +82,9 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.phone_number %}
+                            </div>
+                            <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.email %}
                             </div>
                         </div>
@@ -90,7 +93,25 @@
                                 {% bootstrap_field form.groups %}
                             </div>
                             <div class="col-md-6 col-sm-12">
-                                {% bootstrap_field form.administrative_unit %}
+                                <label>{% translate 'Administrative units' %}</label>
+                                <div id="cascading-selects-container">
+                                    {% for level in administrative_levels %}
+                                    <div class="au-select-wrapper mb-2" data-level-order="{{ level.order }}" style="display: none;">
+                                        <select class="form-control au-cascade-select"
+                                                data-level-order="{{ level.order }}"
+                                                data-level-name="{{ level.name }}">
+                                            <option value="">-- {{ level.name }} --</option>
+                                        </select>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="button" id="au-stack-add" class="btn btn-outline-secondary btn-sm mt-1">
+                                    <i class="fas fa-plus"></i> {% translate 'Add' %}
+                                </button>
+                                <div id="au-stack-container" class="mt-2" style="display: none;">
+                                    <!-- selected units appear here -->
+                                </div>
+                                <div id="au-hidden-inputs"></div>
                             </div>
                         </div>
                 </div>
@@ -107,6 +128,7 @@
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
+            const select2Language = '{{ lang }}';
 
             let table = $('#table-field-agents').DataTable({
                 language: {
@@ -127,18 +149,179 @@
             $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();
             });
-            
+
+            // Cascading Administrative Unit Select Logic
+            const rootUrl = "{% url 'administrativelevels:api:administrative-unit-root' %}";
+            const childrenUrlTemplate = "{% url 'administrativelevels:api:administrative-level-children' pk=9999 %}";
+            function getChildrenUrl(parentId) {
+                return childrenUrlTemplate.replace('9999', parentId);
+            }
+
+            function initSelect2(selectElement) {
+                if ($(selectElement).data('select2')) {
+                    $(selectElement).select2('destroy');
+                }
+                $(selectElement).select2({
+                    language: select2Language,
+                    dropdownParent: $('#fieldAgentModal'),
+                    width: '100%'
+                });
+            }
+
+            // Stack management
+            let stackedUnits = {};
+
+            function clearStack() {
+                stackedUnits = {};
+                $('#au-stack-container').empty().hide();
+                $('#au-hidden-inputs').empty();
+            }
+
+            function addToStack(unitId, displayName) {
+                unitId = String(unitId);
+                if (stackedUnits[unitId]) return;
+                stackedUnits[unitId] = displayName;
+                const item = $('<div class="d-flex align-items-center mb-1 border rounded px-2 py-1 au-stack-item" data-unit-id="' + unitId + '">' +
+                    '<span class="flex-grow-1 mr-2">' + $('<span>').text(displayName).html() + '</span>' +
+                    '<button type="button" class="btn btn-sm btn-link text-danger p-0 au-stack-remove"><i class="fas fa-times"></i></button>' +
+                    '</div>');
+                $('#au-stack-container').append(item).show();
+                $('#au-hidden-inputs').append('<input type="hidden" name="administrative_units" value="' + unitId + '">');
+            }
+
+            function removeFromStack(unitId) {
+                unitId = String(unitId);
+                delete stackedUnits[unitId];
+                $('#au-stack-container .au-stack-item[data-unit-id="' + unitId + '"]').remove();
+                $('#au-hidden-inputs input[value="' + unitId + '"]').remove();
+                if (Object.keys(stackedUnits).length === 0) {
+                    $('#au-stack-container').hide();
+                }
+            }
+
+            $(document).on('click', '.au-stack-remove', function() {
+                const unitId = String($(this).closest('.au-stack-item').data('unit-id'));
+                removeFromStack(unitId);
+            });
+
+            $('#au-stack-add').on('click', function() {
+                let lastValue = '';
+                const displayParts = [];
+                $('.au-select-wrapper:visible .au-cascade-select').each(function() {
+                    const val = $(this).val();
+                    if (val) {
+                        lastValue = val;
+                        displayParts.push($(this).find('option:selected').text());
+                    }
+                });
+                if (!lastValue) return;
+                addToStack(lastValue, displayParts.join(' > '));
+            });
+
+            function resetCascadingSelects() {
+                $('.au-cascade-select').each(function() {
+                    if ($(this).data('select2')) {
+                        $(this).select2('destroy');
+                    }
+                    const levelName = $(this).data('level-name');
+                    $(this).html('<option value="">-- ' + levelName + ' --</option>');
+                });
+                $('.au-select-wrapper').hide();
+            }
+
+            function showSelectForOrder(order) {
+                const wrapper = $('.au-select-wrapper[data-level-order="' + order + '"]');
+                wrapper.show();
+                const select = wrapper.find('.au-cascade-select');
+                initSelect2(select);
+            }
+
+            function hideSelectsAfterOrder(order) {
+                $('.au-select-wrapper').each(function() {
+                    if ($(this).data('level-order') > order) {
+                        const select = $(this).find('.au-cascade-select');
+                        if (select.data('select2')) {
+                            select.select2('destroy');
+                        }
+                        const levelName = select.data('level-name');
+                        select.html('<option value="">-- ' + levelName + ' --</option>');
+                        $(this).hide();
+                    }
+                });
+            }
+
+            function loadRootUnits(callback) {
+                $.ajax({
+                    url: rootUrl,
+                    success: function(data) {
+                        const firstSelect = $('.au-cascade-select[data-level-order="1"]');
+                        const levelName = firstSelect.data('level-name');
+                        firstSelect.html('<option value="">-- ' + levelName + ' --</option>');
+                        $.each(data, function() {
+                            firstSelect.append($("<option />").val(this.id).text(this.name));
+                        });
+                        showSelectForOrder(1);
+                        if (callback) callback();
+                    }
+                });
+            }
+
+            function loadChildren(parentId, targetOrder, callback) {
+                $.ajax({
+                    url: getChildrenUrl(parentId),
+                    success: function(data) {
+                        if (data.length > 0) {
+                            const targetSelect = $('.au-cascade-select[data-level-order="' + targetOrder + '"]');
+                            const levelName = targetSelect.data('level-name');
+                            targetSelect.html('<option value="">-- ' + levelName + ' --</option>');
+                            $.each(data, function() {
+                                targetSelect.append($("<option />").val(this.id).text(this.name));
+                            });
+                            showSelectForOrder(targetOrder);
+                        }
+                        if (callback) callback();
+                    }
+                });
+            }
+
+            // Handle cascading select change
+            $(document).on('change', '.au-cascade-select', function() {
+                const currentOrder = $(this).data('level-order');
+                const selectedValue = $(this).val();
+                hideSelectsAfterOrder(currentOrder);
+                if (selectedValue) {
+                    loadChildren(selectedValue, currentOrder + 1);
+                }
+            });
+
             $(".field-agent-modal-show").on("click", function () {
                 $("#id_field_agent").val($(this).data("id"));
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
                 $("#id_email").val($(this).data("email"));
-                $("#id_administrative_unit").val($(this).data("administrative-unit")).change();
+
+                // Reset selects, clear stack, load root units fresh
+                resetCascadingSelects();
+                clearStack();
+                loadRootUnits();
+
+                // Pre-populate stack from existing assigned units
+                const unitsData = $(this).data("administrative-units") || '';
+                if (unitsData) {
+                    String(unitsData).split('|').forEach(function(unit) {
+                        const separatorIndex = unit.indexOf('::');
+                        if (separatorIndex !== -1) {
+                            const unitId = unit.substring(0, separatorIndex);
+                            const unitName = unit.substring(separatorIndex + 2);
+                            addToStack(unitId, unitName);
+                        }
+                    });
+                }
 
                 // Initialize groups multiselect
-                var groupsData = $(this).data("groups");
+                const groupsData = $(this).data("groups");
                 if (groupsData) {
-                    var groupIds = groupsData.toString().split(',').filter(function(id) {
+                    const groupIds = groupsData.toString().split(',').filter(function(id) {
                         return id !== '';
                     });
                     $("#id_groups").val(groupIds).change();
@@ -148,7 +331,7 @@
 
                 $('#fieldAgentModal').modal('show');
             });
-            
+
         });
     </script>
 {% endblock %}

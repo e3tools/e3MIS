@@ -205,6 +205,8 @@ class Attachment(models.Model):
                                                  on_delete=models.CASCADE, related_name="attachments")
     field_name = models.CharField(max_length=255, blank=True, null=True)
     file = models.FileField(upload_to='media/attachments/')
+    # upload_at = models.DateTimeField(auto_now_add=True)
+    # updated_at = models.DateTimeField(auto_now=True)
 
 
 class DisplayFieldSetting(models.Model):

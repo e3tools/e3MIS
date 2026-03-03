@@ -33,13 +33,12 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         if administrative_unit_id == '':
             user = CustomUser.objects.filter(id=self.request.META.get('HTTP_USER', None)).first()
             if user:
-                administrative_unit = user.administrative_unit
+                all_lower_children = [child for unit in user.administrative_units.all() for child in self.get_lower_children(unit)]
             else:
-                administrative_unit = AdministrativeUnit.objects.none()
+                all_lower_children = []
         else:
             administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
-
-        all_lower_children = self.get_lower_children(administrative_unit)
+            all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
             trackable_object_instance_qs = TrackableObjectInstance.objects.filter(
                 administrative_units=child,

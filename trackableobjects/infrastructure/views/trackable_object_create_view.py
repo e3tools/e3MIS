@@ -1,7 +1,7 @@
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_lazy as _l
 from trackableobjects.models import TrackableObject
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -14,6 +14,9 @@ class TrackableObjectCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateVi
     form_class = TrackableObjectForm
     template_name = "trackable_objects/create_edit.html"
     success_url = reverse_lazy("trackableobjects:trackable_object_list")
+    extra_context = {
+        'title': _l('Create Trackable Object'),
+    }
 
     def get_context_data(self, **kwargs):
         kwargs.update({
