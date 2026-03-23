@@ -88,6 +88,22 @@
                                 {% bootstrap_field form.email %}
                             </div>
                         </div>
+                        <div id="reset-password-toggle" style="display: none;">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="reset-password-checkbox">
+                                <label class="form-check-label" for="reset-password-checkbox">
+                                    {% translate 'Reset password' %}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="row" id="password-fields">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.password1 %}
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.password2 %}
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.groups %}
@@ -302,6 +318,17 @@
                 }
             });
 
+            // Checkbox toggle for reset password
+            $('#reset-password-checkbox').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#password-fields').show();
+                } else {
+                    $('#password-fields').hide();
+                    $("#id_password1").val("");
+                    $("#id_password2").val("");
+                }
+            });
+
             // Checkbox toggle for administrative units
             $('#au-attach-checkbox').on('change', function() {
                 if ($(this).is(':checked')) {
@@ -317,10 +344,21 @@
             });
 
             $(".field-agent-modal-show").on("click", function () {
+                const isEdit = $(this).data("id") !== "";
                 $("#id_field_agent").val($(this).data("id"));
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
                 $("#id_email").val($(this).data("email"));
+                $("#id_password1").val("");
+                $("#id_password2").val("");
+                $("#reset-password-checkbox").prop('checked', false);
+                if (isEdit) {
+                    $("#password-fields").hide();
+                    $("#reset-password-toggle").show();
+                } else {
+                    $("#password-fields").show();
+                    $("#reset-password-toggle").hide();
+                }
 
                 // Reset selects, clear stack, load root units fresh
                 resetCascadingSelects();
