@@ -88,11 +88,34 @@
                                 {% bootstrap_field form.email %}
                             </div>
                         </div>
+                        <div id="reset-password-toggle" style="display: none;">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" id="reset-password-checkbox">
+                                <label class="form-check-label" for="reset-password-checkbox">
+                                    {% translate 'Reset password' %}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="row" id="password-fields">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.password1 %}
+                            </div>
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.password2 %}
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.groups %}
                             </div>
                             <div class="col-md-6 col-sm-12">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="au-attach-checkbox">
+                                    <label class="form-check-label" for="au-attach-checkbox">
+                                        {% translate 'Attach to administrative unit' %}
+                                    </label>
+                                </div>
+                                <div id="au-fields-wrapper" style="display: none;">
                                 <label>{% translate 'Administrative units' %}</label>
                                 <div id="cascading-selects-container">
                                     {% for level in administrative_levels %}
@@ -112,6 +135,7 @@
                                     <!-- selected units appear here -->
                                 </div>
                                 <div id="au-hidden-inputs"></div>
+                                </div> {# /au-fields-wrapper #}
                             </div>
                         </div>
                 </div>
@@ -294,20 +318,61 @@
                 }
             });
 
+            // Checkbox toggle for reset password
+            $('#reset-password-checkbox').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#password-fields').show();
+                } else {
+                    $('#password-fields').hide();
+                    $("#id_password1").val("");
+                    $("#id_password2").val("");
+                }
+            });
+
+            // Checkbox toggle for administrative units
+            $('#au-attach-checkbox').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('#au-fields-wrapper').show();
+                    if ($('.au-select-wrapper:visible').length === 0) {
+                        loadRootUnits();
+                    }
+                } else {
+                    $('#au-fields-wrapper').hide();
+                    resetCascadingSelects();
+                    clearStack();
+                }
+            });
+
             $(".field-agent-modal-show").on("click", function () {
+                const isEdit = $(this).data("id") !== "";
                 $("#id_field_agent").val($(this).data("id"));
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
                 $("#id_email").val($(this).data("email"));
+                $("#id_password1").val("");
+                $("#id_password2").val("");
+                $("#reset-password-checkbox").prop('checked', false);
+                if (isEdit) {
+                    $("#password-fields").hide();
+                    $("#reset-password-toggle").show();
+                } else {
+                    $("#password-fields").show();
+                    $("#reset-password-toggle").hide();
+                }
 
                 // Reset selects, clear stack, load root units fresh
                 resetCascadingSelects();
                 clearStack();
-                loadRootUnits();
 
                 // Pre-populate stack from existing assigned units
                 const unitsData = $(this).data("administrative-units") || '';
-                if (unitsData) {
+                const hasUnits = unitsData !== '';
+
+                // Set checkbox state based on whether the agent has units
+                $('#au-attach-checkbox').prop('checked', hasUnits);
+                if (hasUnits) {
+                    $('#au-fields-wrapper').show();
+                    loadRootUnits();
                     String(unitsData).split('|').forEach(function(unit) {
                         const separatorIndex = unit.indexOf('::');
                         if (separatorIndex !== -1) {
@@ -316,6 +381,8 @@
                             addToStack(unitId, unitName);
                         }
                     });
+                } else {
+                    $('#au-fields-wrapper').hide();
                 }
 
                 // Initialize groups multiselect
