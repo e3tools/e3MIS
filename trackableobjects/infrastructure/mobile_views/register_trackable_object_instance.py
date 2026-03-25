@@ -69,7 +69,8 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             jsonForm=cleaned_data
         )
         instance.save()
-        instance.administrative_units.add(*post_dict.pop('administrative_units'))
+        administrative_units = post_dict.pop('administrative_units', [])
+        instance.administrative_units.set(administrative_units)
 
         if form.files is not None:
             for key, value in form.files.items():

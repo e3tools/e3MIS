@@ -57,11 +57,14 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
+            if isinstance(cleaned_data[key], TrackableObjectInstance) or isinstance(cleaned_data[key], AdministrativeUnit):
+                cleaned_data[key] = cleaned_data[key].id
+
         self.object.filled_by = self.request.user
         self.object.jsonForm = cleaned_data
         self.object.save()
-        self.object.administrative_units.clear()
-        self.object.administrative_units.add(*post_dict.pop('administrative_units'))
+        administrative_units = post_dict.pop('administrative_units', [])
+        self.object.administrative_units.set(administrative_units)
 
         # if form.files is not None:
         #     for key, value in form.files.items():
