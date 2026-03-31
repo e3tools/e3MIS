@@ -1,5 +1,5 @@
 from django.views.generic.detail import DetailView
-from django.db.models import Q, F, Count, Sum
+from django.db.models import Q, F, Count, Sum, OuterRef, Exists
 
 from administrativelevels.models import AdministrativeUnit
 from trackableobjects.models import TrackableObject, TrackableObjectInstance
@@ -10,6 +10,21 @@ from src.permissions import IsFieldAgentUserMixin
 class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, DetailView):
     template_name = 'trackable_objects/mobile/select_trackable_object_instance_for_activity.html'
     queryset = TrackableObject.objects.all()
+
+    def get_queryset(self):
+        user_group_ids = list(self.request.user.groups.values_list('id', flat=True))
+
+        unmatched_groups = TrackableObject.groups.through.objects.filter(
+            trackableobject_id=OuterRef('pk')
+        ).exclude(
+            group_id__in=user_group_ids
+        )
+
+        return TrackableObject.objects.annotate(
+            has_unmatched_groups=Exists(unmatched_groups)
+        ).filter(
+            has_unmatched_groups=False
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

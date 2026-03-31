@@ -35,8 +35,17 @@
                         <i class="fas fa-home"></i>
                     </a>
                 </div>
+                <div class="card-footer p-2">
+                    <a href="{% url 'trackableobjects:mobile:trackable_object_create' object.id %}"
+                       class="btn btn-block btn-warning text-left d-flex align-items-center"
+                       style="font-size: 1.15rem;">
+                        <i class="fas fa-file-contract nav-icon mr-3"></i>
+                        <span class="btn-label flex-grow-1">Create New {{ object.name }}</span>
+                        <i class="fas fa-chevron-right ml-2"></i>
+                    </a>
+                </div>
                 <div class="card-body p-2">
-                    {% for instance in object.instances.all %}
+                    {% for instance in user_instances %}
                         <a href="{% url 'trackableobjects:mobile:trackable_object_edit' instance.id %}"
                            class="btn btn-block btn-default text-left d-flex align-items-center"
                            style="font-size: 1.15rem;">
@@ -47,15 +56,6 @@
                             <i class="fas fa-chevron-right ml-2"></i>
                         </a>
                     {% endfor %}
-                </div>
-                <div class="card-footer p-2">
-                    <a href="{% url 'trackableobjects:mobile:trackable_object_create' object.id %}"
-                       class="btn btn-block btn-warning text-left d-flex align-items-center"
-                       style="font-size: 1.15rem;">
-                        <i class="fas fa-file-contract nav-icon mr-3"></i>
-                        <span class="btn-label flex-grow-1">Create New {{ object.name }}</span>
-                        <i class="fas fa-chevron-right ml-2"></i>
-                    </a>
                 </div>
             </div>
         </div>

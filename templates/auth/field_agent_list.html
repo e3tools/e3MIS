@@ -14,7 +14,7 @@
                 <div class="card-header">
                     <div class="col-12">
                         <a class="btn btn-primary pull-right field-agent-modal-show" data-first-name=""
-                           data-last-name="" data-email="" data-administrative-units="" data-groups="" data-id=""
+                           data-last-name="" data-email="" data-phone-number="" data-administrative-units="" data-groups="" data-id=""
                         >{% translate 'Create' %} {% translate 'Field agent' %}</a>
                     </div>
                 </div>
@@ -40,6 +40,7 @@
                                             data-first-name="{{ field_angent.first_name }}"
                                             data-last-name="{{ field_angent.last_name }}"
                                             data-email="{{ field_angent.email }}"
+                                            data-phone-number="{{ field_angent.phone_number }}"
                                             data-administrative-units="{% for au in field_angent.administrative_units.all %}{{ au.id }}::{{ au.hierarchy_name }}{% if not forloop.last %}|{% endif %}{% endfor %}"
                                             data-groups="{% for group in field_angent.groups.all %}{{ group.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
                                             data-id="{{ field_angent.id }}"
@@ -349,6 +350,7 @@
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
                 $("#id_email").val($(this).data("email"));
+                $("#id_phone_number").val($(this).data("phone-number"));
                 $("#id_password1").val("");
                 $("#id_password2").val("");
                 $("#reset-password-checkbox").prop('checked', false);
