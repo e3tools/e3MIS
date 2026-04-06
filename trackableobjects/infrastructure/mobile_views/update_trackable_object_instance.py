@@ -57,11 +57,18 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
+        restrict_au = 'restrict_by_administrative_units' in self.request.POST
         self.object.filled_by = self.request.user
         self.object.jsonForm = cleaned_data
+        self.object.restrict_by_administrative_units = restrict_au
         self.object.save()
         self.object.administrative_units.clear()
-        self.object.administrative_units.add(*post_dict.pop('administrative_units'))
+        if restrict_au and 'administrative_units' in post_dict:
+            self.object.administrative_units.add(*post_dict.pop('administrative_units'))
+        else:
+            all_leaf_ids = [id for unit in self.request.user.administrative_units.all()
+                           for id in self.get_descendants(unit)]
+            self.object.administrative_units.add(*all_leaf_ids)
 
         # if form.files is not None:
         #     for key, value in form.files.items():
@@ -111,6 +118,7 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
                                                                                                             flat=True)
 
         context['trackable_object'] = self.object.trackable_object
+        context['restrict_by_administrative_units'] = self.object.restrict_by_administrative_units
         return context
 
     def get_initial(self):

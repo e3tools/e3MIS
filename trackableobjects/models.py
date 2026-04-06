@@ -62,6 +62,8 @@ class TrackableObjectInstance(models.Model):
                                     blank=True)
     administrative_units = models.ManyToManyField(AdministrativeUnit, verbose_name=_('Administrative units'),
                                                   blank=True, related_name="trackable_object_instances", )
+    restrict_by_administrative_units = models.BooleanField(default=True,
+                                                           verbose_name=_('Restrict by administrative units'))
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
 
     @property
