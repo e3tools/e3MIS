@@ -24,6 +24,8 @@
                         <tr>
                             <th>{% translate 'Name' %}</th>
                             <th>{% translate 'Email' %}</th>
+                            <th>{% translate 'Phone number' %}</th>
+                            <th>{% translate 'Groups' %}</th>
                             <th>{% translate 'Administrative level' %}</th>
                             <th>{% translate 'Actions' %}</th>
                         </tr>
@@ -33,6 +35,8 @@
                             <tr id="subproject-{{ subproject.pk }}">
                                 <td>{{ field_angent.get_full_name }}</td>
                                 <td>{{ field_angent.email }}</td>
+                                <td>{{ field_angent.phone_number }}</td>
+                                <td>{% for group in field_angent.groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                                 <td>{% for au in field_angent.administrative_units.all %}{{ au.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                                 <td>
                                   <div class="btn-group">

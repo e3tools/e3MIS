@@ -21,10 +21,12 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             'trackable_object'
         ).get(id=self.kwargs['pk'])
 
-        # Verify user has group access to the parent TrackableObject
-        for group in trackable_object_instance.trackable_object.groups.all():
-            if not self.request.user.groups.filter(id=group.id).exists():
-                raise PermissionDenied
+        # Verify user shares at least one group with the parent TrackableObject
+        trackable_object_groups = trackable_object_instance.trackable_object.groups.all()
+        if trackable_object_groups.exists() and not self.request.user.groups.filter(
+            id__in=trackable_object_groups
+        ).exists():
+            raise PermissionDenied
 
         context['trackable_object_instance'] = trackable_object_instance
 

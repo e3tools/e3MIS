@@ -19,6 +19,7 @@ class TrackableObjectEditView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
         context = super().get_context_data(**kwargs)
         context['title'] = '{} - {}'.format(self.object.name, _('Edit'))
         context.update({'custom_forms': self.model.objects.exclude(id=self.object.id)})
+        context.update({'trackable_objects': self.model.objects.all()})
 
         context.update({'groups': Group.objects.all()})
         context.update({'trackable_object_groups': list(self.object.groups.all().values_list(

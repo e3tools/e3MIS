@@ -12,16 +12,13 @@ class MobileViewsTrackableObjectInstanceRegistrationListView(IsFieldAgentUserMix
     def get_queryset(self):
         user_group_ids = list(self.request.user.groups.values_list('id', flat=True))
 
-        unmatched_groups = TrackableObject.groups.through.objects.filter(
-            trackableobject_id=OuterRef('pk')
-        ).exclude(
+        matched_groups = TrackableObject.groups.through.objects.filter(
+            trackableobject_id=OuterRef('pk'),
             group_id__in=user_group_ids
         )
 
-        return TrackableObject.objects.annotate(
-            has_unmatched_groups=Exists(unmatched_groups)
-        ).filter(
-            has_unmatched_groups=False
+        return TrackableObject.objects.filter(
+            Exists(matched_groups)
         )
 
     def get_context_data(self, **kwargs):

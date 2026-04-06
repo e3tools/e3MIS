@@ -15,16 +15,13 @@ class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
         self.user_group_ids = list(self.user_groups.values_list('id', flat=True))
         kwargs.update({'administrative_units': [d for unit in self.request.user.administrative_units.all() for d in self.get_descendants(unit)]})
 
-        unmatched_groups = TrackableObject.groups.through.objects.filter(
-            trackableobject_id=OuterRef('pk')
-        ).exclude(
+        matched_groups = TrackableObject.groups.through.objects.filter(
+            trackableobject_id=OuterRef('pk'),
             group_id__in=self.user_group_ids
         )
 
-        trackable_objects = TrackableObject.objects.annotate(
-            has_unmatched_groups=Exists(unmatched_groups)
-        ).filter(
-            has_unmatched_groups=False
+        trackable_objects = TrackableObject.objects.filter(
+            Exists(matched_groups)
         )
 
         kwargs.update({'trackable_objects': trackable_objects})

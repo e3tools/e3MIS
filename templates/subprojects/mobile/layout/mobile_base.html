@@ -9,6 +9,17 @@
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
+    <!-- Mobile top bar -->
+    <nav class="navbar navbar-light bg-white shadow-sm px-3 py-2">
+        <span class="navbar-text font-weight-bold">{{ request.user.get_full_name }}</span>
+        <form method="post" action="{% url 'authorization:logout' %}" class="mb-0">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="fa fa-sign-out-alt mr-1"></i> {% translate 'Logout' %}
+            </button>
+        </form>
+    </nav>
+
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper" style="margin-left: 0;">
 

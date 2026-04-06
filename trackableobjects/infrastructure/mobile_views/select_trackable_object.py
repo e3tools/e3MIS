@@ -10,16 +10,13 @@ class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
     def get_context_data(self, **kwargs):
         user_group_ids = list(self.request.user.groups.values_list('id', flat=True))
 
-        unmatched_groups = TrackableObject.groups.through.objects.filter(
-            trackableobject_id=OuterRef('pk')
-        ).exclude(
+        matched_groups = TrackableObject.groups.through.objects.filter(
+            trackableobject_id=OuterRef('pk'),
             group_id__in=user_group_ids
         )
 
-        trackable_objects = TrackableObject.objects.annotate(
-            has_unmatched_groups=Exists(unmatched_groups)
-        ).filter(
-            has_unmatched_groups=False
+        trackable_objects = TrackableObject.objects.filter(
+            Exists(matched_groups)
         )
         kwargs.update({'trackable_objects': trackable_objects})
 
