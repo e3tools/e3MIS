@@ -63,14 +63,20 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             if isinstance(cleaned_data[key], TrackableObjectInstance) or isinstance(cleaned_data[key], AdministrativeUnit):
                 cleaned_data[key] = cleaned_data[key].id
 
+        restrict_au = 'restrict_by_administrative_units' in self.request.POST
         instance = self.model(
             trackable_object=self.object,
             created_by=self.request.user,
+            restrict_by_administrative_units=restrict_au,
             jsonForm=cleaned_data
         )
         instance.save()
-        administrative_units = post_dict.pop('administrative_units', [])
-        instance.administrative_units.set(administrative_units)
+        if restrict_au and 'administrative_units' in post_dict:
+            instance.administrative_units.add(*post_dict.pop('administrative_units'))
+        else:
+            all_leaf_ids = [id for unit in self.request.user.administrative_units.all()
+                           for id in self.get_descendants(unit)]
+            instance.administrative_units.add(*all_leaf_ids)
 
         if form.files is not None:
             for key, value in form.files.items():
@@ -118,6 +124,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
 
         context['administrative_units'] = response_list
         context['trackable_object'] = self.object
+        context['restrict_by_administrative_units'] = True
 
         return context
 

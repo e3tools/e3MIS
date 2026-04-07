@@ -1,5 +1,5 @@
 from django.views.generic import TemplateView
-from django.db.models import Q, Exists, OuterRef, Count, Subquery, IntegerField, ExpressionWrapper, F, Value
+from django.db.models import Q, Exists, OuterRef
 from src.permissions import IsFieldAgentUserMixin
 from subprojects.models import Subproject, SubprojectCustomField, SubprojectFormResponse
 
@@ -10,18 +10,16 @@ class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
     def get_context_data(self, **kwargs):
         user_group_ids = list(self.request.user.groups.values_list('id', flat=True))
 
-        matching_group_count = SubprojectCustomField.groups.through.objects.filter(
-            subprojectcustomfield_id=OuterRef('pk'),
+        unmatched_groups = SubprojectCustomField.groups.through.objects.filter(
+            subprojectcustomfield_id=OuterRef('pk')
+        ).exclude(
             group_id__in=user_group_ids
-        ).values('subprojectcustomfield_id').annotate(
-            count=Count('group_id')
-        ).values('count')
+        )
 
         subproject = Subproject.objects.filter(id=self.kwargs.get('subproject')).first()
         subproject_custom_fields = SubprojectCustomField.objects.annotate(
-                total_groups=Count('groups', distinct=True),
-                matched_groups=Subquery(matching_group_count, output_field=IntegerField()),
-            ).filter(
+            has_unmatched_groups=Exists(unmatched_groups)
+        ).filter(
             (
                 Q(dependencies_children__isnull=True) |
                 Q(dependencies_children__parent__isnull=False) &
@@ -31,10 +29,8 @@ class SelectSubprojectCustomFieldView(IsFieldAgentUserMixin, TemplateView):
                         subproject=subproject
                     )
                 )
-            ) & (
-                Q(total_groups=0) |
-                Q(total_groups=F('matched_groups'))
-            )
+            ),
+            has_unmatched_groups=False
         ).distinct().values('id', 'name')
         kwargs.update({'subproject_custom_fields': subproject_custom_fields})
         kwargs.update({'subproject': subproject})

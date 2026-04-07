@@ -310,6 +310,11 @@ $(document).ready(function () {
             $("#min-date-input").val("");
             $("#max-date-input").val("");
 
+            // Reset trackable object fields
+            $("#trackable-object-restriction-input").val("");
+            $("#btn-trackable-object-adm-lvl-yes").addClass("active");
+            $("#btn-trackable-object-adm-lvl-no").removeClass("active");
+
             // Reset conditional fields
             $("#enable-conditional").prop("checked", false);
             $("#conditional-display-group").hide();
@@ -739,6 +744,18 @@ $(document).ready(function () {
                 // Date restrictions
                 $("#min-date-input").val(fieldSchema.validators.min || "");
                 $("#max-date-input").val(fieldSchema.validators.max || "");
+
+                // Trackable object restrictions
+                if (fieldSchema.validators.trackable_object_id) {
+                    $("#trackable-object-restriction-input").val(fieldSchema.validators.trackable_object_id);
+                }
+                if (fieldSchema.validators.administrative_level_restriction) {
+                    $("#btn-trackable-object-adm-lvl-yes").addClass("active");
+                    $("#btn-trackable-object-adm-lvl-no").removeClass("active");
+                } else {
+                    $("#btn-trackable-object-adm-lvl-no").addClass("active");
+                    $("#btn-trackable-object-adm-lvl-yes").removeClass("active");
+                }
             }
 
             // Load multiple conditions

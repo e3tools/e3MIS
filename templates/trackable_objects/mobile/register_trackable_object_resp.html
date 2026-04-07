@@ -28,10 +28,18 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="card card-primary mt-4 shadow">
-                        <div class="card-header">
-                            {% translate 'Administrative levels' %}
+                        <div class="card-header d-flex align-items-center justify-content-between">
+                            <span>{% translate 'Administrative levels' %}</span>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input"
+                                       id="restrict-au-toggle" name="restrict_by_administrative_units"
+                                       value="true" {% if restrict_by_administrative_units %}checked{% endif %}>
+                                <label class="custom-control-label" for="restrict-au-toggle">
+                                    {% translate 'Restrict' %}
+                                </label>
+                            </div>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body" id="au-select-body" {% if not restrict_by_administrative_units %}style="display: none;"{% endif %}>
                             <div class="form-group">
                                 <label for="administrative_units_select_id">{% translate 'Administrative levels related' %}</label>
                                 <select id="administrative_units_select_id" name="administrative_units" class="form-control" multiple="">
@@ -87,6 +95,15 @@
     $(Document).ready(function () {
         
         bsCustomFileInput.init();
+
+        // Toggle administrative units select visibility
+        $('#restrict-au-toggle').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('#au-select-body').slideDown(200);
+            } else {
+                $('#au-select-body').slideUp(200);
+            }
+        });
         
         // Initialize conditional display on page load
         initConditionalDisplay();

@@ -1,5 +1,5 @@
 from django.views.generic import TemplateView
-from django.db.models import Q, OuterRef, Count, Subquery, IntegerField, F
+from django.db.models import OuterRef, Exists
 
 from src.permissions import IsFieldAgentUserMixin
 from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
@@ -12,26 +12,34 @@ class SelectSubprojectForActivityView(IsFieldAgentUserMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         self.user_groups = self.request.user.groups.all()
+        self.user_group_ids = list(self.user_groups.values_list('id', flat=True))
         kwargs.update({'administrative_units': [d for unit in self.request.user.administrative_units.all() for d in self.get_descendants(unit)]})
-        kwargs.update({'trackable_objects': TrackableObject.objects.all()})
+
+        matched_groups = TrackableObject.groups.through.objects.filter(
+            trackableobject_id=OuterRef('pk'),
+            group_id__in=self.user_group_ids
+        )
+
+        trackable_objects = TrackableObject.objects.filter(
+            Exists(matched_groups)
+        )
+
+        kwargs.update({'trackable_objects': trackable_objects})
         return super().get_context_data(**kwargs)
 
     def get_descendants(self, administrative_unit):
         descendants = list()
-        user_group_ids = list(self.user_groups.values_list('id', flat=True))
 
-        matching_group_count = SubprojectCustomField.groups.through.objects.filter(
-            subprojectcustomfield_id=OuterRef('pk'),
-            group_id__in=user_group_ids
-        ).values('subprojectcustomfield_id').annotate(
-            count=Count('group_id')
-        ).values('count')
+        unmatched_groups = SubprojectCustomField.groups.through.objects.filter(
+            subprojectcustomfield_id=OuterRef('pk')
+        ).exclude(
+            group_id__in=self.user_group_ids
+        )
 
         subproject_custom_field_ids = SubprojectCustomField.objects.annotate(
-            total_groups=Count('groups', distinct=True),
-            matched_groups=Subquery(matching_group_count, output_field=IntegerField()),
+            has_unmatched_groups=Exists(unmatched_groups)
         ).filter(
-            Q(total_groups=0) | Q(total_groups=F('matched_groups'))
+            has_unmatched_groups=False
         ).values('id')
 
         def recurse(node):

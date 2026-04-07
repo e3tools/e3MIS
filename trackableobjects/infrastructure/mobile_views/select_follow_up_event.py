@@ -1,5 +1,6 @@
 from django.views.generic import TemplateView
-from django.db.models import Q, OuterRef, Count, Subquery, IntegerField, F, Exists
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q, OuterRef, Subquery, Exists
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
     FollowUpEvent,
@@ -19,6 +20,13 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
         trackable_object_instance = TrackableObjectInstance.objects.select_related(
             'trackable_object'
         ).get(id=self.kwargs['pk'])
+
+        # Verify user shares at least one group with the parent TrackableObject
+        trackable_object_groups = trackable_object_instance.trackable_object.groups.all()
+        if trackable_object_groups.exists() and not self.request.user.groups.filter(
+            id__in=trackable_object_groups
+        ).exists():
+            raise PermissionDenied
 
         context['trackable_object_instance'] = trackable_object_instance
 
@@ -43,13 +51,12 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
     def _get_follow_up_events_queryset(self, user_group_ids, trackable_object_instance):
         """Returns queryset of FollowUpEvents filtered by permissions and dependencies."""
 
-        # Subquery: Count matching user groups
-        matching_group_count = FollowUpEvent.groups.through.objects.filter(
-            followupevent_id=OuterRef('pk'),
+        # Subquery: groups on this event that the user is NOT in
+        unmatched_groups = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk')
+        ).exclude(
             group_id__in=user_group_ids
-        ).values('followupevent_id').annotate(
-            count=Count('group_id')
-        ).values('count')
+        )
 
         # Subquery: Check for unfulfilled parent dependencies
         unfulfilled_dependencies = FollowUpEventDependency.objects.filter(
@@ -63,14 +70,13 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
         )
 
         return FollowUpEvent.objects.annotate(
-            total_groups=Count('groups', distinct=True),
-            matched_groups=Subquery(matching_group_count, output_field=IntegerField()),
+            has_unmatched_groups=Exists(unmatched_groups),
             has_unfulfilled_deps=Exists(unfulfilled_dependencies)
         ).filter(
-            # User has permission (either no groups or user is in all required groups)
-            Q(total_groups=0) | Q(total_groups=F('matched_groups')),
             # Event applies to this trackable object
             Q(trackable_objects=trackable_object_instance.trackable_object) | Q(trackable_objects=None),
+            # User has permission (no groups the user isn't in)
+            has_unmatched_groups=False,
             # Event is active and has no unfulfilled dependencies
             is_active=True,
             has_unfulfilled_deps=False
