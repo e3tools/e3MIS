@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import (
 
 from authorization.infrastructure.forms.email_authentication_form import EmailAuthenticationForm
 from authorization.infrastructure.views.field_agent_list import FieldAgentListView
+from authorization.infrastructure.views.field_agent_delete import FieldAgentDeleteView
 
 app_name = 'authorization'
 urlpatterns = [
@@ -16,6 +17,7 @@ urlpatterns = [
         redirect_authenticated_user=True), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('field-agents/', FieldAgentListView.as_view(), name='field_agent_list'),
+    path('field-agents/<int:pk>/delete/', FieldAgentDeleteView.as_view(), name='field_agent_delete'),
     path('api/', include([
         path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
         path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),

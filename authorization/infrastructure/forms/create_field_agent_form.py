@@ -38,7 +38,6 @@ class CreateFieldAgentForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        super().save(False)
         self.instance.is_field_agent = True
         password = self.cleaned_data.get('password1')
         if password:

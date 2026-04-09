@@ -32,6 +32,31 @@ class AdministrativeUnitRootAPIView(generics.ListAPIView):
     serializer_class = AdministrativeUnitModelSerializer
 
 
+class AdministrativeUnitDescendantsAPIView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def get(self, request, pk):
+        try:
+            unit = AdministrativeUnit.objects.get(pk=pk)
+        except AdministrativeUnit.DoesNotExist:
+            return Response({'error': 'Administrative unit not found'}, status=404)
+
+        descendants = []
+
+        def collect(node, depth=0):
+            for child in node.children.all().order_by('name'):
+                descendants.append({
+                    'id': child.id,
+                    'name': child.name,
+                    'level': child.level.name,
+                    'depth': depth,
+                })
+                collect(child, depth + 1)
+
+        collect(unit)
+        return Response(descendants)
+
+
 class AdministrativeUnitAncestorChainAPIView(APIView):
     permission_classes = (permissions.AllowAny,)
 

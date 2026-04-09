@@ -34,6 +34,7 @@
                             <th>{% translate 'Actions' %}</th>
                             <th>{% translate 'Name' %}</th>
                             <th>{% translate 'Description' %}</th>
+                            <th>{% translate 'Groups' %}</th>
                             <th>{% translate 'Trackable object' %}</th>
                         </tr>
                         </thead>
@@ -68,6 +69,7 @@
                                 </td>
                                 <td>{{ follow_up_event.name }}</td>
                                 <td>{{ follow_up_event.description }}</td>
+                                <td>{% for group in follow_up_event.groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                                 <td>{{ follow_up_event.trackable_objects_names }}</td>
                             </tr>
                         {% endfor %}
@@ -148,6 +150,3 @@
         });
     </script>
 {% endblock %}
-
-
-    

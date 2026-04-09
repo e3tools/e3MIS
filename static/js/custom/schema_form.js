@@ -315,6 +315,10 @@ $(document).ready(function () {
             $("#btn-trackable-object-adm-lvl-yes").addClass("active");
             $("#btn-trackable-object-adm-lvl-no").removeClass("active");
 
+            // Reset administrative level fields
+            $("#btn-admin-level-restriction-yes").addClass("active");
+            $("#btn-admin-level-restriction-no").removeClass("active");
+
             // Reset conditional fields
             $("#enable-conditional").prop("checked", false);
             $("#conditional-display-group").hide();
@@ -758,6 +762,17 @@ $(document).ready(function () {
                 }
             }
 
+            // Administrative level restrictions
+            if (fieldSchema.type === "administrative_level" && fieldSchema.validators) {
+                if (fieldSchema.validators.administrative_level_restriction === "true") {
+                    $("#btn-admin-level-restriction-yes").addClass("active");
+                    $("#btn-admin-level-restriction-no").removeClass("active");
+                } else {
+                    $("#btn-admin-level-restriction-no").addClass("active");
+                    $("#btn-admin-level-restriction-yes").removeClass("active");
+                }
+            }
+
             // Load multiple conditions
             this.currentConditions = [];
             if (fieldOptions.dependencies && fieldOptions.dependencies.conditions) {
@@ -977,12 +992,15 @@ $(document).ready(function () {
             const numberRestrictionsGroup = $("#number-restrictions-group");
             const dateRestrictionsGroup = $("#date-restrictions-group");
 
+            const adminLevelRestrictionsGroup = $("#admin-level-restrictions-group");
+
             // Hide all restriction groups first
             trackableObjectRestrictionsGroup.hide();
             enumOptionsGroup.hide();
             textRestrictionsGroup.hide();
             numberRestrictionsGroup.hide();
             dateRestrictionsGroup.hide();
+            adminLevelRestrictionsGroup.hide();
 
             // Show relevant restriction group based on field type
             switch (fieldType) {
@@ -1002,6 +1020,9 @@ $(document).ready(function () {
                     break;
                 case "trackable_object":
                     trackableObjectRestrictionsGroup.show();
+                    break;
+                case "administrative_level":
+                    adminLevelRestrictionsGroup.show();
                     break;
             }
         },
@@ -1117,6 +1138,12 @@ $(document).ready(function () {
                 }
                 if (trackable_object_type && !isNaN(trackable_object_type)) {
                     newFieldSchema.validators.trackable_object_id = trackable_object_type;
+                }
+            } else if (fieldType === "administrative_level") {
+                newFieldSchema = {type: fieldType, validators: {}};
+                const adminLevelRestriction = $("#btn-admin-level-restriction-yes").hasClass("active");
+                if (adminLevelRestriction) {
+                    newFieldSchema.validators.administrative_level_restriction = "true";
                 }
             } else {
                 newFieldSchema = {type: fieldType, validators: {}};

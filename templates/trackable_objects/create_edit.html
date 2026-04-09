@@ -206,6 +206,24 @@
                         </div>
                     </div>
                     
+                    <!-- Administrative Level Restrictions (show only for administrative_level type) -->
+                    <div class="form-group" id="admin-level-restrictions-group" style="display: none;">
+                        <label class="font-weight-bold">Administrative Level Restrictions</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label>Pull only from assigned administrative levels?</label><br>
+                                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                                    <label class="btn btn-outline-danger" id="btn-admin-level-restriction-no">
+                                        <input type="radio" name="admin-level-options" value="no"> No
+                                    </label>
+                                    <label class="btn btn-outline-success active" id="btn-admin-level-restriction-yes">
+                                        <input type="radio" name="admin-level-options" value="yes" checked> Yes
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Conditional Display -->
                     <div class="form-group">
                         <div class="custom-control custom-checkbox">
