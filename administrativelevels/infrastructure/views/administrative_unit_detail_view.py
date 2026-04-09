@@ -49,7 +49,7 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
         action = request.POST.get('action')
 
         if not pk:
-            # Root view - only allow adding root units
+            # Root view
             if action == 'add_root':
                 form = AdministrativeUnitForm(request.POST)
                 if form.is_valid():
@@ -66,6 +66,13 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
                     for field, errors in form.errors.items():
                         for error in errors:
                             messages.error(request, f'{field}: {error}')
+            elif action == 'delete_child':
+                child_pk = request.POST.get('child_pk')
+                if child_pk:
+                    child = get_object_or_404(AdministrativeUnit, pk=child_pk)
+                    name = child.name
+                    self._delete_unit_recursive(child)
+                    messages.success(request, f'Unit "{name}" and all its descendants deleted successfully.')
             return redirect('administrativelevels:administrative_unit_root')
 
         unit = get_object_or_404(AdministrativeUnit, pk=pk)
@@ -99,4 +106,26 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
                     for error in errors:
                         messages.error(request, f'{field}: {error}')
 
+        elif action == 'delete_child':
+            child_pk = request.POST.get('child_pk')
+            if child_pk:
+                child = get_object_or_404(AdministrativeUnit, pk=child_pk)
+                name = child.name
+                self._delete_unit_recursive(child)
+                messages.success(request, f'Unit "{name}" and all its descendants deleted successfully.')
+
+        elif action == 'delete_self':
+            parent_pk = unit.parent.pk if unit.parent else None
+            name = unit.name
+            self._delete_unit_recursive(unit)
+            messages.success(request, f'Unit "{name}" and all its descendants deleted successfully.')
+            if parent_pk:
+                return redirect('administrativelevels:administrative_unit_detail', pk=parent_pk)
+            return redirect('administrativelevels:administrative_unit_root')
+
         return redirect('administrativelevels:administrative_unit_detail', pk=unit.pk)
+
+    def _delete_unit_recursive(self, unit):
+        for child in unit.children.all():
+            self._delete_unit_recursive(child)
+        unit.delete()
