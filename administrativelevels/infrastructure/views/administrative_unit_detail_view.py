@@ -2,6 +2,7 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
+from django.db import IntegrityError
 from administrativelevels.models import AdministrativeUnit, AdministrativeLevel
 from administrativelevels.forms import AdministrativeUnitEditForm, AdministrativeUnitForm
 
@@ -58,8 +59,11 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
                         unit = form.save(commit=False)
                         unit.level = root_level
                         unit.parent = None
-                        unit.save()
-                        messages.success(request, f'Root unit "{unit.name}" added successfully.')
+                        try:
+                            unit.save()
+                            messages.success(request, f'Root unit "{unit.name}" added successfully.')
+                        except IntegrityError:
+                            messages.error(request, f'A root administrative unit with the name "{unit.name}" already exists.')
                     else:
                         messages.error(request, 'No root level defined. Please create an administrative level with order 1.')
                 else:
@@ -81,8 +85,12 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
             # Edit unit name
             form = AdministrativeUnitEditForm(request.POST, instance=unit)
             if form.is_valid():
-                form.save()
-                messages.success(request, f'Administrative unit "{unit.name}" updated successfully.')
+                try:
+                    form.save()
+                    messages.success(request, f'Administrative unit "{unit.name}" updated successfully.')
+                except IntegrityError:
+                    parent_msg = f' under "{unit.parent.name}"' if unit.parent else ' at root level'
+                    messages.error(request, f'An administrative unit with the name "{form.cleaned_data["name"]}" already exists{parent_msg}.')
             else:
                 for field, errors in form.errors.items():
                     for error in errors:
@@ -97,8 +105,11 @@ class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
                     child = form.save(commit=False)
                     child.parent = unit
                     child.level = child_level
-                    child.save()
-                    messages.success(request, f'Child unit "{child.name}" added successfully.')
+                    try:
+                        child.save()
+                        messages.success(request, f'Child unit "{child.name}" added successfully.')
+                    except IntegrityError:
+                        messages.error(request, f'An administrative unit with the name "{child.name}" already exists under "{unit.name}".')
                 else:
                     messages.error(request, 'No child level defined for this unit.')
             else:

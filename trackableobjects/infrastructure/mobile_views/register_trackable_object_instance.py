@@ -52,8 +52,6 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         return self.render_to_response(self.get_context_data())
 
     def form_valid(self, form):
-        post_dict = self.request.POST.copy()
-
         cleaned_data = serialize_for_json(form.cleaned_data)
 
         for key in cleaned_data.keys():
@@ -63,20 +61,12 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             if isinstance(cleaned_data[key], TrackableObjectInstance) or isinstance(cleaned_data[key], AdministrativeUnit):
                 cleaned_data[key] = cleaned_data[key].id
 
-        restrict_au = 'restrict_by_administrative_units' in self.request.POST
         instance = self.model(
             trackable_object=self.object,
             created_by=self.request.user,
-            restrict_by_administrative_units=restrict_au,
             jsonForm=cleaned_data
         )
         instance.save()
-        if restrict_au and 'administrative_units' in post_dict:
-            instance.administrative_units.add(*post_dict.pop('administrative_units'))
-        else:
-            all_leaf_ids = [id for unit in self.request.user.administrative_units.all()
-                           for id in self.get_descendants(unit)]
-            instance.administrative_units.add(*all_leaf_ids)
 
         if form.files is not None:
             for key, value in form.files.items():
@@ -105,27 +95,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-        administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]).select_related('parent')
-
-        response_list = list()
-        for administrative_unit in administrative_units_qs:
-            flag = False
-            for node in response_list:
-                if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
-                    node['children'].append({'id': administrative_unit.id, 'name': administrative_unit.hierarchy_name})
-                    flag = True
-            if not flag:
-                response_list.append({
-                    'parent_id': administrative_unit.parent.id,
-                    'name': administrative_unit.parent.name,
-                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.hierarchy_name}]
-                })
-
-        context['administrative_units'] = response_list
         context['trackable_object'] = self.object
-        context['restrict_by_administrative_units'] = True
-
         return context
 
     def get_custom_form(self):

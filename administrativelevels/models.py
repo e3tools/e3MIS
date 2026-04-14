@@ -24,7 +24,18 @@ class AdministrativeUnit(models.Model):
     hierarchy_name = models.CharField(max_length=255, null=True, blank=True)
 
     class Meta:
-        unique_together = ('name', 'level', 'parent')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'parent'],
+                name='unique_name_per_parent',
+                condition=models.Q(parent__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=['name'],
+                name='unique_root_name',
+                condition=models.Q(parent__isnull=True),
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         self.hierarchy_name = self.__get_hierarchy_name(self)

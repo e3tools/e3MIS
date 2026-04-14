@@ -43,12 +43,34 @@
                                 <span class="btn-label flex-grow-1">{{ trackable_object.name }}</span>
                                 <i class="fas fa-chevron-right ml-2"></i>
                             </a>
-{#                            <span class="notification-dot"></span>#}
                         </div>
                     </div>
                 {% endfor %}
             </div>
         </div>
+        {% if standalone_follow_up_events %}
+        <div class="card card-primary mt-3 mb-3 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {% translate 'General Activities' %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% for event in standalone_follow_up_events %}
+                    <div class="row justify-content-center">
+                        <div class="col-12 mb-3">
+                            <a href="{% url 'trackableobjects:mobile:standalone_follow_up_event_list' event.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
+                               style="font-size: 1.15rem;">
+                                <i class="fas fa-clipboard-list mr-3"></i>
+                                <span class="btn-label flex-grow-1">{{ event.name }}</span>
+                                <i class="fas fa-chevron-right ml-2"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -8,8 +8,6 @@ from trackableobjects.models import TrackableObject, TrackableObjectInstance
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
-from administrativelevels.models import AdministrativeUnit
-
 
 def serialize_for_json(data):
     """
@@ -51,24 +49,14 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
 
     def form_valid(self, form):
         cleaned_data = serialize_for_json(form.cleaned_data)
-        post_dict = self.request.POST.copy()
 
         for key in cleaned_data.keys():
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
-        restrict_au = 'restrict_by_administrative_units' in self.request.POST
         self.object.filled_by = self.request.user
         self.object.jsonForm = cleaned_data
-        self.object.restrict_by_administrative_units = restrict_au
         self.object.save()
-        self.object.administrative_units.clear()
-        if restrict_au and 'administrative_units' in post_dict:
-            self.object.administrative_units.add(*post_dict.pop('administrative_units'))
-        else:
-            all_leaf_ids = [id for unit in self.request.user.administrative_units.all()
-                           for id in self.get_descendants(unit)]
-            self.object.administrative_units.add(*all_leaf_ids)
 
         # if form.files is not None:
         #     for key, value in form.files.items():
@@ -95,30 +83,7 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-
-        administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]).select_related('parent')
-
-        response_list = list()
-        for administrative_unit in administrative_units_qs:
-            flag = False
-            for node in response_list:
-                if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
-                    node['children'].append({'id': administrative_unit.id, 'name': administrative_unit.hierarchy_name})
-                    flag = True
-            if not flag:
-                response_list.append({
-                    'parent_id': administrative_unit.parent.id,
-                    'name': administrative_unit.parent.name,
-                    'children': [{'id': administrative_unit.id, 'name': administrative_unit.hierarchy_name}]
-                })
-
-        context['administrative_units'] = response_list
-        context['selected_administrative_units'] = context['object'].administrative_units.all().values_list('id',
-                                                                                                            flat=True)
-
         context['trackable_object'] = self.object.trackable_object
-        context['restrict_by_administrative_units'] = self.object.restrict_by_administrative_units
         return context
 
     def get_initial(self):
@@ -182,16 +147,3 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
             if not self.request.user.groups.filter(id=group.id).exists():
                 return False
         return True
-
-    def get_descendants(self, administrative_unit):
-        descendants = list()
-
-        def recurse(node):
-            if node.children.exists():
-                for child in node.children.all():
-                    recurse(child)
-            else:
-                descendants.append(node.id)
-
-        recurse(administrative_unit)
-        return descendants

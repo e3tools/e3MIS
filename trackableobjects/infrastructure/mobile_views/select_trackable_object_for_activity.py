@@ -3,7 +3,7 @@ from django.db.models import OuterRef, Exists
 
 from src.permissions import IsFieldAgentUserMixin
 from subprojects.models import SubprojectCustomField, SubprojectFormResponse, Subproject
-from trackableobjects.models import TrackableObject
+from trackableobjects.models import TrackableObject, FollowUpEvent
 
 
 class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
@@ -21,6 +21,19 @@ class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
         )
 
         kwargs.update({'trackable_objects': TrackableObject.objects.filter(Exists(matched_groups))})
+
+        # Standalone follow-up events (not related to any trackable object)
+        unmatched_fe_groups = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk')
+        ).exclude(group_id__in=self.user_group_ids)
+
+        kwargs['standalone_follow_up_events'] = FollowUpEvent.objects.filter(
+            trackable_objects=None,
+            is_active=True,
+        ).annotate(
+            has_unmatched_groups=Exists(unmatched_fe_groups)
+        ).filter(has_unmatched_groups=False)
+
         return super().get_context_data(**kwargs)
 
     def get_descendants(self, administrative_unit):
