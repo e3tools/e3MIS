@@ -1,5 +1,6 @@
 {% extends 'layout/base.html' %}
 {% load static i18n bootstrap4 %}
+{% get_current_language as LANGUAGE_CODE %}
 
 {% block custom_title %}
     <div class="col-sm-12 d-flex align-items-center">
@@ -69,29 +70,33 @@
           </div>
 
           <div class="table-responsive">
-            <table class="table table-striped mb-0">
+            <table class="table table-striped mb-0" id="follow-up-events-table">
               <thead>
                 <tr>
+                  <th style="width: 40px;"></th>
+                  <th class="text-nowrap">{% translate 'Order' %}</th>
                   <th class="text-nowrap">{% translate 'Actions' %}</th>
                   <th>{% translate 'Name' %}</th>
                   <th class="text-nowrap">{% translate 'Date' %}</th>
                 </tr>
               </thead>
-              <tbody>
-                {% for follow_up_event in object.follow_up_events.all %}
-                  <tr>
+              <tbody id="follow-up-events-sortable">
+                {% for through in ordered_follow_up_events %}
+                  <tr data-event-id="{{ through.follow_up_event.id }}">
+                    <td class="text-center" style="cursor: grab;"><i class="fas fa-grip-vertical text-muted"></i></td>
+                    <td class="text-nowrap order-display">{{ through.order }}</td>
                     <td class="text-nowrap">
-                      <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
+                      <a href="{% url 'trackableobjects:follow_up_event_object_detail' through.follow_up_event.id %}"
                          class="btn btn-sm btn-info" title="{% translate 'Details' %}">
                         <i class="fas fa-info-circle"></i>
                       </a>
                     </td>
-                    <td>{{ follow_up_event.name }}</td>
-                    <td class="text-nowrap">{{ follow_up_event.updated_at|date:"d M, Y - P" }}</td>
+                    <td>{{ through.follow_up_event.name }}</td>
+                    <td class="text-nowrap">{{ through.follow_up_event.updated_at|date:"d M, Y - P" }}</td>
                   </tr>
                 {% empty %}
                   <tr>
-                    <td colspan="3" class="text-muted">{% translate 'No follow up events yet.' %}</td>
+                    <td colspan="5" class="text-muted">{% translate 'No follow up events yet.' %}</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -170,4 +175,36 @@
 
   </div><!-- /row -->
 </section>
+{% endblock %}
+
+{% block extrajs %}
+<script src="{% static 'AdminLTE/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+<script>
+$(function() {
+    const trackableObjectId = {{ object.pk }};
+
+    $("#follow-up-events-sortable").sortable({
+        handle: ".fa-grip-vertical",
+        axis: "y",
+        update: function() {
+            const orderedIds = [];
+            $("#follow-up-events-sortable tr[data-event-id]").each(function(index) {
+                orderedIds.push($(this).data('event-id'));
+                $(this).find('.order-display').text(index + 1);
+            });
+
+            $.ajax({
+                url: "{% url 'trackableobjects:api:follow_up_event_reorder' %}",
+                type: "POST",
+                contentType: "application/json",
+                headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                data: JSON.stringify({
+                    trackable_object_id: trackableObjectId,
+                    ordered_ids: orderedIds
+                })
+            });
+        }
+    });
+});
+</script>
 {% endblock %}

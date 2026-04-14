@@ -1,4 +1,6 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from django.db.models import Subquery
@@ -7,7 +9,9 @@ from django.template.defaultfilters import date
 from authorization.models import CustomUser
 from administrativelevels.models import AdministrativeUnit
 from trackableobjects.api.serializers import TrackableObjectInstanceSerializer
-from trackableobjects.models import TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent
+from trackableobjects.models import (
+    TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent, FollowUpEventTrackableObject
+)
 
 
 class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
@@ -76,3 +80,20 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         get_children(administrative_unit)
 
         return administrative_units
+
+
+class FollowUpEventReorderAPIView(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        trackable_object_id = request.data.get('trackable_object_id')
+        ordered_ids = request.data.get('ordered_ids', [])
+
+        for index, event_id in enumerate(ordered_ids):
+            FollowUpEventTrackableObject.objects.filter(
+                trackable_object_id=trackable_object_id,
+                follow_up_event_id=event_id,
+            ).update(order=index + 1)
+
+        return Response({'status': 'ok'})

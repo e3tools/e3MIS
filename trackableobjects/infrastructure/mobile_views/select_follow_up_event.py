@@ -1,10 +1,11 @@
 from django.views.generic import TemplateView
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q, OuterRef, Subquery, Exists
+from django.db.models import Q, OuterRef, Subquery, Exists, Value, IntegerField
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
     FollowUpEvent,
     FollowUpEventResponse,
+    FollowUpEventTrackableObject,
     TrackableObjectInstance,
     FollowUpEventDependency
 )
@@ -69,9 +70,16 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             )
         )
 
+        # Subquery: get order from through table for this trackable object
+        through_order = FollowUpEventTrackableObject.objects.filter(
+            follow_up_event=OuterRef('pk'),
+            trackable_object=trackable_object_instance.trackable_object
+        ).values('order')[:1]
+
         return FollowUpEvent.objects.annotate(
             has_unmatched_groups=Exists(unmatched_groups),
-            has_unfulfilled_deps=Exists(unfulfilled_dependencies)
+            has_unfulfilled_deps=Exists(unfulfilled_dependencies),
+            custom_order=Subquery(through_order, output_field=IntegerField()),
         ).filter(
             # Event applies to this trackable object
             Q(trackable_objects=trackable_object_instance.trackable_object) | Q(trackable_objects=None),
@@ -80,7 +88,7 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             # Event is active and has no unfulfilled dependencies
             is_active=True,
             has_unfulfilled_deps=False
-        ).distinct()
+        ).distinct().order_by('custom_order', 'name')
 
     def _annotate_response_status(self, follow_up_events, trackable_object_instance):
         """Adds has_no_response and response_id attributes to one-off events."""
