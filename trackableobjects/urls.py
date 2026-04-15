@@ -28,6 +28,8 @@ from trackableobjects.infrastructure.mobile_views.register_follow_up_resp import
 from trackableobjects.infrastructure.mobile_views.select_trackable_object_instance_for_activity import \
     MobileViewsTrackableObjectInstanceActivityListView
 from trackableobjects.infrastructure.mobile_views.select_follow_up_event import SelectFollowUpEventView
+from trackableobjects.infrastructure.mobile_views.select_standalone_follow_up_event import \
+    SelectStandaloneFollowUpEventView
 
 app_name = 'trackableobjects'
 urlpatterns = [
@@ -74,5 +76,15 @@ urlpatterns = [
                                  path('follow-up/<int:follow_up_event>/form/response/<int:response>/',
                                       FollowUpEventResponseCreateView.as_view(),
                                       name='follow_up_event_response_update'),
+                                 # Standalone follow-up events (not related to any trackable object)
+                                 path('standalone-follow-up/<int:pk>/',
+                                      SelectStandaloneFollowUpEventView.as_view(),
+                                      name='standalone_follow_up_event_list'),
+                                 path('standalone-follow-up/<int:follow_up_event>/detail/',
+                                      MobileViewsFollowUpEventDetailView.as_view(),
+                                      name='standalone_follow_up_event_detail'),
+                                 path('standalone-follow-up/<int:follow_up_event>/form/',
+                                      FollowUpEventResponseCreateView.as_view(),
+                                      name='standalone_follow_up_event_response_create'),
                              ], 'mobile'))),
 ]

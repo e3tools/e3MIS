@@ -23,11 +23,19 @@
             <div class="card card-primary mt-4 mb-4 shadow">
                 <div class="card-header position-relative d-flex align-items-center justify-content-center"
                      style="min-height:56px;">
-                    <a href="{% url 'trackableobjects:mobile:follow_up_event_list' trackable_instance_id %}" 
+                    {% if trackable_instance_id %}
+                    <a href="{% url 'trackableobjects:mobile:follow_up_event_list' trackable_instance_id %}"
                        class="btn btn-link p-2 position-absolute"
                        style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
                         <i class="fas fa-arrow-left"></i>
                     </a>
+                    {% else %}
+                    <a href="{% url 'trackableobjects:mobile:standalone_follow_up_event_list' object.id %}"
+                       class="btn btn-link p-2 position-absolute"
+                       style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    {% endif %}
                     <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
                         {{ object.name }} {% translate 'responses' %}
                     </h4>
@@ -46,8 +54,13 @@
                     {% endfor %}
                 </div>
                 <div class="card-footer p-2">
+                    {% if trackable_instance_id %}
                     <a href="{% url 'trackableobjects:mobile:follow_up_event_response_create' trackable_instance_id object.id %}" class="btn btn-block btn-primary text-left d-flex align-items-center"
                        style="font-size: 1.15rem;">
+                    {% else %}
+                    <a href="{% url 'trackableobjects:mobile:standalone_follow_up_event_response_create' object.id %}" class="btn btn-block btn-primary text-left d-flex align-items-center"
+                       style="font-size: 1.15rem;">
+                    {% endif %}
                         <i class="fas fa-file-contract nav-icon mr-3"></i>
                         <span class="btn-label flex-grow-1">{% translate 'Create New Response' %}</span>
                         <i class="fas fa-chevron-right ml-2"></i>

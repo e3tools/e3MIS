@@ -59,8 +59,9 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         if self.instance is not None:
             trackable_object_instance = self.instance.trackable_object_instance
         else:
+            trackable_instance_id = self.kwargs.get('trackable_instance')
             trackable_object_instance = TrackableObjectInstance.objects.filter(
-                id=self.kwargs.get('trackable_instance')).first()
+                id=trackable_instance_id).first() if trackable_instance_id else None
 
         cleaned_data = serialize_for_json(form.cleaned_data)
 
@@ -107,26 +108,41 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
-        context['follow_up_event'] = FollowUpEvent.objects.filter(id=self.kwargs['follow_up_event']).first()
+        follow_up_event = FollowUpEvent.objects.filter(id=self.kwargs['follow_up_event']).first()
+        context['follow_up_event'] = follow_up_event
 
-        if 'trackable_instance' in self.kwargs:
+        trackable_instance_id = self.kwargs.get('trackable_instance')
+        if trackable_instance_id:
             context['trackable_object_instance'] = TrackableObjectInstance.objects.filter(
-                id=self.kwargs['trackable_instance']).first()
+                id=trackable_instance_id).first()
+        elif 'response' in self.kwargs:
+            response = FollowUpEventResponse.objects.filter(id=self.kwargs['response']).first()
+            context['trackable_object_instance'] = response.trackable_object_instance if response else None
         else:
-            context['trackable_object_instance'] = FollowUpEventResponse.objects.filter(
-                id=self.kwargs['response']).first().trackable_object_instance
+            context['trackable_object_instance'] = None
 
-        if context['follow_up_event'].is_one_off:
-            context['back_url'] = reverse_lazy(
-                'trackableobjects:mobile:follow_up_event_list', args=[context['trackable_object_instance'].id]
-            )
+        toi = context['trackable_object_instance']
+        if toi:
+            if follow_up_event.is_one_off:
+                context['back_url'] = reverse_lazy(
+                    'trackableobjects:mobile:follow_up_event_list', args=[toi.id]
+                )
+            else:
+                context['back_url'] = reverse_lazy(
+                    'trackableobjects:mobile:follow_up_event_detail',
+                    args=[toi.id, follow_up_event.id]
+                )
         else:
-            context['back_url'] = reverse_lazy(
-                'trackableobjects:mobile:follow_up_event_detail',
-                args=[context['trackable_object_instance'].id, context['follow_up_event'].id]
-            )
+            if follow_up_event.is_one_off:
+                context['back_url'] = reverse_lazy(
+                    'trackableobjects:mobile:standalone_follow_up_event_list', args=[follow_up_event.id]
+                )
+            else:
+                context['back_url'] = reverse_lazy(
+                    'trackableobjects:mobile:standalone_follow_up_event_detail',
+                    args=[follow_up_event.id]
+                )
 
-        # NEW: Add parent form data to context
         context['parent_form_data_json'] = self.get_parent_form_data_json()
 
         return context
@@ -142,9 +158,10 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         parent_form_data = {}
 
         # Get the trackable object instance
-        if 'trackable_instance' in self.kwargs:
+        trackable_instance_id = self.kwargs.get('trackable_instance')
+        if trackable_instance_id:
             trackable_object_instance = TrackableObjectInstance.objects.filter(
-                id=self.kwargs['trackable_instance']
+                id=trackable_instance_id
             ).first()
         elif 'response' in self.kwargs:
             response = FollowUpEventResponse.objects.filter(id=self.kwargs['response']).first()
@@ -269,14 +286,24 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         return True
 
     def get_success_url(self):
-        if self.instance.follow_up_event.is_one_off:
+        toi = self.instance.trackable_object_instance
+        fe = self.instance.follow_up_event
+        if toi:
+            if fe.is_one_off:
+                return reverse_lazy(
+                    'trackableobjects:mobile:follow_up_event_list', args=[toi.id]
+                )
             return reverse_lazy(
-                'trackableobjects:mobile:follow_up_event_list', args=[self.instance.trackable_object_instance.id]
+                'trackableobjects:mobile:follow_up_event_detail', args=[toi.id, fe.id]
             )
-        return reverse_lazy(
-            'trackableobjects:mobile:follow_up_event_detail',
-            args=[self.instance.trackable_object_instance.id, self.instance.follow_up_event.id]
-        )
+        else:
+            if fe.is_one_off:
+                return reverse_lazy(
+                    'trackableobjects:mobile:standalone_follow_up_event_list', args=[fe.id]
+                )
+            return reverse_lazy(
+                'trackableobjects:mobile:standalone_follow_up_event_detail', args=[fe.id]
+            )
 
     def get_descendants(self, administrative_unit):
         descendants = list()

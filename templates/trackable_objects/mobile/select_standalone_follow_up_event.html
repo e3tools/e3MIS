@@ -1,0 +1,63 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-primary mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}"
+                   class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {{ follow_up_event.name }}
+                </h4>
+                <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
+                    <i class="fas fa-home"></i>
+                </a>
+            </div>
+            <div class="card-body p-2">
+                {% if follow_up_event.is_one_off %}
+                    {% if existing_response %}
+                        <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' follow_up_event.id existing_response.id %}"
+                           class="btn btn-block btn-default text-left d-flex align-items-center" style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ existing_response.identifier }}</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <span class="text-muted">{% translate 'No response yet.' %}</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {% for resp in responses %}
+                        <a href="{% url 'trackableobjects:mobile:follow_up_event_response_update' follow_up_event.id resp.id %}"
+                           class="btn btn-block btn-default text-left d-flex align-items-center" style="font-size: 1.15rem;">
+                            <i class="fas fa-file-contract nav-icon text-warning mr-3"></i>
+                            <span class="btn-label flex-grow-1">{{ resp.identifier }}</span>
+                            <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    {% empty %}
+                        <div class="text-center py-3">
+                            <span class="text-muted">{% translate 'No responses yet.' %}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+            {% if not follow_up_event.is_one_off or not existing_response %}
+            <div class="card-footer p-2">
+                <a href="{% url 'trackableobjects:mobile:standalone_follow_up_event_response_create' follow_up_event.id %}"
+                   class="btn btn-block btn-primary text-left d-flex align-items-center" style="font-size: 1.15rem;">
+                    <i class="fas fa-file-contract nav-icon mr-3"></i>
+                    <span class="btn-label flex-grow-1">{% translate 'Create New Response' %}</span>
+                    <i class="fas fa-chevron-right ml-2"></i>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

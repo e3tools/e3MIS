@@ -25,13 +25,15 @@ class MobileViewsFollowUpEventDetailView(IsFieldAgentUserMixin, DetailView):
             has_unmatched_groups=False
         )
 
-    def filter_queryset(self, queryset):
-        query = queryset.filter(trackable_object__id=self.kwargs['trackable_instance'])
-        return super().filter_queryset(query)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['trackable_instance_id'] = self.kwargs['trackable_instance']
-        context['responses'] = self.object.responses.filter(
-            trackable_object_instance__id=self.kwargs['trackable_instance'])
+        trackable_instance_id = self.kwargs.get('trackable_instance')
+        context['trackable_instance_id'] = trackable_instance_id
+        if trackable_instance_id:
+            context['responses'] = self.object.responses.filter(
+                trackable_object_instance__id=trackable_instance_id)
+        else:
+            context['responses'] = self.object.responses.filter(
+                created_by=self.request.user,
+                trackable_object_instance__isnull=True)
         return context

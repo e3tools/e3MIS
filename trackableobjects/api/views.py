@@ -1,4 +1,6 @@
-from rest_framework import generics, viewsets
+from rest_framework import generics, permissions
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from django.db.models import Subquery
@@ -7,14 +9,9 @@ from django.template.defaultfilters import date
 from api.permissions import ReadOnly
 from authorization.models import CustomUser
 from administrativelevels.models import AdministrativeUnit
-from trackableobjects.api.serializers import (
-    TrackableObjectSerializer, TrackableObjectInstanceSerializer,
-    FollowUpEventSerializer, FollowUpEventDependencySerializer,
-    FollowUpEventResponseSerializer
-)
+from trackableobjects.api.serializers import TrackableObjectInstanceSerializer
 from trackableobjects.models import (
-    TrackableObject, TrackableObjectInstance,
-    FollowUpEventResponse, FollowUpEvent, FollowUpEventDependency
+    TrackableObjectInstance, FollowUpEventResponse, FollowUpEvent, FollowUpEventTrackableObject
 )
 
 
@@ -87,31 +84,18 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         return administrative_units
 
 
-class TrackableObjectModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
-    queryset = TrackableObject.objects.all()
-    serializer_class = TrackableObjectSerializer
+class FollowUpEventReorderAPIView(APIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
+    def post(self, request):
+        trackable_object_id = request.data.get('trackable_object_id')
+        ordered_ids = request.data.get('ordered_ids', [])
 
-class FollowUpEventModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
-    queryset = FollowUpEvent.objects.all()
-    serializer_class = FollowUpEventSerializer
+        for index, event_id in enumerate(ordered_ids):
+            FollowUpEventTrackableObject.objects.filter(
+                trackable_object_id=trackable_object_id,
+                follow_up_event_id=event_id,
+            ).update(order=index + 1)
 
-
-class FollowUpEventDependencyModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
-    queryset = FollowUpEventDependency.objects.all()
-    serializer_class = FollowUpEventDependencySerializer
-
-
-class TrackableObjectInstanceModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
-    queryset = TrackableObjectInstance.objects.all()
-    serializer_class = TrackableObjectInstanceSerializer
-
-
-class FollowUpEventResponseModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
-    queryset = FollowUpEventResponse.objects.all()
-    serializer_class = FollowUpEventResponseSerializer
+        return Response({'status': 'ok'})
