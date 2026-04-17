@@ -2,7 +2,7 @@ import json
 from django.views.generic.edit import UpdateView
 from django.urls import reverse_lazy
 from django.utils.translation import gettext as _
-from trackableobjects.models import TrackableObject
+from trackableobjects.models import TrackableObject, COLOR_TOKENS, COLOR_MAP
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
@@ -24,6 +24,10 @@ class TrackableObjectEditView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
         context.update({'groups': Group.objects.all()})
         context.update({'trackable_object_groups': list(self.object.groups.all().values_list(
             'id', flat=True))})
+        context.update({
+            'color_tokens': COLOR_TOKENS,
+            'color_map': COLOR_MAP,
+        })
 
         context['object'].jsonForm = json.dumps(context['object'].jsonForm)
         return context

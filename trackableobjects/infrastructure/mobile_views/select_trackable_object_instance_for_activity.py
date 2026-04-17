@@ -1,3 +1,5 @@
+import json
+
 from django.views.generic.detail import DetailView
 from django.db.models import Q, F, Count, Sum, OuterRef, Exists
 
@@ -26,64 +28,67 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['trackable_object'] = self.kwargs.get('pk', None)
-        administrative_units_qs = AdministrativeUnit.objects.filter(
-            id__in=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
-        ).select_related('parent')
 
-        response_list = list()
-        for administrative_unit in administrative_units_qs:
+        user_units = list(
+            self.request.user.administrative_units.all()
+            .select_related('level')
+        )
 
-            base_instances = TrackableObjectInstance.objects.filter(
-                administrative_units=administrative_unit,
-                trackable_object=self.object
+        if not user_units:
+            context['units_json'] = '[]'
+            return context
+
+        user_unit_ids = {u.id for u in user_units}
+
+        # Build full accessible tree (from user's assigned units downward)
+        all_units = {}
+
+        def collect_tree(node):
+            if node.id in all_units:
+                return
+            all_units[node.id] = node
+            for child in node.children.select_related('level').order_by('name'):
+                collect_tree(child)
+
+        for unit in user_units:
+            collect_tree(unit)
+
+        # Instance counts per admin unit (direct assignment)
+        direct_counts = dict(
+            TrackableObjectInstance.objects.filter(
+                trackable_object=self.object,
+                administrative_units__id__in=all_units.keys(),
+            ).values_list('administrative_units__id').annotate(
+                count=Count('id', distinct=True)
             )
+        )
 
-            qs = base_instances.annotate(
-                total_one_off_events=Count(
-                    'trackable_object__follow_up_events',
-                    filter=Q(trackable_object__follow_up_events__is_one_off=True),
-                    distinct=True
-                ),
-                total_one_off_responses=Count(
-                    'follow_up_responses',
-                    filter=Q(follow_up_responses__follow_up_event__is_one_off=True),
-                    distinct=True
-                ),
-            ).annotate(pending_one_off=F('total_one_off_events') - F('total_one_off_responses'))
+        # Compute subtree instance counts (unit + all descendants)
+        subtree_cache = {}
 
-            result = qs.aggregate(pending_total=Sum('pending_one_off'))['pending_total'] or ''
+        def subtree_count(unit_id):
+            if unit_id in subtree_cache:
+                return subtree_cache[unit_id]
+            count = direct_counts.get(unit_id, 0)
+            for uid, u in all_units.items():
+                if u.parent_id == unit_id:
+                    count += subtree_count(uid)
+            subtree_cache[unit_id] = count
+            return count
 
-            child = {
-                'id': administrative_unit.id,
-                'name': administrative_unit.hierarchy_name,
-                'pending_responses': result,
-                'trackable_instances_count': base_instances.count() or ''
-            }
+        # Build JSON, filtering out units with 0 instances in subtree
+        units_data = []
+        for uid, u in all_units.items():
+            ic = subtree_count(uid)
+            if ic == 0:
+                continue
+            units_data.append({
+                'id': u.id,
+                'name': u.name,
+                'level_name': u.level.name,
+                'parent_id': u.parent_id if u.parent_id in all_units else None,
+                'instance_count': ic,
+            })
 
-            flag = False
-            for node in response_list:
-                if 'parent_id' in node and node['parent_id'] == administrative_unit.parent.id:
-                    flag = True
-                    node['children'].append(child)
-            if not flag:
-                response_list.append({
-                    'parent_id': administrative_unit.parent.id,
-                    'name': administrative_unit.parent.name,
-                    'children': [child]
-                })
-
-        context['administrative_units'] = response_list
+        context['units_json'] = json.dumps(units_data)
         return context
-
-    def get_descendants(self, administrative_unit):
-        descendants = list()
-
-        def recurse(node):
-            if node.children.exists():
-                for child in node.children.all():
-                    recurse(child)
-            else:
-                descendants.append(node.id)
-
-        recurse(administrative_unit)
-        return descendants

@@ -3,24 +3,95 @@
 {% get_current_language as LANGUAGE_CODE %}
 
 {% block extracss %}
-    <style>
-        .notification-dot {
-            position: absolute;
-            top: 8px;
-            right: 16px;
-            width: 10px;
-            height: 10px;
-            background-color: red;
-            border-radius: 50%;
-            z-index: 10;
-        }
-    </style>
+<style>
+    .object-card {
+        display: flex;
+        align-items: center;
+        padding: 14px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e2e6eb;
+        margin-bottom: 10px;
+        text-decoration: none;
+        color: #2c3e50;
+        transition: box-shadow .15s;
+    }
+    .object-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,.12);
+        text-decoration: none;
+        color: #2c3e50;
+    }
+    .object-icon-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+    .object-info {
+        flex-grow: 1;
+        min-width: 0;
+    }
+    .object-name {
+        font-weight: 600;
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .object-meta {
+        font-size: .8rem;
+        color: #7f8c8d;
+    }
+    .pending-badge {
+        background: #e67e22;
+        color: #fff;
+        border-radius: 12px;
+        padding: 2px 10px;
+        font-size: .75rem;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .global-card {
+        background: #f3e5f8;
+        border: 1px solid #d5b8e8;
+    }
+    .global-card .object-icon-wrap {
+        background: #e1bee7;
+    }
+    .global-card .object-icon-wrap i {
+        color: #8e44ad;
+    }
+    .search-wrap {
+        position: relative;
+        margin-bottom: 16px;
+    }
+    .search-wrap i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #7f8c8d;
+    }
+    .search-wrap input {
+        padding-left: 38px;
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        height: 44px;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-12">
-        <div class="card card-primary mt-3 mb-3 shadow">
+
+        <!-- Header -->
+        <div class="card card-warning mt-3 mb-3 shadow">
             <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
                 <a href="{% url 'trackableobjects:mobile:index' %}"
                    class="btn btn-link p-2 position-absolute" style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
@@ -28,49 +99,152 @@
                 </a>
                 <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
                     {% translate 'Submit Activity' %}
+                    {% if total_pending %}
+                        <span class="badge badge-light ml-1">{{ total_pending }} {% translate 'pending' %}</span>
+                    {% endif %}
                 </h4>
                 <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
                     <i class="fas fa-home"></i>
                 </a>
             </div>
+
             <div class="card-body">
-                {% for trackable_object in trackable_objects %}
-                    <div class="row justify-content-center">
-                        <div class="col-12 mb-3">
-                            <a href="{% url 'trackableobjects:mobile:trackable_object_instance_activity_list' trackable_object.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
-                               style="font-size: 1.15rem;">
-                                <i class="fas fa-briefcase mr-3"></i>
-                                <span class="btn-label flex-grow-1">{{ trackable_object.name }}</span>
-                                <i class="fas fa-chevron-right ml-2"></i>
-                            </a>
+
+                <!-- "See all my activities" shortcut -->
+                <a href="{% url 'trackableobjects:mobile:all_activities' %}"
+                   class="object-card mb-3" data-searchable="{% translate 'All activities' %}"
+                   style="background: linear-gradient(135deg, #3498db, #2471a3); border:none; color:#fff; box-shadow: 0 3px 10px rgba(52,152,219,.3);">
+                    <div class="object-icon-wrap" style="background: rgba(255,255,255,.2);">
+                        <i class="fas fa-tasks" style="font-size:1.3rem; color:#fff;"></i>
+                    </div>
+                    <div class="object-info">
+                        <div class="object-name" style="color:#fff;">{% translate 'See all my activities' %}</div>
+                        <div class="object-meta" style="color:rgba(255,255,255,.85);">
+                            {% if total_pending %}{{ total_pending }} {% translate 'pending' %} &middot; {% endif %}{% translate 'across every object' %}
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% if standalone_follow_up_events %}
-        <div class="card card-primary mt-3 mb-3 shadow">
-            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
-                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
-                    {% translate 'General Activities' %}
-                </h4>
-            </div>
-            <div class="card-body">
-                {% for event in standalone_follow_up_events %}
-                    <div class="row justify-content-center">
-                        <div class="col-12 mb-3">
-                            <a href="{% url 'trackableobjects:mobile:standalone_follow_up_event_list' event.id %}" class="btn btn-block btn-default text-left d-flex align-items-center"
-                               style="font-size: 1.15rem;">
-                                <i class="fas fa-clipboard-list mr-3"></i>
-                                <span class="btn-label flex-grow-1">{{ event.name }}</span>
-                                <i class="fas fa-chevron-right ml-2"></i>
-                            </a>
+                    <i class="fas fa-chevron-right ml-2" style="color:rgba(255,255,255,.7);"></i>
+                </a>
+
+                <!-- Search -->
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="activity-search" class="form-control"
+                           placeholder="{% translate 'Search objects or activities...' %}">
+                </div>
+
+                <!-- Global Activities Card -->
+                {% if standalone_follow_up_events %}
+                <a href="#" class="object-card global-card" id="global-activities-toggle" data-searchable="{% translate 'Global Activities' %}">
+                    <div class="object-icon-wrap">
+                        <i class="fas fa-globe-africa" style="font-size:1.3rem;"></i>
+                    </div>
+                    <div class="object-info">
+                        <div class="object-name">{% translate 'Global Activities' %}</div>
+                        <div class="object-meta">
+                            {{ standalone_count }} {% translate 'activities' %}
                         </div>
                     </div>
+                    {% if standalone_pending %}
+                        <span class="pending-badge">{{ standalone_pending }} {% translate 'pending' %}</span>
+                    {% endif %}
+                    <i class="fas fa-chevron-down ml-2 text-muted" id="global-chevron"></i>
+                </a>
+
+                <!-- Global activities expandable list -->
+                <div id="global-activities-list" style="display: none; margin-bottom: 10px;">
+                    {% for event in standalone_follow_up_events %}
+                        <a href="{% url 'trackableobjects:mobile:standalone_follow_up_event_list' event.id %}"
+                           class="object-card ml-3" data-searchable="{{ event.name }}">
+                            <div class="object-icon-wrap" style="background: #e1bee7; width:36px; height:36px;">
+                                <i class="fas fa-clipboard-list" style="font-size:1rem; color:#8e44ad;"></i>
+                            </div>
+                            <div class="object-info">
+                                <div class="object-name">{{ event.name }}</div>
+                            </div>
+                            <i class="fas fa-chevron-right ml-2 text-muted"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Section label -->
+                {% if trackable_objects_data %}
+                <div class="text-muted mb-2 mt-2" style="font-size:.85rem; font-weight:600; text-transform:uppercase; letter-spacing:.5px;">
+                    {% translate 'By object type' %}
+                </div>
+                {% endif %}
+
+                <!-- Object type list -->
+                {% for item in trackable_objects_data %}
+                <a href="{% url 'trackableobjects:mobile:trackable_object_instance_activity_list' item.object.id %}"
+                   class="object-card" data-searchable="{{ item.object.name }}">
+                    <div class="object-icon-wrap" style="background: {{ item.object.color_tint }};">
+                        <i class="fas {{ item.object.icon }}" style="font-size:1.3rem; color: {{ item.object.color_solid }};"></i>
+                    </div>
+                    <div class="object-info">
+                        <div class="object-name">{{ item.object.name }}</div>
+                        <div class="object-meta">
+                            {{ item.instance_count }} {% translate 'instances' %}
+                        </div>
+                    </div>
+                    {% if item.pending_count %}
+                        <span class="pending-badge">{{ item.pending_count }} {% translate 'pending' %}</span>
+                    {% endif %}
+                    <i class="fas fa-chevron-right ml-2 text-muted"></i>
+                </a>
+                {% empty %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                    {% translate 'No trackable objects available.' %}
+                </div>
                 {% endfor %}
+
             </div>
         </div>
-        {% endif %}
+
     </div>
 </div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(function() {
+    // Toggle global activities list
+    $('#global-activities-toggle').on('click', function(e) {
+        e.preventDefault();
+        const $list = $('#global-activities-list');
+        const $chevron = $('#global-chevron');
+        $list.slideToggle(200);
+        $chevron.toggleClass('fa-chevron-down fa-chevron-up');
+    });
+
+    // Client-side search
+    $('#activity-search').on('input', function() {
+        const q = $(this).val().toLowerCase();
+        $('.object-card').each(function() {
+            const searchable = ($(this).data('searchable') || '').toLowerCase();
+            $(this).toggle(searchable.includes(q));
+        });
+        // Always show global toggle if any child matches
+        if (q) {
+            let globalMatch = false;
+            $('#global-activities-list .object-card').each(function() {
+                if (($(this).data('searchable') || '').toLowerCase().includes(q)) {
+                    globalMatch = true;
+                }
+            });
+            if (globalMatch) {
+                $('#global-activities-toggle').show();
+                $('#global-activities-list').show();
+                $('#global-chevron').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            }
+        } else {
+            // Reset: hide global list on clear
+            $('#global-activities-list').hide();
+            $('#global-chevron').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        }
+    });
+});
+</script>
 {% endblock %}

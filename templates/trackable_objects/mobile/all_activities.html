@@ -1,0 +1,314 @@
+{% extends 'subprojects/mobile/layout/mobile_base.html' %}
+{% load static i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block extracss %}
+<style>
+    .activity-card {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e2e6eb;
+        margin-bottom: 8px;
+        text-decoration: none;
+        color: #2c3e50;
+        transition: box-shadow .15s;
+    }
+    .activity-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,.12);
+        text-decoration: none;
+        color: #2c3e50;
+    }
+    .activity-icon-wrap {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+    .activity-info { flex-grow: 1; min-width: 0; }
+    .activity-name {
+        font-weight: 600;
+        font-size: .95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .activity-meta {
+        font-size: .78rem;
+        color: #7f8c8d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pending-badge {
+        background: #e67e22;
+        color: #fff;
+        border-radius: 12px;
+        padding: 2px 10px;
+        font-size: .72rem;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .global-badge {
+        background: #8e44ad;
+        color: #fff;
+        border-radius: 12px;
+        padding: 2px 10px;
+        font-size: .72rem;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .count-badge-sm {
+        background: #ecf0f1;
+        color: #7f8c8d;
+        border-radius: 12px;
+        padding: 2px 10px;
+        font-size: .72rem;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .search-wrap {
+        position: relative;
+        margin-bottom: 10px;
+    }
+    .search-wrap i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #7f8c8d;
+    }
+    .search-wrap input {
+        padding-left: 38px;
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        height: 44px;
+    }
+    .status-pills {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 10px;
+        overflow-x: auto;
+    }
+    .status-pill {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: .82rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid #e2e6eb;
+        background: #fff;
+        color: #7f8c8d;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .status-pill.active {
+        background: #e67e22;
+        color: #fff;
+        border-color: #e67e22;
+    }
+    .status-pill .pill-count {
+        background: rgba(0,0,0,.12);
+        padding: 0 6px;
+        border-radius: 10px;
+        margin-left: 4px;
+        font-size: .7rem;
+    }
+    .status-pill.active .pill-count {
+        background: rgba(0,0,0,.2);
+    }
+    .filter-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .filter-row select {
+        flex: 1;
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        padding: 8px 12px;
+        font-size: .85rem;
+        color: #2c3e50;
+        background: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-warning mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}"
+                   class="btn btn-link position-absolute"
+                   style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {% translate 'My Activities' %}
+                    <span class="badge badge-light ml-1" id="visible-count">{{ total_count }}</span>
+                </h4>
+                <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
+                    <i class="fas fa-home"></i>
+                </a>
+            </div>
+
+            <div class="card-body">
+
+                <!-- Search -->
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="activity-search" class="form-control"
+                           placeholder="{% translate 'Search activity or record...' %}">
+                </div>
+
+                <!-- Status pills -->
+                <div class="status-pills">
+                    <div class="status-pill active" data-filter="all">
+                        {% translate 'All' %} <span class="pill-count">{{ total_count }}</span>
+                    </div>
+                    <div class="status-pill" data-filter="pending">
+                        {% translate 'Pending' %} <span class="pill-count">{{ pending_count }}</span>
+                    </div>
+                    <div class="status-pill" data-filter="global">
+                        {% translate 'Global' %} <span class="pill-count">{{ global_count }}</span>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="filter-row">
+                    <select id="filter-type">
+                        <option value="">{% translate 'All types' %}</option>
+                        {% for to in trackable_objects %}
+                            <option value="{{ to.name }}">{{ to.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="filter-unit">
+                        <option value="">{% translate 'All units' %}</option>
+                        {% for unit_name in admin_units %}
+                            <option value="{{ unit_name }}">{{ unit_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Activity list -->
+                <div id="activity-list">
+                    {% for activity in activities %}
+                    <a href="{{ activity.url }}" class="activity-card"
+                       data-searchable="{{ activity.event_name }} {{ activity.instance_name }} {{ activity.object_name }}"
+                       data-pending="{{ activity.is_pending|yesno:'true,false' }}"
+                       data-global="{{ activity.is_global|yesno:'true,false' }}"
+                       data-type="{{ activity.object_name }}"
+                       data-unit="{{ activity.admin_unit }}">
+                        <div class="activity-icon-wrap" style="background: {{ activity.object_color_tint }};">
+                            <i class="fas {{ activity.object_icon }}" style="font-size:1.1rem; color: {{ activity.object_color_solid }};"></i>
+                        </div>
+                        <div class="activity-info">
+                            <div class="activity-name">{{ activity.event_name }}</div>
+                            <div class="activity-meta">
+                                {% if activity.instance_name %}
+                                    <i class="fas fa-xs fa-tag"></i> {{ activity.instance_name }}
+                                    {% if activity.admin_unit %} &middot; {{ activity.admin_unit }}{% endif %}
+                                {% else %}
+                                    <i class="fas fa-xs fa-globe-africa"></i> {% translate 'Global' %}
+                                    {% if activity.object_name %} &middot; {{ activity.object_name }}{% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if activity.is_global %}
+                            <span class="global-badge">{% translate 'GLOBAL' %}</span>
+                        {% endif %}
+                        {% if activity.is_pending %}
+                            <span class="pending-badge">{% translate 'Pending' %}</span>
+                        {% elif activity.response_count %}
+                            <span class="count-badge-sm">{{ activity.response_count }}</span>
+                        {% endif %}
+                        <i class="fas fa-chevron-right ml-2 text-muted"></i>
+                    </a>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                        {% translate 'No activities found.' %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Empty state for filters -->
+                <div id="no-results" style="display:none;" class="text-center text-muted py-3">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                    <span>{% translate 'No matching activities.' %}</span>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+$(function() {
+    let currentTab = 'all';
+
+    function applyFilters() {
+        const query = ($('#activity-search').val() || '').toLowerCase();
+        const typeFilter = $('#filter-type').val();
+        const unitFilter = $('#filter-unit').val();
+        let visibleCount = 0;
+
+        $('#activity-list .activity-card').each(function() {
+            const $card = $(this);
+            const searchable = ($card.data('searchable') || '').toLowerCase();
+            const isPending = $card.data('pending') === 'true' || $card.data('pending') === true;
+            const isGlobal = $card.data('global') === 'true' || $card.data('global') === true;
+            const cardType = $card.data('type') || '';
+            const cardUnit = $card.data('unit') || '';
+
+            let show = true;
+
+            // Tab filter
+            if (currentTab === 'pending' && !isPending) show = false;
+            if (currentTab === 'global' && !isGlobal) show = false;
+
+            // Search filter
+            if (show && query && !searchable.includes(query)) show = false;
+
+            // Type filter
+            if (show && typeFilter && cardType !== typeFilter) show = false;
+
+            // Unit filter
+            if (show && unitFilter && cardUnit !== unitFilter) show = false;
+
+            $card.toggle(show);
+            if (show) visibleCount++;
+        });
+
+        $('#visible-count').text(visibleCount);
+        $('#no-results').toggle(visibleCount === 0 && {{ total_count }} > 0);
+    }
+
+    // Search
+    $('#activity-search').on('input', applyFilters);
+
+    // Status pills
+    $('.status-pill').on('click', function() {
+        $('.status-pill').removeClass('active');
+        $(this).addClass('active');
+        currentTab = $(this).data('filter');
+        applyFilters();
+    });
+
+    // Dropdown filters
+    $('#filter-type, #filter-unit').on('change', applyFilters);
+});
+</script>
+{% endblock %}

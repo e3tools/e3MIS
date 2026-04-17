@@ -2,7 +2,7 @@ from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.utils.translation import gettext as _, gettext_lazy as _l
-from trackableobjects.models import TrackableObject
+from trackableobjects.models import TrackableObject, COLOR_TOKENS, COLOR_MAP
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
@@ -21,7 +21,9 @@ class TrackableObjectCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateVi
     def get_context_data(self, **kwargs):
         kwargs.update({
             'trackable_objects': self.model.objects.all(),
-            'groups': Group.objects.all()
+            'groups': Group.objects.all(),
+            'color_tokens': COLOR_TOKENS,
+            'color_map': COLOR_MAP,
         })
         return super().get_context_data(**kwargs)
 
