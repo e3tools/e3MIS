@@ -43,6 +43,7 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
                 if obj.id not in ids_in:
                     node = {
                         'created_at': date(obj.created_at, "N j, y"),
+                        'created_at_iso': obj.created_at.isoformat(),
                         'id': obj.id,
                         'trackable_object__id': obj.trackable_object.id,
                         'identifier': obj.identifier,
@@ -57,10 +58,9 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
                             follow_up_event__id__in=Subquery(sub_qs_1.values('id'))
                     )
 
-                    if sub_qs_1.count() != sub_qs_2.count():
-                        node['has_badge'] = True
-                    else:
-                        node['has_badge'] = False
+                    pending_count = sub_qs_1.count() - sub_qs_2.count()
+                    node['pending_count'] = max(pending_count, 0)
+                    node['has_badge'] = pending_count > 0
 
                     ids_in.append(obj.id)
                     resp_list.append(node)

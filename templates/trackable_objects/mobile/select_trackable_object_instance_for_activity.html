@@ -3,161 +3,462 @@
 {% get_current_language as LANGUAGE_CODE %}
 
 {% block extracss %}
-    <style>
-        .notification-dot {
-            position: absolute;
-            top: 8px;
-            right: 16px;
-            width: 10px;
-            height: 10px;
-            background-color: red;
-            border-radius: 50%;
-            z-index: 10;
-        }
-    </style>
+<style>
+    .instance-card {
+        display: flex;
+        align-items: center;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e2e6eb;
+        margin-bottom: 8px;
+        text-decoration: none;
+        color: #2c3e50;
+        transition: box-shadow .15s;
+    }
+    .instance-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,.12);
+        text-decoration: none;
+        color: #2c3e50;
+    }
+    .instance-info { flex-grow: 1; min-width: 0; }
+    .instance-name {
+        font-weight: 600;
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .instance-meta { font-size: .8rem; color: #7f8c8d; }
+    .pending-badge {
+        background: #e67e22;
+        color: #fff;
+        border-radius: 12px;
+        padding: 2px 10px;
+        font-size: .75rem;
+        font-weight: 600;
+        flex-shrink: 0;
+        margin-left: 8px;
+    }
+    .search-wrap {
+        position: relative;
+        margin-bottom: 12px;
+    }
+    .search-wrap i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #7f8c8d;
+    }
+    .search-wrap input {
+        padding-left: 38px;
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        height: 44px;
+    }
+    .status-pills {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+    }
+    .status-pill {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: .85rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid #e2e6eb;
+        background: #fff;
+        color: #7f8c8d;
+    }
+    .status-pill.active {
+        background: #e67e22;
+        color: #fff;
+        border-color: #e67e22;
+    }
+    .sort-select {
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        padding: 6px 12px;
+        font-size: .85rem;
+        color: #2c3e50;
+        background: #fff;
+        margin-bottom: 12px;
+    }
+    .filters-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .filters-row .status-pills {
+        margin-bottom: 0;
+        flex-grow: 1;
+    }
+    .recent-chips {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+    }
+    .recent-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        background: #eaf4fb;
+        color: #3498db;
+        font-size: .82rem;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        flex-shrink: 0;
+        border: 1px solid #d4e9f7;
+        transition: background .15s;
+    }
+    .recent-chip:hover {
+        background: #d4e9f7;
+        text-decoration: none;
+        color: #3498db;
+    }
+    .recent-chip i { font-size: .7rem; }
+    .breadcrumb-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .8rem;
+        color: #7f8c8d;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .breadcrumb-bar a {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .breadcrumb-bar a:hover { text-decoration: underline; }
+    .breadcrumb-bar .current { font-weight: 600; color: #2c3e50; }
+    .cascade-select {
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        height: 44px;
+        padding: 6px 12px;
+        font-size: .9rem;
+        color: #2c3e50;
+        background: #fff;
+        margin-bottom: 8px;
+        width: 100%;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-    <div class="row justify-content-center">
-        <div class="col-12">
-            <div class="card card-warning mt-4 mb-4 shadow">
-                <div class="card-header position-relative d-flex align-items-center justify-content-center"
-                     style="min-height:56px;">
-                    <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}" 
-                       class="btn btn-link position-absolute"
-                       style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
-                        <i class="fas fa-arrow-left"></i>
-                    </a>
-                    <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
-                        {{ object.name }} {% translate 'instances' %}
-                    </h4>
-                    <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
-                        <i class="fas fa-home"></i>
-                    </a>
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card card-warning mt-3 mb-4 shadow">
+            <div class="card-header position-relative d-flex align-items-center justify-content-center" style="min-height:56px;">
+                <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}"
+                   class="btn btn-link position-absolute"
+                   style="left: 0; top: 50%; transform: translateY(-50%); font-size:1.4rem;">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h4 class="card-title mb-0 text-center w-100" style="pointer-events: none;">
+                    {{ object.name }}
+                    <span class="badge badge-light ml-1" id="instance-count-badge"></span>
+                </h4>
+                <a href="{% url 'trackableobjects:mobile:index' %}" class="text-right" style="font-size:1.4rem;">
+                    <i class="fas fa-home"></i>
+                </a>
+            </div>
+            <div class="card-body">
+
+                <!-- Breadcrumb -->
+                <div class="breadcrumb-bar">
+                    <a href="{% url 'trackableobjects:mobile:select_trackable_object_for_activity' %}">{% translate 'Submit Activity' %}</a>
+                    <i class="fas fa-chevron-right" style="font-size:.6rem;"></i>
+                    <span class="current">{{ object.name }}</span>
                 </div>
-                <div class="card-body">
-                    <div class="row justify-content-center">
-                        <div class="col-12 form-group">
-                            <label for="administrative_units_select_id">{% translate 'Administrative levels related' %}</label>
-                            <select id="administrative_units_select_id" name="administrative_units" class="form-control">
-                                <option value="">{% translate 'All' %}</option>
-                                {% for administrative_unit in administrative_units %}
-                                    <optgroup label="{{ administrative_unit.name }}">
-                                        {% for child in administrative_unit.children %}
-                                            {% if child.id in selected_administrative_units %}
-                                            <option value="{{ child.id }}" data-count="{{ child.trackable_instances_count }}" data-pending="{{ child.pending_responses }}" selected>{{ child.name }}</option>
-                                            {% else %}
-                                            <option value="{{ child.id }}" data-count="{{ child.trackable_instances_count }}" data-pending="{{ child.pending_responses }}">{{ child.name }}</option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </optgroup>
-                                {% endfor %}
-                            </select>
-                        </div>
+
+                <!-- Cascading administrative unit filters -->
+                <div id="cascade-filters" data-all-label="{% translate 'All' %}"></div>
+
+                <!-- Search -->
+                <div class="search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="instance-search" class="form-control"
+                           placeholder="{% translate 'Search by name...' %}">
+                </div>
+
+                <!-- Status pills + Sort -->
+                <div class="filters-row">
+                    <div class="status-pills">
+                        <div class="status-pill active" data-filter="all">{% translate 'All' %}</div>
+                        <div class="status-pill" data-filter="pending">{% translate 'Pending' %}</div>
+                        <div class="status-pill" data-filter="complete">{% translate 'Complete' %}</div>
                     </div>
-                    <hr class="mt-0">
-                    <div id="id-btn-wrapper"></div>
+                    <select id="sort-select" class="sort-select">
+                        <option value="alpha">A–Z</option>
+                        <option value="newest">{% translate 'Newest' %}</option>
+                        <option value="oldest">{% translate 'Oldest' %}</option>
+                    </select>
                 </div>
+
+                <!-- Recently visited chips -->
+                <div id="recent-chips" class="recent-chips" style="display:none;"></div>
+
+                <!-- Instance list (AJAX loaded) -->
+                <div id="id-btn-wrapper"></div>
+
             </div>
         </div>
     </div>
-
-    <template id="btn-template">
-        <div class="row justify-content-center">
-            <div class="col-12 mb-3">
-                <a href="" class="btn btn-block btn-default text-left d-flex align-items-center"
-                   style="font-size: 1.15rem;">
-                    <i class="fas fa-briefcase mr-3"></i>
-                    <span class="btn-label flex-grow-1"></span>
-                    <i class="fas fa-chevron-right ml-2"></i>
-                </a>
-                <span class="notification-dot"></span>
-            </div>
-        </div>
-    </template>
+</div>
 {% endblock %}
 
 {% block extrajs %}
-<script type="text/javascript" id="select_trackable_object_instance_for_activity_script_id" data-tracakble-object="{{ trackable_object }}">
-    function fill_btn_wrapper(administrative_unit, trackable_object){
-        let url = "{% url 'trackableobjects:api:trackable_object_instance' %}?administrative-unit=" + administrative_unit + "&trackable-object=" + trackable_object;
-        let wrapper = $('#id-btn-wrapper');
-        wrapper.html('');
+<script type="text/javascript" id="step2-script" data-trackable-object="{{ trackable_object }}">
+    let allInstances = [];
+    let currentFilter = 'all';
+
+    const trackable_object = $('#step2-script').data('trackable-object');
+    const allUnits = JSON.parse('{{ units_json|escapejs }}');
+    const allLabel = $('#cascade-filters').data('all-label');
+
+    const RECENT_KEY = 'recent_instances_' + trackable_object;
+    const MAX_RECENT = 3;
+
+    // ── Recently visited ──────────────────────────────────────────────
+
+    function getRecent() {
+        try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; }
+        catch(e) { return []; }
+    }
+
+    function saveRecent(id, identifier) {
+        let recent = getRecent().filter(r => r.id !== id);
+        recent.unshift({ id: id, identifier: identifier });
+        if (recent.length > MAX_RECENT) recent = recent.slice(0, MAX_RECENT);
+        localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+    }
+
+    function renderRecentChips() {
+        const recent = getRecent();
+        const $container = $('#recent-chips');
+        $container.html('');
+
+        const instanceIds = new Set(allInstances.map(i => i.id));
+        const valid = recent.filter(r => instanceIds.has(r.id));
+
+        if (valid.length === 0) {
+            $container.hide();
+            return;
+        }
+
+        $container.show();
+        $container.append(
+            `<span style="font-size:.75rem;color:#7f8c8d;font-weight:600;align-self:center;flex-shrink:0;">{% translate 'Recent' %}:</span>`
+        );
+
+        valid.forEach(function(r) {
+            const href = "{% url 'trackableobjects:mobile:follow_up_event_list' '1' %}".replace('1', r.id);
+            const chip = $(
+                `<a href="${href}" class="recent-chip">
+                    <i class="fas fa-clock"></i> ${r.identifier}
+                </a>`
+            );
+            chip.on('click', function() { saveRecent(r.id, r.identifier); });
+            $container.append(chip);
+        });
+    }
+
+    // ── AJAX load ─────────────────────────────────────────────────────
+
+    function fill_btn_wrapper(administrative_unit, trackable_object) {
+        const url = "{% url 'trackableobjects:api:trackable_object_instance' %}?administrative-unit="
+            + administrative_unit + "&trackable-object=" + trackable_object;
+        const wrapper = $('#id-btn-wrapper');
+        wrapper.html('<div class="text-center py-3"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i></div>');
+
         $.ajax({
             url: url,
-            headers: {
-                user: "{{ user.id }}"
-            },
+            headers: { user: "{{ user.id }}" },
             success: function(data) {
-                if (data.length === 0) {
-                    wrapper.html(
-                        `<div class="text-center text-muted py-3">
-                            <i class="fas fa-info-circle fa-2x mb-2"></i><br>
-                            <span>{% translate 'No activities available.' %}</span>
-                        </div>`
-                    );
-                    return;
-                }
-                data.forEach(function (trackable_object_instance) {
-                    const rendered_button = render_trackable_object_instance_button(trackable_object_instance);
-                    wrapper.append(rendered_button);
-                });
+                allInstances = data;
+                renderRecentChips();
+                applyFilters();
             }
         });
     }
 
-    function render_trackable_object_instance_button(trackable_object_instance) {
-        let post_template = $($('#btn-template')[0].content).clone();
-        let href = "{% url 'trackableobjects:mobile:follow_up_event_list' '1' %}";
-        href = href.replace('1', trackable_object_instance.id);
-        post_template.find('a').attr('href', href);
-        post_template.find('.btn-label').text(trackable_object_instance.identifier);
-        if ( !trackable_object_instance.has_badge ) {
-            post_template.find('.notification-dot').toggleClass('notification-dot');
+    // ── Filters & sort ────────────────────────────────────────────────
+
+    function applyFilters() {
+        const query = ($('#instance-search').val() || '').toLowerCase();
+        const wrapper = $('#id-btn-wrapper');
+        wrapper.html('');
+
+        let filtered = allInstances.slice();
+
+        // Status filter
+        if (currentFilter === 'pending') {
+            filtered = filtered.filter(i => i.has_badge);
+        } else if (currentFilter === 'complete') {
+            filtered = filtered.filter(i => !i.has_badge);
         }
-        return post_template;
+
+        // Search filter
+        if (query) {
+            filtered = filtered.filter(i =>
+                (i.identifier || '').toLowerCase().includes(query)
+            );
+        }
+
+        // Sort
+        const sortBy = $('#sort-select').val();
+        if (sortBy === 'alpha') {
+            filtered.sort((a, b) => (a.identifier || '').localeCompare(b.identifier || ''));
+        } else if (sortBy === 'newest') {
+            filtered.sort((a, b) => (b.created_at_iso || '').localeCompare(a.created_at_iso || ''));
+        } else if (sortBy === 'oldest') {
+            filtered.sort((a, b) => (a.created_at_iso || '').localeCompare(b.created_at_iso || ''));
+        }
+
+        // Update count
+        $('#instance-count-badge').text(filtered.length);
+
+        if (filtered.length === 0) {
+            wrapper.html(
+                `<div class="text-center text-muted py-3">
+                    <i class="fas fa-info-circle fa-2x mb-2"></i><br>
+                    <span>{% translate 'No instances found.' %}</span>
+                </div>`
+            );
+            return;
+        }
+
+        filtered.forEach(function(instance) {
+            let href = "{% url 'trackableobjects:mobile:follow_up_event_list' '1' %}".replace('1', instance.id);
+            let badge = '';
+            if (instance.pending_count > 0) {
+                badge = `<span class="pending-badge">${instance.pending_count} {% translate 'pending' %}</span>`;
+            }
+            const card = $(
+                `<a href="${href}" class="instance-card">
+                    <div class="instance-info">
+                        <div class="instance-name">${instance.identifier}</div>
+                        <div class="instance-meta">${instance.created_at}</div>
+                    </div>
+                    ${badge}
+                    <i class="fas fa-chevron-right ml-2 text-muted"></i>
+                </a>`
+            );
+            card.on('click', function() {
+                saveRecent(instance.id, instance.identifier);
+            });
+            wrapper.append(card);
+        });
     }
 
-    function formatOption(option) {
-        if (!option.id) {
-            return option.text;  // For placeholder etc.
-        }
+    // ── Cascading admin unit filters ──────────────────────────────────
 
-        const pending = $(option.element).data('pending');
-        const count = $(option.element).data('count');
-        const name = option.text;
-        let notif = '<i class="fas fa-xs fa-circle text-warning float-right"></i>';
-        
-        if(pending === ''){
-            notif = '';
-        }
+    let suppressLoad = false;
 
-        return $(`
-            <span>${name} 
-                <span class="badge badge-primary">${count}</span>` + notif + `
-            </span>`);
+    function getChildren(parentId) {
+        if (parentId === null) {
+            return allUnits.filter(u => u.parent_id === null);
+        }
+        return allUnits.filter(u => u.parent_id === parentId);
     }
 
-    $(document).ready(function () {
-        
-        const trackable_object = $('#select_trackable_object_instance_for_activity_script_id').data('tracakble-object')
+    function getDeepestSelectedUnit() {
+        let deepest = '';
+        $('#cascade-filters .cascade-select').each(function() {
+            const val = $(this).val();
+            if (val) deepest = val;
+        });
+        return deepest;
+    }
 
-        let administrative_units_input = $('#administrative_units_select_id');
-        
-        fill_btn_wrapper(administrative_units_input.val(), trackable_object);
-        
-        administrative_units_input.change(function () {
-            fill_btn_wrapper($(this).val(), trackable_object);
+    function buildCascade(parentId, depth) {
+        // Remove dropdowns at this depth and below
+        $('#cascade-filters .cascade-select').each(function() {
+            if (parseInt($(this).data('depth')) >= depth) {
+                $(this).remove();
+            }
         });
 
-        administrative_units_input.select2({
-            templateResult: formatOption,
-            templateSelection: formatOption,
-            escapeMarkup: function (markup) {
-                return markup;
-            }  // Allow HTML
+        const children = getChildren(parentId);
+        if (children.length === 0) return;
+
+        // Determine level label
+        const levelNames = [...new Set(children.map(u => u.level_name))];
+        const levelLabel = levelNames.length === 1 ? levelNames[0] : '{% translate "Administrative Unit" %}';
+
+        const $select = $(`<select class="cascade-select" data-depth="${depth}"></select>`);
+        $select.append(`<option value="">${allLabel} ${levelLabel}</option>`);
+
+        children
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .forEach(u => {
+                $select.append(`<option value="${u.id}">${u.name} (${u.instance_count})</option>`);
+            });
+
+        $('#cascade-filters').append($select);
+
+        $select.on('change', function() {
+            const val = $(this).val();
+            if (val) {
+                buildCascade(parseInt(val), depth + 1);
+            } else {
+                // "All" selected — remove subsequent dropdowns
+                $('#cascade-filters .cascade-select').each(function() {
+                    if (parseInt($(this).data('depth')) > depth) {
+                        $(this).remove();
+                    }
+                });
+            }
+
+            if (!suppressLoad) {
+                fill_btn_wrapper(getDeepestSelectedUnit(), trackable_object);
+            }
         });
 
+        // Auto-select if only one option
+        if (children.length === 1) {
+            $select.val(children[0].id);
+            buildCascade(children[0].id, depth + 1);
+        }
+    }
+
+    // ── Initialize ────────────────────────────────────────────────────
+
+    $(document).ready(function() {
+        // Build cascading dropdowns
+        suppressLoad = true;
+        buildCascade(null, 0);
+        suppressLoad = false;
+
+        // Initial instance load
+        fill_btn_wrapper(getDeepestSelectedUnit(), trackable_object);
+
+        // Search
+        $('#instance-search').on('input', applyFilters);
+
+        // Sort
+        $('#sort-select').on('change', applyFilters);
+
+        // Status pills
+        $('.status-pill').on('click', function() {
+            $('.status-pill').removeClass('active');
+            $(this).addClass('active');
+            currentFilter = $(this).data('filter');
+            applyFilters();
+        });
     });
 </script>
 {% endblock %}

@@ -1,6 +1,6 @@
 from django.views.generic import TemplateView
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q, OuterRef, Subquery, Exists, Value, IntegerField
+from django.db.models import Q, OuterRef, Subquery, Exists, Value, IntegerField, Count
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
     FollowUpEvent,
@@ -47,6 +47,12 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             trackable_object_instance
         )
 
+        # Annotate repeating events with response count
+        self._annotate_response_count(
+            context['repeating_follow_up_events'],
+            trackable_object_instance
+        )
+
         return context
 
     def _get_follow_up_events_queryset(self, user_group_ids, trackable_object_instance):
@@ -76,10 +82,16 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             trackable_object=trackable_object_instance.trackable_object
         ).values('order')[:1]
 
+        # Subquery: check if event has any trackable objects (global = no TOs)
+        has_trackable_objects = FollowUpEventTrackableObject.objects.filter(
+            follow_up_event=OuterRef('pk'),
+        )
+
         return FollowUpEvent.objects.annotate(
             has_unmatched_groups=Exists(unmatched_groups),
             has_unfulfilled_deps=Exists(unfulfilled_dependencies),
             custom_order=Subquery(through_order, output_field=IntegerField()),
+            is_global=~Exists(has_trackable_objects),
         ).filter(
             # Event applies to this trackable object
             Q(trackable_objects=trackable_object_instance.trackable_object) | Q(trackable_objects=None),
@@ -100,3 +112,12 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
 
             follow_up_event.has_no_response = response is None
             follow_up_event.response_id = response.id if response else None
+
+    @staticmethod
+    def _annotate_response_count(follow_up_events, trackable_object_instance):
+        """Adds response_count attribute to repeating events."""
+        for event in follow_up_events:
+            event.response_count = FollowUpEventResponse.objects.filter(
+                follow_up_event=event,
+                trackable_object_instance=trackable_object_instance,
+            ).count()

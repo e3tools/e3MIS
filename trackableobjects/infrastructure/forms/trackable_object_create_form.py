@@ -11,7 +11,11 @@ class TrackableObjectForm(forms.ModelForm):
 
     class Meta:
         model = TrackableObject
-        fields = ['name', 'description', 'jsonForm', 'groups', 'identifier_field']
+        fields = ['name', 'description', 'jsonForm', 'groups', 'identifier_field', 'icon', 'color']
+        widgets = {
+            'icon': forms.HiddenInput(),
+            'color': forms.HiddenInput(),
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
