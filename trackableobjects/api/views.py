@@ -27,61 +27,69 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         administrative_unit_id = self.request.query_params.get('administrative-unit', None)
         trackable_object = self.request.query_params.get('trackable-object', None)
 
+        # Collect all accessible admin unit IDs (ancestors + descendants)
         if administrative_unit_id == '':
             user = CustomUser.objects.filter(id=self.request.META.get('HTTP_USER', None)).first()
             if user:
-                all_lower_children = [child for unit in user.administrative_units.all() for child in self.get_lower_children(unit)]
+                all_unit_ids = set()
+                for unit in user.administrative_units.all():
+                    self._collect_ancestor_ids(unit, all_unit_ids)
+                    self._collect_descendant_ids(unit, all_unit_ids)
             else:
-                all_lower_children = []
+                all_unit_ids = set()
         else:
             administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
-            all_lower_children = self.get_lower_children(administrative_unit)
-        for child in all_lower_children:
-            trackable_object_instance_qs = TrackableObjectInstance.objects.filter(
-                administrative_units=child,
-                trackable_object__id=trackable_object,
-            ).distinct()
-            for obj in trackable_object_instance_qs:
-                if obj.id not in ids_in:
-                    node = {
-                        'created_at': date(obj.created_at, "N j, y"),
-                        'created_at_iso': obj.created_at.isoformat(),
-                        'id': obj.id,
-                        'trackable_object__id': obj.trackable_object.id,
-                        'identifier': obj.identifier,
-                    }
+            all_unit_ids = set()
+            self._collect_ancestor_ids(administrative_unit, all_unit_ids)
+            self._collect_descendant_ids(administrative_unit, all_unit_ids)
 
-                    sub_qs_1 = FollowUpEvent.objects.filter(
-                        trackable_objects__id=node['trackable_object__id'],
-                        is_one_off=True
-                    )
-                    sub_qs_2 = FollowUpEventResponse.objects.filter(
-                            trackable_object_instance__id=node['id'],
-                            follow_up_event__id__in=Subquery(sub_qs_1.values('id'))
-                    )
+        from django.db.models import Q
+        trackable_object_instance_qs = TrackableObjectInstance.objects.filter(
+            Q(restrict_by_administrative_units=False) |
+            Q(administrative_units__id__in=all_unit_ids),
+            trackable_object__id=trackable_object,
+        ).select_related('trackable_object').distinct()
 
-                    pending_count = sub_qs_1.count() - sub_qs_2.count()
-                    node['pending_count'] = max(pending_count, 0)
-                    node['has_badge'] = pending_count > 0
+        for obj in trackable_object_instance_qs:
+            if obj.id not in ids_in:
+                node = {
+                    'created_at': date(obj.created_at, "N j, y"),
+                    'created_at_iso': obj.created_at.isoformat(),
+                    'id': obj.id,
+                    'trackable_object__id': obj.trackable_object.id,
+                    'identifier': obj.identifier,
+                }
 
-                    ids_in.append(obj.id)
-                    resp_list.append(node)
+                sub_qs_1 = FollowUpEvent.objects.filter(
+                    trackable_objects__id=node['trackable_object__id'],
+                    is_one_off=True
+                )
+                sub_qs_2 = FollowUpEventResponse.objects.filter(
+                        trackable_object_instance__id=node['id'],
+                        follow_up_event__id__in=Subquery(sub_qs_1.values('id'))
+                )
+
+                pending_count = sub_qs_1.count() - sub_qs_2.count()
+                node['pending_count'] = max(pending_count, 0)
+                node['has_badge'] = pending_count > 0
+
+                ids_in.append(obj.id)
+                resp_list.append(node)
 
         return Response(resp_list)
 
-    def get_lower_children(self, administrative_unit):
-        administrative_units = list()
+    @staticmethod
+    def _collect_ancestor_ids(unit, id_set):
+        node = unit
+        while node is not None:
+            id_set.add(node.id)
+            node = node.parent
 
-        def get_children(node):
-            if node.children.all():
-                for children in node.children.all():
-                    get_children(children)
-            else:
-                administrative_units.append(node)
-
-        get_children(administrative_unit)
-
-        return administrative_units
+    @staticmethod
+    def _collect_descendant_ids(unit, id_set):
+        id_set.add(unit.id)
+        for child in unit.children.all():
+            TrackableObjectInstanceRetrieveAPIView._collect_descendant_ids(child, id_set)
 
 
 class FollowUpEventReorderAPIView(APIView):

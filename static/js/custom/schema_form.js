@@ -319,6 +319,18 @@ $(document).ready(function () {
             $("#btn-admin-level-restriction-yes").addClass("active");
             $("#btn-admin-level-restriction-no").removeClass("active");
 
+            // Reset boolean display option
+            $("#btn-bool-checkbox").addClass("active");
+            $("#btn-bool-radio").removeClass("active");
+
+            // Reset enum display option
+            $("#btn-enum-select").addClass("active");
+            $("#btn-enum-radio").removeClass("active");
+
+            // Reset multi display option
+            $("#btn-multi-select").addClass("active");
+            $("#btn-multi-checkboxes").removeClass("active");
+
             // Reset conditional fields
             $("#enable-conditional").prop("checked", false);
             $("#conditional-display-group").hide();
@@ -717,9 +729,23 @@ $(document).ready(function () {
             if (fieldSchema.enum) {
                 fieldType = "enum";
                 $("#enum-options-input").val(fieldSchema.enum.join(", "));
+                if (fieldSchema.display === "radio") {
+                    $("#btn-enum-radio").addClass("active");
+                    $("#btn-enum-select").removeClass("active");
+                } else {
+                    $("#btn-enum-select").addClass("active");
+                    $("#btn-enum-radio").removeClass("active");
+                }
             } else if (fieldSchema.multi) {
                 fieldType = "multi";
                 $("#enum-options-input").val(fieldSchema.multi.join(", "));
+                if (fieldSchema.display === "checkboxes") {
+                    $("#btn-multi-checkboxes").addClass("active");
+                    $("#btn-multi-select").removeClass("active");
+                } else {
+                    $("#btn-multi-select").addClass("active");
+                    $("#btn-multi-checkboxes").removeClass("active");
+                }
             } else if (fieldSchema.format === "date") {
                 fieldType = "date";
             }
@@ -759,6 +785,17 @@ $(document).ready(function () {
                 } else {
                     $("#btn-trackable-object-adm-lvl-no").addClass("active");
                     $("#btn-trackable-object-adm-lvl-yes").removeClass("active");
+                }
+            }
+
+            // Boolean display option
+            if (fieldSchema.type === "bool") {
+                if (fieldSchema.display === "radio") {
+                    $("#btn-bool-radio").addClass("active");
+                    $("#btn-bool-checkbox").removeClass("active");
+                } else {
+                    $("#btn-bool-checkbox").addClass("active");
+                    $("#btn-bool-radio").removeClass("active");
                 }
             }
 
@@ -993,6 +1030,9 @@ $(document).ready(function () {
             const dateRestrictionsGroup = $("#date-restrictions-group");
 
             const adminLevelRestrictionsGroup = $("#admin-level-restrictions-group");
+            const boolDisplayGroup = $("#bool-display-group");
+            const enumDisplayGroup = $("#enum-display-group");
+            const multiDisplayGroup = $("#multi-display-group");
 
             // Hide all restriction groups first
             trackableObjectRestrictionsGroup.hide();
@@ -1001,12 +1041,19 @@ $(document).ready(function () {
             numberRestrictionsGroup.hide();
             dateRestrictionsGroup.hide();
             adminLevelRestrictionsGroup.hide();
+            boolDisplayGroup.hide();
+            enumDisplayGroup.hide();
+            multiDisplayGroup.hide();
 
             // Show relevant restriction group based on field type
             switch (fieldType) {
                 case "enum":
+                    enumOptionsGroup.show();
+                    enumDisplayGroup.show();
+                    break;
                 case "multi":
                     enumOptionsGroup.show();
+                    multiDisplayGroup.show();
                     break;
                 case "string":
                     textRestrictionsGroup.show();
@@ -1023,6 +1070,9 @@ $(document).ready(function () {
                     break;
                 case "administrative_level":
                     adminLevelRestrictionsGroup.show();
+                    break;
+                case "bool":
+                    boolDisplayGroup.show();
                     break;
             }
         },
@@ -1068,9 +1118,11 @@ $(document).ready(function () {
                     return;
                 }
 
+                const displayAs = $("#btn-enum-radio").hasClass("active") ? "radio" : "select";
                 newFieldSchema = {
                     type: "string",
-                    enum: enumOptions
+                    enum: enumOptions,
+                    display: displayAs
                 };
             } else if (fieldType === "multi") {
                 const rawOptions = $("#enum-options-input").val().trim();
@@ -1083,9 +1135,11 @@ $(document).ready(function () {
                     return;
                 }
 
+                const multiDisplayAs = $("#btn-multi-checkboxes").hasClass("active") ? "checkboxes" : "select";
                 newFieldSchema = {
                     type: "string",
-                    multi: enumOptions
+                    multi: enumOptions,
+                    display: multiDisplayAs
                 };
             } else if (fieldType === "date") {
                 newFieldSchema = {
@@ -1145,6 +1199,9 @@ $(document).ready(function () {
                 if (adminLevelRestriction) {
                     newFieldSchema.validators.administrative_level_restriction = "true";
                 }
+            } else if (fieldType === "bool") {
+                const displayAs = $("#btn-bool-radio").hasClass("active") ? "radio" : "checkbox";
+                newFieldSchema = {type: fieldType, display: displayAs, validators: {}};
             } else {
                 newFieldSchema = {type: fieldType, validators: {}};
             }
@@ -1507,9 +1564,13 @@ $(document).ready(function () {
         getFieldTypeDisplay(fieldSchema) {
             // Helper method to get display name for field type
             if (fieldSchema.enum) {
-                return "dropdown";
+                return fieldSchema.display === "radio" ? "dropdown (radio)" : "dropdown (select)";
+            } else if (fieldSchema.multi) {
+                return fieldSchema.display === "checkboxes" ? "multiselect (checkboxes)" : "multiselect (select)";
             } else if (fieldSchema.format === "date") {
                 return "date";
+            } else if (fieldSchema.type === "bool") {
+                return fieldSchema.display === "radio" ? "boolean (radio)" : "boolean (checkbox)";
             } else {
                 return fieldSchema.type || "string";
             }
