@@ -9,13 +9,13 @@ const error_server_message = "An error has occurred, please check your network c
 $(".alert-div-content").fadeIn();
 window.setTimeout(function () {
     $(".alert-success").fadeOut();
-}, 4000);
+}, 3000);
 
 // alerts displayed in modal
 $(".messageModal").modal("show");
 window.setTimeout(function () {
     $(".modal-success").modal("hide");
-}, 4000);
+}, 3000);
 
 // It is used to show the alerts from an ajax call
 function showPopupMessage(content) {
@@ -30,12 +30,12 @@ function showPopupMessage(content) {
         $(".alert-div-content").fadeIn();
         window.setTimeout(function () {
             $(".alert-success").fadeOut();
-        }, 4000);
+        }, 3000);
 
         $(".messageModal").modal("show");
         window.setTimeout(function () {
             $(".modal-success").modal("hide");
-        }, 4000);
+        }, 3000);
     }
 }
 

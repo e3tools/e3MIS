@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.urls import reverse
 from django.views.generic import TemplateView
-from django.db.models import OuterRef, Exists
+from django.db.models import Q, OuterRef, Exists
 
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
@@ -19,10 +19,11 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
         user = self.request.user
         user_group_ids = list(user.groups.values_list('id', flat=True))
 
-        # Leaf admin-unit IDs the user can access
-        admin_unit_ids = []
+        # All admin-unit IDs the user can access (assigned + descendants + ancestors)
+        admin_unit_ids = set()
         for unit in user.administrative_units.all():
-            admin_unit_ids.extend(self._get_leaf_ids(unit))
+            self._collect_ancestor_ids(unit, admin_unit_ids)
+            self._collect_descendant_ids(unit, admin_unit_ids)
 
         # ── Trackable objects the user has group access to ─────────────
         matched_groups = TrackableObject.groups.through.objects.filter(
@@ -37,8 +38,9 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
         # ── All instances the user can access ─────────────────────────
         instances = list(
             TrackableObjectInstance.objects.filter(
+                Q(restrict_by_administrative_units=False) |
+                Q(administrative_units__id__in=admin_unit_ids),
                 trackable_object__in=to_ids,
-                administrative_units__id__in=admin_unit_ids,
             ).select_related('trackable_object').distinct()
         )
 
@@ -230,16 +232,14 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
         return super().get_context_data(**kwargs)
 
     @staticmethod
-    def _get_leaf_ids(unit):
-        leaves = []
+    def _collect_ancestor_ids(unit, id_set):
+        node = unit
+        while node is not None:
+            id_set.add(node.id)
+            node = node.parent
 
-        def recurse(node):
-            children = node.children.all()
-            if children.exists():
-                for child in children:
-                    recurse(child)
-            else:
-                leaves.append(node.id)
-
-        recurse(unit)
-        return leaves
+    @staticmethod
+    def _collect_descendant_ids(unit, id_set):
+        id_set.add(unit.id)
+        for child in unit.children.all():
+            AllActivitiesView._collect_descendant_ids(child, id_set)

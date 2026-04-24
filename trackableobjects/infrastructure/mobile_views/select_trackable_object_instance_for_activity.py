@@ -38,20 +38,30 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
             context['units_json'] = '[]'
             return context
 
-        user_unit_ids = {u.id for u in user_units}
-
-        # Build full accessible tree (from user's assigned units downward)
+        # Build full accessible tree (ancestors + assigned units + descendants)
         all_units = {}
 
-        def collect_tree(node):
+        def collect_descendants(node):
             if node.id in all_units:
                 return
             all_units[node.id] = node
             for child in node.children.select_related('level').order_by('name'):
-                collect_tree(child)
+                collect_descendants(child)
+
+        def collect_ancestors(node):
+            current = node.parent
+            while current is not None:
+                if current.id in all_units:
+                    break
+                # Need to ensure level is loaded
+                if not hasattr(current, '_level_cache'):
+                    current = AdministrativeUnit.objects.select_related('level').get(pk=current.pk)
+                all_units[current.id] = current
+                current = current.parent
 
         for unit in user_units:
-            collect_tree(unit)
+            collect_descendants(unit)
+            collect_ancestors(unit)
 
         # Instance counts per admin unit (direct assignment)
         direct_counts = dict(

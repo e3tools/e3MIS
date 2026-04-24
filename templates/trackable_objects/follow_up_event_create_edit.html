@@ -124,10 +124,46 @@
                             <option value="administrative_level">Administrative Level</option>
                         </select>
                     </div>
+                    <!-- Boolean Display Options (show only for bool type) -->
+                    <div class="form-group" id="bool-display-group" style="display: none;">
+                        <label>Display as</label><br>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active" id="btn-bool-checkbox">
+                                <input type="radio" name="bool-display-options" value="checkbox" checked> Checkbox
+                            </label>
+                            <label class="btn btn-outline-primary" id="btn-bool-radio">
+                                <input type="radio" name="bool-display-options" value="radio"> Radio (Yes/No)
+                            </label>
+                        </div>
+                    </div>
                     <div class="form-group" id="enum-options-group" style="display: none;">
                         <label for="enum-options-input">Dropdown Options (comma-separated)</label>
                         <input type="text" class="form-control" id="enum-options-input"
                                placeholder="e.g. Option A, Option B, Option C">
+                    </div>
+                    <!-- Enum Display Options (show only for enum type) -->
+                    <div class="form-group" id="enum-display-group" style="display: none;">
+                        <label>Display as</label><br>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active" id="btn-enum-select">
+                                <input type="radio" name="enum-display-options" value="select" checked> Dropdown
+                            </label>
+                            <label class="btn btn-outline-primary" id="btn-enum-radio">
+                                <input type="radio" name="enum-display-options" value="radio"> Radio Buttons
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Multi Display Options (show only for multi type) -->
+                    <div class="form-group" id="multi-display-group" style="display: none;">
+                        <label>Display as</label><br>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active" id="btn-multi-select">
+                                <input type="radio" name="multi-display-options" value="select" checked> Multiselect
+                            </label>
+                            <label class="btn btn-outline-primary" id="btn-multi-checkboxes">
+                                <input type="radio" name="multi-display-options" value="checkboxes"> Checkboxes
+                            </label>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Is this field required?</label><br>

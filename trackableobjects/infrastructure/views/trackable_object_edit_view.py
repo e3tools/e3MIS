@@ -1,6 +1,7 @@
 import json
 from django.views.generic.edit import UpdateView
 from django.urls import reverse_lazy
+from django.contrib import messages
 from django.utils.translation import gettext as _
 from trackableobjects.models import TrackableObject, COLOR_TOKENS, COLOR_MAP
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
@@ -31,3 +32,8 @@ class TrackableObjectEditView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
 
         context['object'].jsonForm = json.dumps(context['object'].jsonForm)
         return context
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, _('Your Trackable Object was successfully created or updated.'))
+        return response

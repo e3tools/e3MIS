@@ -156,22 +156,36 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         # Dropdown (enum)
         if field_schema.get('type') == 'string' and 'enum' in field_schema:
             choices = [(opt, opt) for opt in field_schema['enum']]
-            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
-            field_instance = forms.ChoiceField(
-                choices=choices,
-                widget=forms.Select(attrs=widget_attrs),
-                **common_args
-            )
+            if field_schema.get('display') == 'radio':
+                field_instance = forms.ChoiceField(
+                    choices=choices,
+                    widget=forms.RadioSelect(attrs=widget_attrs),
+                    **common_args
+                )
+            else:
+                widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+                field_instance = forms.ChoiceField(
+                    choices=choices,
+                    widget=forms.Select(attrs=widget_attrs),
+                    **common_args
+                )
 
         # Multiselect (multi)
         elif field_schema.get('type') == 'string' and 'multi' in field_schema:
             choices = [(opt, opt) for opt in field_schema['multi']]
-            widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
-            field_instance = forms.MultipleChoiceField(
-                choices=choices,
-                widget=forms.SelectMultiple(attrs=widget_attrs),
-                **common_args
-            )
+            if field_schema.get('display') == 'checkboxes':
+                field_instance = forms.MultipleChoiceField(
+                    choices=choices,
+                    widget=forms.CheckboxSelectMultiple(attrs=widget_attrs),
+                    **common_args
+                )
+            else:
+                widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+                field_instance = forms.MultipleChoiceField(
+                    choices=choices,
+                    widget=forms.SelectMultiple(attrs=widget_attrs),
+                    **common_args
+                )
 
         # TrackableObject
         elif field_schema.get('type') == 'trackable_object':
@@ -204,10 +218,18 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
 
         # Boolean
         elif field_schema.get('type') == 'bool':
-            field_instance = forms.BooleanField(
-                widget=forms.CheckboxInput(attrs=widget_attrs),
-                **common_args
-            )
+            if field_schema.get('display') == 'radio':
+                field_instance = forms.TypedChoiceField(
+                    choices=[('true', 'Yes'), ('false', 'No')],
+                    coerce=lambda x: x == 'true',
+                    widget=forms.RadioSelect(attrs=widget_attrs),
+                    **common_args
+                )
+            else:
+                field_instance = forms.BooleanField(
+                    widget=forms.CheckboxInput(attrs=widget_attrs),
+                    **common_args
+                )
 
         # Date field
         elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
