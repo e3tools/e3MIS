@@ -124,18 +124,6 @@
                             <option value="administrative_level">Administrative Level</option>
                         </select>
                     </div>
-                    <!-- Boolean Display Options (show only for bool type) -->
-                    <div class="form-group" id="bool-display-group" style="display: none;">
-                        <label>Display as</label><br>
-                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                            <label class="btn btn-outline-primary active" id="btn-bool-checkbox">
-                                <input type="radio" name="bool-display-options" value="checkbox" checked> Checkbox
-                            </label>
-                            <label class="btn btn-outline-primary" id="btn-bool-radio">
-                                <input type="radio" name="bool-display-options" value="radio"> Radio (Yes/No)
-                            </label>
-                        </div>
-                    </div>
                     <div class="form-group" id="enum-options-group" style="display: none;">
                         <label for="enum-options-input">Dropdown Options (comma-separated)</label>
                         <input type="text" class="form-control" id="enum-options-input"
@@ -177,6 +165,18 @@
                         </div>
                     </div>
                     
+                    <!-- Text Display Options (show only for string type) -->
+                    <div class="form-group" id="text-display-group" style="display: none;">
+                        <label>Display as</label><br>
+                        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                            <label class="btn btn-outline-primary active" id="btn-text-input">
+                                <input type="radio" name="text-display-options" value="input" checked> Text Input
+                            </label>
+                            <label class="btn btn-outline-primary" id="btn-text-textarea">
+                                <input type="radio" name="text-display-options" value="textarea"> Text Area
+                            </label>
+                        </div>
+                    </div>
                     <!-- Text Field Restrictions (show only for string type) -->
                     <div class="form-group" id="text-restrictions-group" style="display: none;">
                         <label class="font-weight-bold">Text Restrictions</label>
