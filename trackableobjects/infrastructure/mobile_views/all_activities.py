@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from django.urls import reverse
 from django.views.generic import TemplateView
-from django.db.models import Q, OuterRef, Exists
+from django.db.models import Q, OuterRef, Exists, Subquery
 
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
@@ -30,8 +30,25 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
             trackableobject_id=OuterRef('pk'),
             group_id__in=user_group_ids,
         )
+
+        # ── TOs reachable via FE group access ─────────────────────────
+        unmatched_fe_groups_for_to = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk'),
+        ).exclude(group_id__in=user_group_ids)
+
+        accessible_fe_ids = FollowUpEvent.objects.annotate(
+            has_unmatched_groups=Exists(unmatched_fe_groups_for_to),
+        ).filter(has_unmatched_groups=False, is_active=True).values('id')
+
+        fe_linked_tos = FollowUpEventTrackableObject.objects.filter(
+            follow_up_event_id__in=accessible_fe_ids,
+            trackable_object_id=OuterRef('pk'),
+        )
+
         trackable_objects = list(
-            TrackableObject.objects.filter(Exists(matched_groups))
+            TrackableObject.objects.filter(
+                Q(Exists(matched_groups)) | Q(Exists(fe_linked_tos))
+            ).distinct()
         )
         to_ids = [to.id for to in trackable_objects]
 

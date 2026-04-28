@@ -1,5 +1,4 @@
 from django.views.generic import TemplateView
-from django.core.exceptions import PermissionDenied
 from django.db.models import Q, OuterRef, Subquery, Exists, Value, IntegerField, Count
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
@@ -21,13 +20,6 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
         trackable_object_instance = TrackableObjectInstance.objects.select_related(
             'trackable_object'
         ).get(id=self.kwargs['pk'])
-
-        # Verify user shares at least one group with the parent TrackableObject
-        trackable_object_groups = trackable_object_instance.trackable_object.groups.all()
-        if trackable_object_groups.exists() and not self.request.user.groups.filter(
-            id__in=trackable_object_groups
-        ).exists():
-            raise PermissionDenied
 
         context['trackable_object_instance'] = trackable_object_instance
 
