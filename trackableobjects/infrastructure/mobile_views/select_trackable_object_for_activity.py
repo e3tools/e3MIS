@@ -5,6 +5,7 @@ from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
     TrackableObject, TrackableObjectInstance,
     FollowUpEvent, FollowUpEventResponse,
+    FollowUpEventTrackableObject,
 )
 
 
@@ -26,7 +27,24 @@ class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
             trackableobject_id=OuterRef('pk'),
             group_id__in=user_group_ids,
         )
-        trackable_objects = TrackableObject.objects.filter(Exists(matched_groups))
+
+        # ── TOs reachable via FE group access ────────────────────────────
+        unmatched_fe_groups_for_to = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk'),
+        ).exclude(group_id__in=user_group_ids)
+
+        accessible_fe_ids = FollowUpEvent.objects.annotate(
+            has_unmatched_groups=Exists(unmatched_fe_groups_for_to),
+        ).filter(has_unmatched_groups=False, is_active=True).values('id')
+
+        fe_linked_tos = FollowUpEventTrackableObject.objects.filter(
+            follow_up_event_id__in=accessible_fe_ids,
+            trackable_object_id=OuterRef('pk'),
+        )
+
+        trackable_objects = TrackableObject.objects.filter(
+            Q(Exists(matched_groups)) | Q(Exists(fe_linked_tos))
+        ).distinct()
 
         # ── Per-object instance + pending counts ────────────────────────
         trackable_objects_data = []

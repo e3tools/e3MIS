@@ -319,9 +319,6 @@ $(document).ready(function () {
             $("#btn-admin-level-restriction-yes").addClass("active");
             $("#btn-admin-level-restriction-no").removeClass("active");
 
-            // Reset boolean display option
-            $("#btn-bool-checkbox").addClass("active");
-            $("#btn-bool-radio").removeClass("active");
 
             // Reset enum display option
             $("#btn-enum-select").addClass("active");
@@ -330,6 +327,10 @@ $(document).ready(function () {
             // Reset multi display option
             $("#btn-multi-select").addClass("active");
             $("#btn-multi-checkboxes").removeClass("active");
+
+            // Reset text display option
+            $("#btn-text-input").addClass("active");
+            $("#btn-text-textarea").removeClass("active");
 
             // Reset conditional fields
             $("#enable-conditional").prop("checked", false);
@@ -751,6 +752,17 @@ $(document).ready(function () {
             }
             $("#field-type-input").val(fieldType);
 
+            // Text display option (only for plain string fields)
+            if (fieldSchema.type === "string" && !fieldSchema.enum && !fieldSchema.multi && fieldSchema.format !== "date") {
+                if (fieldSchema.display === "textarea") {
+                    $("#btn-text-textarea").addClass("active");
+                    $("#btn-text-input").removeClass("active");
+                } else {
+                    $("#btn-text-input").addClass("active");
+                    $("#btn-text-textarea").removeClass("active");
+                }
+            }
+
             // Set required status
             const isRequired = page.page.required.includes(fieldName);
             if (isRequired) {
@@ -788,16 +800,6 @@ $(document).ready(function () {
                 }
             }
 
-            // Boolean display option
-            if (fieldSchema.type === "bool") {
-                if (fieldSchema.display === "radio") {
-                    $("#btn-bool-radio").addClass("active");
-                    $("#btn-bool-checkbox").removeClass("active");
-                } else {
-                    $("#btn-bool-checkbox").addClass("active");
-                    $("#btn-bool-radio").removeClass("active");
-                }
-            }
 
             // Administrative level restrictions
             if (fieldSchema.type === "administrative_level" && fieldSchema.validators) {
@@ -1030,9 +1032,9 @@ $(document).ready(function () {
             const dateRestrictionsGroup = $("#date-restrictions-group");
 
             const adminLevelRestrictionsGroup = $("#admin-level-restrictions-group");
-            const boolDisplayGroup = $("#bool-display-group");
             const enumDisplayGroup = $("#enum-display-group");
             const multiDisplayGroup = $("#multi-display-group");
+            const textDisplayGroup = $("#text-display-group");
 
             // Hide all restriction groups first
             trackableObjectRestrictionsGroup.hide();
@@ -1041,9 +1043,9 @@ $(document).ready(function () {
             numberRestrictionsGroup.hide();
             dateRestrictionsGroup.hide();
             adminLevelRestrictionsGroup.hide();
-            boolDisplayGroup.hide();
             enumDisplayGroup.hide();
             multiDisplayGroup.hide();
+            textDisplayGroup.hide();
 
             // Show relevant restriction group based on field type
             switch (fieldType) {
@@ -1056,6 +1058,7 @@ $(document).ready(function () {
                     multiDisplayGroup.show();
                     break;
                 case "string":
+                    textDisplayGroup.show();
                     textRestrictionsGroup.show();
                     break;
                 case "number":
@@ -1070,9 +1073,6 @@ $(document).ready(function () {
                     break;
                 case "administrative_level":
                     adminLevelRestrictionsGroup.show();
-                    break;
-                case "bool":
-                    boolDisplayGroup.show();
                     break;
             }
         },
@@ -1158,7 +1158,8 @@ $(document).ready(function () {
                     newFieldSchema.validators.max = maxDate;
                 }
             } else if (fieldType === "string") {
-                newFieldSchema = {type: fieldType, validators: {}};
+                const textDisplayAs = $("#btn-text-textarea").hasClass("active") ? "textarea" : "input";
+                newFieldSchema = {type: fieldType, display: textDisplayAs, validators: {}};
 
                 const minLength = $("#min-length-input").val().trim();
                 const maxLength = $("#max-length-input").val().trim();
@@ -1200,8 +1201,7 @@ $(document).ready(function () {
                     newFieldSchema.validators.administrative_level_restriction = "true";
                 }
             } else if (fieldType === "bool") {
-                const displayAs = $("#btn-bool-radio").hasClass("active") ? "radio" : "checkbox";
-                newFieldSchema = {type: fieldType, display: displayAs, validators: {}};
+                newFieldSchema = {type: fieldType, display: "radio", validators: {}};
             } else {
                 newFieldSchema = {type: fieldType, validators: {}};
             }
@@ -1570,7 +1570,9 @@ $(document).ready(function () {
             } else if (fieldSchema.format === "date") {
                 return "date";
             } else if (fieldSchema.type === "bool") {
-                return fieldSchema.display === "radio" ? "boolean (radio)" : "boolean (checkbox)";
+                return "boolean (Yes/No)";
+            } else if (fieldSchema.type === "string") {
+                return fieldSchema.display === "textarea" ? "text (textarea)" : "text (input)";
             } else {
                 return fieldSchema.type || "string";
             }

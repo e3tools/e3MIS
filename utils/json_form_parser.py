@@ -218,18 +218,13 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
 
         # Boolean
         elif field_schema.get('type') == 'bool':
-            if field_schema.get('display') == 'radio':
-                field_instance = forms.TypedChoiceField(
-                    choices=[('true', 'Yes'), ('false', 'No')],
-                    coerce=lambda x: x == 'true',
-                    widget=forms.RadioSelect(attrs=widget_attrs),
-                    **common_args
-                )
-            else:
-                field_instance = forms.BooleanField(
-                    widget=forms.CheckboxInput(attrs=widget_attrs),
-                    **common_args
-                )
+            field_instance = forms.TypedChoiceField(
+                choices=[('true', 'Yes'), ('false', 'No')],
+                coerce=lambda x: x == 'true' if x != '' else None,
+                empty_value=None,
+                widget=forms.RadioSelect(attrs=widget_attrs),
+                **common_args
+            )
 
         # Date field
         elif field_schema.get('type') == 'string' and field_schema.get('format') == 'date':
@@ -311,10 +306,16 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 text_attrs['maxlength'] = validators['max_length']
             text_attrs.update(widget_attrs)
 
-            field_instance = forms.CharField(
-                widget=forms.TextInput(attrs=text_attrs),
-                **common_args
-            )
+            if field_schema.get('display') == 'textarea':
+                field_instance = forms.CharField(
+                    widget=forms.Textarea(attrs=text_attrs),
+                    **common_args
+                )
+            else:
+                field_instance = forms.CharField(
+                    widget=forms.TextInput(attrs=text_attrs),
+                    **common_args
+                )
 
         else:
             field_type = field_schema.get('type', 'string')
@@ -332,6 +333,19 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
     # Sort by order and create fields dict
     field_list.sort(key=lambda x: x[0])
     fields = {field_name: field_instance for _, field_name, field_instance in field_list}
+
+    # Collect boolean field names for initial data normalization
+    bool_field_names = {name for _, name, f in field_list if isinstance(f, forms.TypedChoiceField) and any(c[0] == 'true' for c in f.choices)}
+
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.get('initial')
+        if initial and bool_field_names:
+            for fname in bool_field_names:
+                if fname in initial and isinstance(initial[fname], bool):
+                    initial[fname] = 'true' if initial[fname] else 'false'
+        forms.Form.__init__(self, *args, **kwargs)
+
+    fields['__init__'] = __init__
 
     return type(f"DynamicFormPage{page_index}", (forms.Form,), fields)
 
