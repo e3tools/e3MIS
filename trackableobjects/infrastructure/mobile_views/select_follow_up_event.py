@@ -50,11 +50,10 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
     def _get_follow_up_events_queryset(self, user_group_ids, trackable_object_instance):
         """Returns queryset of FollowUpEvents filtered by permissions and dependencies."""
 
-        # Subquery: groups on this event that the user is NOT in
-        unmatched_groups = FollowUpEvent.groups.through.objects.filter(
-            followupevent_id=OuterRef('pk')
-        ).exclude(
-            group_id__in=user_group_ids
+        # Subquery: groups on this event that the user IS in
+        matched_groups = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk'),
+            group_id__in=user_group_ids,
         )
 
         # Subquery: Check for unfulfilled parent dependencies
@@ -80,15 +79,15 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
         )
 
         return FollowUpEvent.objects.annotate(
-            has_unmatched_groups=Exists(unmatched_groups),
+            has_matched_groups=Exists(matched_groups),
             has_unfulfilled_deps=Exists(unfulfilled_dependencies),
             custom_order=Subquery(through_order, output_field=IntegerField()),
             is_global=~Exists(has_trackable_objects),
         ).filter(
             # Event applies to this trackable object
             Q(trackable_objects=trackable_object_instance.trackable_object) | Q(trackable_objects=None),
-            # User has permission (no groups the user isn't in)
-            has_unmatched_groups=False,
+            # User has permission (at least one shared group)
+            has_matched_groups=True,
             # Event is active and has no unfulfilled dependencies
             is_active=True,
             has_unfulfilled_deps=False

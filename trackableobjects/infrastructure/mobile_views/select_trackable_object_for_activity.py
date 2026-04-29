@@ -22,20 +22,16 @@ class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
             self._collect_ancestor_ids(unit, admin_unit_ids)
             self._collect_descendant_ids(unit, admin_unit_ids)
 
-        # ── Trackable objects the user has group access to ───────────────
-        matched_groups = TrackableObject.groups.through.objects.filter(
-            trackableobject_id=OuterRef('pk'),
+        # ── FollowUpEvents accessible to this user (at least one shared group) ──
+        matched_fe_groups = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk'),
             group_id__in=user_group_ids,
         )
 
-        # ── TOs reachable via FE group access ────────────────────────────
-        unmatched_fe_groups_for_to = FollowUpEvent.groups.through.objects.filter(
-            followupevent_id=OuterRef('pk'),
-        ).exclude(group_id__in=user_group_ids)
-
-        accessible_fe_ids = FollowUpEvent.objects.annotate(
-            has_unmatched_groups=Exists(unmatched_fe_groups_for_to),
-        ).filter(has_unmatched_groups=False, is_active=True).values('id')
+        accessible_fe_ids = FollowUpEvent.objects.filter(
+            Exists(matched_fe_groups),
+            is_active=True,
+        ).values('id')
 
         fe_linked_tos = FollowUpEventTrackableObject.objects.filter(
             follow_up_event_id__in=accessible_fe_ids,
@@ -43,7 +39,7 @@ class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
         )
 
         trackable_objects = TrackableObject.objects.filter(
-            Q(Exists(matched_groups)) | Q(Exists(fe_linked_tos))
+            Exists(fe_linked_tos)
         ).distinct()
 
         # ── Per-object instance + pending counts ────────────────────────
@@ -90,16 +86,16 @@ class SelectTrackableObjectForActivityView(IsFieldAgentUserMixin, TemplateView):
         kwargs['trackable_objects_data'] = trackable_objects_data
 
         # ── Standalone (global) follow-up events ────────────────────────
-        unmatched_fe_groups = FollowUpEvent.groups.through.objects.filter(
+        matched_standalone_groups = FollowUpEvent.groups.through.objects.filter(
             followupevent_id=OuterRef('pk'),
-        ).exclude(group_id__in=user_group_ids)
+            group_id__in=user_group_ids,
+        )
 
         standalone_events = FollowUpEvent.objects.filter(
+            Exists(matched_standalone_groups),
             trackable_objects=None,
             is_active=True,
-        ).annotate(
-            has_unmatched_groups=Exists(unmatched_fe_groups),
-        ).filter(has_unmatched_groups=False)
+        )
 
         kwargs['standalone_follow_up_events'] = standalone_events
         kwargs['standalone_count'] = standalone_events.count()
