@@ -1,7 +1,7 @@
 import json
 
 from django.views.generic.detail import DetailView
-from django.db.models import Q, F, Count, Sum, OuterRef, Exists, Subquery
+from django.db.models import Count, OuterRef, Exists
 
 from administrativelevels.models import AdministrativeUnit
 from trackableobjects.models import (
@@ -19,19 +19,16 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
     def get_queryset(self):
         user_group_ids = list(self.request.user.groups.values_list('id', flat=True))
 
-        matched_groups = TrackableObject.groups.through.objects.filter(
-            trackableobject_id=OuterRef('pk'),
-            group_id__in=user_group_ids
+        # FollowUpEvents accessible to this user (at least one shared group)
+        matched_fe_groups = FollowUpEvent.groups.through.objects.filter(
+            followupevent_id=OuterRef('pk'),
+            group_id__in=user_group_ids,
         )
 
-        # TOs reachable via FE group access
-        unmatched_fe_groups = FollowUpEvent.groups.through.objects.filter(
-            followupevent_id=OuterRef('pk'),
-        ).exclude(group_id__in=user_group_ids)
-
-        accessible_fe_ids = FollowUpEvent.objects.annotate(
-            has_unmatched_groups=Exists(unmatched_fe_groups),
-        ).filter(has_unmatched_groups=False, is_active=True).values('id')
+        accessible_fe_ids = FollowUpEvent.objects.filter(
+            Exists(matched_fe_groups),
+            is_active=True,
+        ).values('id')
 
         fe_linked_tos = FollowUpEventTrackableObject.objects.filter(
             follow_up_event_id__in=accessible_fe_ids,
@@ -39,7 +36,7 @@ class MobileViewsTrackableObjectInstanceActivityListView(IsFieldAgentUserMixin, 
         )
 
         return TrackableObject.objects.filter(
-            Q(Exists(matched_groups)) | Q(Exists(fe_linked_tos))
+            Exists(fe_linked_tos)
         ).distinct()
 
     def get_context_data(self, **kwargs):
