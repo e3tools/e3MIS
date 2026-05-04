@@ -12,6 +12,7 @@ class AdministrativeLevelChildrenAPIView(generics.ListAPIView):
     pagination_class = None
     queryset = AdministrativeUnit.objects.all()
     serializer_class = AdministrativeUnitModelSerializer
+    swagger_schema = None
 
     def get_queryset(self):
         queryset = self.queryset
