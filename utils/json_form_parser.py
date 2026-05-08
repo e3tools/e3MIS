@@ -89,6 +89,10 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         dependencies = meta.get('dependencies', {})
         widget_attrs = {}
 
+        placeholder = meta.get('placeholder', '')
+        if placeholder:
+            widget_attrs['placeholder'] = placeholder
+
         if dependencies:
             # NEW: Handle multiple conditions
             if 'conditions' in dependencies:
@@ -214,7 +218,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 widget=forms.Select(attrs=widget_attrs),
                 **common_args
             )
-            field_instance.label_from_instance = lambda obj: obj.hierarchy_name
+            field_instance.label_from_instance = lambda obj: "{} ({})".format(obj.name, obj.level.name)
 
         # Boolean
         elif field_schema.get('type') == 'bool':
@@ -286,6 +290,8 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
             field_class = field_map.get(field_type, forms.CharField)
 
             number_attrs = {'class': 'form-control', 'type': 'number'}
+            if field_type == 'number':
+                number_attrs['step'] = 'any'
             if 'min_value' in validators:
                 number_attrs['min'] = validators['min_value']
             if 'max_value' in validators:
