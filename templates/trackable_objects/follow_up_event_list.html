@@ -31,6 +31,8 @@
                     <table id="table-subprojects" class="table table-striped">
                         <thead>
                         <tr>
+                            <th style="width: 40px;"></th>
+                            <th class="text-nowrap">{% translate 'Order' %}</th>
                             <th>{% translate 'Actions' %}</th>
                             <th>{% translate 'Name' %}</th>
                             <th>{% translate 'Description' %}</th>
@@ -38,24 +40,23 @@
                             <th>{% translate 'Trackable object' %}</th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="follow-up-events-sortable">
                         {% for follow_up_event in object_list %}
-                            <tr>
+                            <tr data-event-id="{{ follow_up_event.pk }}">
+                                <td class="text-center" style="cursor: grab;"><i class="fas fa-grip-vertical text-muted"></i></td>
+                                <td class="text-nowrap order-display">{{ follow_up_event.order }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <!-- Update Info (functional) -->
                                         <a href="{% url 'trackableobjects:follow_up_event_object_edit' follow_up_event.pk %}"
                                            class="btn btn-default btn-flat">
                                             <i class="fas fa-pencil-alt text-primary"></i>
                                         </a>
 
-                                        <!-- Detail Info (functional) -->
                                         <a href="{% url 'trackableobjects:follow_up_event_object_detail' follow_up_event.id %}"
                                            class="btn btn-default btn-flat">
                                             <i class="fas fa-info"></i>
                                         </a>
 
-                                        <!-- Trigger inside the group -->
                                         <button type="button"
                                                 class="btn btn-default btn-flat"
                                                 data-toggle="modal"
@@ -111,10 +112,11 @@
     </div>
 {% endblock %}
 {% block extrajs %}
+    <script src="{% static 'AdminLTE/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
-            
+
             const search_select = $('#search');
             search_select.select2();
 
@@ -125,14 +127,14 @@
                 dom: "ltipr",
                 columnDefs: [
                     {
-                        targets: 1,
+                        targets: [0, 1],
                         orderable: false,
-                        searchable: true,
+                        searchable: false,
                     }
                 ],
                 lengthMenu: [10, 50, 100],
                 pageLength: 10,
-                order: [[0, 'desc', 'desc']]
+                order: [[1, 'asc']]
             });
             search_select.on('change', function () {
                 table.search($(this).val()).draw();
@@ -146,6 +148,26 @@
                 let modal = $(this);
                 modal.find('form').attr('action', url);
                 modal.find('.object-name').text(name || 'this item');
+            });
+
+            $("#follow-up-events-sortable").sortable({
+                handle: ".fa-grip-vertical",
+                axis: "y",
+                update: function() {
+                    const orderedIds = [];
+                    $("#follow-up-events-sortable tr[data-event-id]").each(function(index) {
+                        orderedIds.push($(this).data('event-id'));
+                        $(this).find('.order-display').text(index + 1);
+                    });
+
+                    $.ajax({
+                        url: "{% url 'trackableobjects:api:follow_up_event_reorder' %}",
+                        type: "POST",
+                        contentType: "application/json",
+                        headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                        data: JSON.stringify({ ordered_ids: orderedIds })
+                    });
+                }
             });
         });
     </script>

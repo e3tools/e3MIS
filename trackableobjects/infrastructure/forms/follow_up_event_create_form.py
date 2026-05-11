@@ -2,7 +2,7 @@ from django import forms
 from django.db.models import Max
 from django.utils.translation import gettext as _
 from django.contrib.auth.models import Group
-from trackableobjects.models import FollowUpEvent, FollowUpEventDependency, FollowUpEventTrackableObject, TrackableObject
+from trackableobjects.models import FollowUpEvent, FollowUpEventDependency, TrackableObject
 
 
 class FollowUpEventForm(forms.ModelForm):
@@ -45,11 +45,8 @@ class FollowUpEventForm(forms.ModelForm):
             self.instance.trackable_object = self.trackable_object
         if self.creating:
             self.instance.created_by = self.user
-
-        # Track existing trackable objects before save (for edit mode)
-        existing_to_ids = set()
-        if not self.creating and self.instance.pk:
-            existing_to_ids = set(self.instance.trackable_objects.values_list('id', flat=True))
+            max_order = FollowUpEvent.objects.aggregate(Max('order'))['order__max'] or 0
+            self.instance.order = max_order + 1
 
         instance = super().save(commit)
         if commit:
@@ -61,18 +58,5 @@ class FollowUpEventForm(forms.ModelForm):
                     child=instance
                 ))
             FollowUpEventDependency.objects.bulk_create(dependencies)
-
-            # Auto-assign order for newly added trackable object associations
-            new_to_ids = set(instance.trackable_objects.values_list('id', flat=True)) - existing_to_ids
-            for to_id in new_to_ids:
-                through_obj = FollowUpEventTrackableObject.objects.filter(
-                    follow_up_event=instance, trackable_object_id=to_id
-                ).first()
-                if through_obj:
-                    max_order = FollowUpEventTrackableObject.objects.filter(
-                        trackable_object_id=to_id
-                    ).exclude(pk=through_obj.pk).aggregate(Max('order'))['order__max'] or 0
-                    through_obj.order = max_order + 1
-                    through_obj.save()
 
         return instance

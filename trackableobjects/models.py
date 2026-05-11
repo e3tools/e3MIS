@@ -71,9 +71,13 @@ class FollowUpEvent(models.Model):
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
     is_one_off = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
     groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="follow_up_events",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
+
+    class Meta:
+        ordering = ['order', 'name']
 
     def __str__(self):
         return self.name
@@ -87,14 +91,12 @@ class FollowUpEvent(models.Model):
 class FollowUpEventTrackableObject(models.Model):
     follow_up_event = models.ForeignKey(FollowUpEvent, on_delete=models.CASCADE)
     trackable_object = models.ForeignKey(TrackableObject, on_delete=models.CASCADE)
-    order = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ['order']
         unique_together = ('follow_up_event', 'trackable_object')
 
     def __str__(self):
-        return f"{self.follow_up_event.name} - {self.trackable_object.name} (order: {self.order})"
+        return f"{self.follow_up_event.name} - {self.trackable_object.name}"
 
 
 class FollowUpEventDependency(models.Model):

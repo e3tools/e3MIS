@@ -1,5 +1,5 @@
 from django.views.generic import TemplateView
-from django.db.models import Q, OuterRef, Subquery, Exists, Value, IntegerField, Count
+from django.db.models import Q, OuterRef, Subquery, Exists
 from src.permissions import IsFieldAgentUserMixin
 from trackableobjects.models import (
     FollowUpEvent,
@@ -67,12 +67,6 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             )
         )
 
-        # Subquery: get order from through table for this trackable object
-        through_order = FollowUpEventTrackableObject.objects.filter(
-            follow_up_event=OuterRef('pk'),
-            trackable_object=trackable_object_instance.trackable_object
-        ).values('order')[:1]
-
         # Subquery: check if event has any trackable objects (global = no TOs)
         has_trackable_objects = FollowUpEventTrackableObject.objects.filter(
             follow_up_event=OuterRef('pk'),
@@ -81,7 +75,6 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
         return FollowUpEvent.objects.annotate(
             has_matched_groups=Exists(matched_groups),
             has_unfulfilled_deps=Exists(unfulfilled_dependencies),
-            custom_order=Subquery(through_order, output_field=IntegerField()),
             is_global=~Exists(has_trackable_objects),
         ).filter(
             # Event applies to this trackable object
@@ -91,7 +84,7 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             # Event is active and has no unfulfilled dependencies
             is_active=True,
             has_unfulfilled_deps=False
-        ).distinct().order_by('custom_order', 'name')
+        ).distinct().order_by('order', 'name')
 
     def _annotate_response_status(self, follow_up_events, trackable_object_instance):
         """Adds has_no_response and response_id attributes to one-off events."""

@@ -148,6 +148,7 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
                 activity = {
                     'event_name': event.name,
                     'event_id': event.id,
+                    'event_order': event.order,
                     'instance_name': instance.identifier,
                     'instance_id': instance.id,
                     'object_name': trackable_obj.name if trackable_obj else '',
@@ -193,6 +194,7 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
             activity = {
                 'event_name': event.name,
                 'event_id': event.id,
+                'event_order': event.order,
                 'instance_name': '',
                 'instance_id': None,
                 'object_name': '',
@@ -221,8 +223,8 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
 
             activities.append(activity)
 
-        # Sort: pending first, then by event name
-        activities.sort(key=lambda a: (not a['is_pending'], a['event_name'].lower()))
+        # Sort by global event order
+        activities.sort(key=lambda a: a.get('event_order', 0))
 
         # ── Counts for tabs ───────────────────────────────────────────
         kwargs['activities'] = activities

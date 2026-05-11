@@ -1,6 +1,6 @@
 from django.views.generic import DetailView
 from django.utils.translation import gettext as _
-from trackableobjects.models import TrackableObject, FollowUpEventTrackableObject
+from trackableobjects.models import TrackableObject
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from src.permissions import IsStaffMemberMixin
@@ -20,9 +20,7 @@ class TrackableObjectDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailVi
         context['title'] = '{} {}'.format(self.object.name, _('Detail'))
         context['form'] = self.get_custom_form()
         context['instances'] = self.object.instances.all()
-        context['ordered_follow_up_events'] = FollowUpEventTrackableObject.objects.filter(
-            trackable_object=self.object
-        ).select_related('follow_up_event').order_by('order', 'follow_up_event__name')
+        context['follow_up_events'] = self.object.follow_up_events.order_by('order', 'name')
         return context
 
     def get_custom_form(self):
