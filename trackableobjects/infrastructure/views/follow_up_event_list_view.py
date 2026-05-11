@@ -7,6 +7,7 @@ from trackableobjects.models import FollowUpEvent, TrackableObject
 class FollowUpEventListView(LoginRequiredMixin, ListView):
     template_name = 'trackable_objects/follow_up_event_list.html'
     model = FollowUpEvent
+    ordering = ['order', 'name']
     extra_context = {
         'title': _('Follow Up Events'),
     }

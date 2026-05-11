@@ -89,9 +89,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         dependencies = meta.get('dependencies', {})
         widget_attrs = {}
 
-        placeholder = meta.get('placeholder', '')
-        if placeholder:
-            widget_attrs['placeholder'] = placeholder
+        widget_attrs['placeholder'] = meta.get('placeholder', '')
 
         if dependencies:
             # NEW: Handle multiple conditions
