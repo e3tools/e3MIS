@@ -124,17 +124,9 @@
                 language: {
                     url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
                 },
-                dom: "ltipr",
-                columnDefs: [
-                    {
-                        targets: [0, 1],
-                        orderable: false,
-                        searchable: false,
-                    }
-                ],
-                lengthMenu: [10, 50, 100],
-                pageLength: 10,
-                order: [[1, 'asc']]
+                dom: "tr",
+                ordering: false,
+                paging: false,
             });
             search_select.on('change', function () {
                 table.search($(this).val()).draw();

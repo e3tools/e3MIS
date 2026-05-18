@@ -9,8 +9,6 @@ from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
 from django.contrib import messages
 
-from administrativelevels.models import AdministrativeUnit
-
 
 def serialize_for_json(data):
     """
@@ -58,7 +56,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
-            if isinstance(cleaned_data[key], TrackableObjectInstance) or isinstance(cleaned_data[key], AdministrativeUnit):
+            if hasattr(cleaned_data[key], 'id') and hasattr(cleaned_data[key], '_meta'):
                 cleaned_data[key] = cleaned_data[key].id
 
         instance = self.model(
@@ -154,14 +152,12 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
         return True
 
     def get_descendants(self, administrative_unit):
-        descendants = list()
+        descendants = []
 
         def recurse(node):
-            if node.children.exists():
-                for child in node.children.all():
-                    recurse(child)
-            else:
-                descendants.append(node.id)
+            descendants.append(node.id)
+            for child in node.children.all():
+                recurse(child)
 
         recurse(administrative_unit)
         return descendants

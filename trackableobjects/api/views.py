@@ -3,6 +3,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from django.db import transaction
 from django.db.models import Subquery
 from django.template.defaultfilters import date
 
@@ -105,8 +106,9 @@ class FollowUpEventReorderAPIView(APIView):
     def post(self, request):
         ordered_ids = request.data.get('ordered_ids', [])
 
-        for index, event_id in enumerate(ordered_ids):
-            FollowUpEvent.objects.filter(id=event_id).update(order=index + 1)
+        with transaction.atomic():
+            for index, event_id in enumerate(ordered_ids):
+                FollowUpEvent.objects.filter(id=event_id).update(order=index + 1)
 
         return Response({'status': 'ok'})
 

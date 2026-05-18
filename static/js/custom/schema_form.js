@@ -472,11 +472,11 @@ $(document).ready(function () {
 
             if (!confirm(`Are you sure you want to remove the field "${fieldLabel}"?`)) return;
 
-            // Check for dependent fields
+            // Check for dependent fields (supports both new and legacy formats)
             const dependentFields = [];
             for (const [otherName, otherOpts] of Object.entries(page.options.fields)) {
                 if (otherName !== fieldName && otherOpts.dependencies) {
-                    if (Object.keys(otherOpts.dependencies).includes(fieldName)) {
+                    if (this.fieldHasDependencyOn(otherOpts.dependencies, fieldName)) {
                         dependentFields.push(otherOpts.label || otherName);
                     }
                 }
@@ -492,8 +492,16 @@ $(document).ready(function () {
 
                 for (const [otherName, otherOpts] of Object.entries(page.options.fields)) {
                     if (otherName !== fieldName && otherOpts.dependencies) {
-                        if (Object.keys(otherOpts.dependencies).includes(fieldName)) {
-                            delete otherOpts.dependencies;
+                        if (this.fieldHasDependencyOn(otherOpts.dependencies, fieldName)) {
+                            if (otherOpts.dependencies.conditions) {
+                                otherOpts.dependencies.conditions = otherOpts.dependencies.conditions
+                                    .filter(c => c.field !== fieldName);
+                                if (otherOpts.dependencies.conditions.length === 0) {
+                                    delete otherOpts.dependencies;
+                                }
+                            } else {
+                                delete otherOpts.dependencies;
+                            }
                         }
                     }
                 }
@@ -1262,6 +1270,13 @@ $(document).ready(function () {
                 .replace(/\_\_+/g, '_')
                 .replace(/^-+/, '')
                 .replace(/-+$/, '');
+        },
+
+        fieldHasDependencyOn(dependencies, fieldName) {
+            if (dependencies.conditions && Array.isArray(dependencies.conditions)) {
+                return dependencies.conditions.some(c => c.field === fieldName);
+            }
+            return Object.keys(dependencies).includes(fieldName);
         },
 
         parseCommaSeparated(raw) {
