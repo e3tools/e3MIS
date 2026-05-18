@@ -1,4 +1,5 @@
 from django import forms
+from django.db import transaction
 from django.db.models import Max
 from django.utils.translation import gettext as _
 from django.contrib.auth.models import Group
@@ -43,20 +44,24 @@ class FollowUpEventForm(forms.ModelForm):
         dependency_objs = self.cleaned_data.pop('dependencies')
         if self.trackable_object is not None:
             self.instance.trackable_object = self.trackable_object
-        if self.creating:
-            self.instance.created_by = self.user
-            max_order = FollowUpEvent.objects.aggregate(Max('order'))['order__max'] or 0
-            self.instance.order = max_order + 1
 
-        instance = super().save(commit)
-        if commit:
-            old_dependencies = FollowUpEventDependency.objects.filter(child=instance)
-            old_dependencies.delete()
-            for dependency_obj in dependency_objs:
-                dependencies.append(FollowUpEventDependency(
-                    parent=dependency_obj,
-                    child=instance
-                ))
-            FollowUpEventDependency.objects.bulk_create(dependencies)
+        with transaction.atomic():
+            if self.creating:
+                self.instance.created_by = self.user
+                max_order = (FollowUpEvent.objects
+                    .select_for_update()
+                    .aggregate(Max('order'))['order__max'] or 0)
+                self.instance.order = max_order + 1
+
+            instance = super().save(commit)
+            if commit:
+                old_dependencies = FollowUpEventDependency.objects.filter(child=instance)
+                old_dependencies.delete()
+                for dependency_obj in dependency_objs:
+                    dependencies.append(FollowUpEventDependency(
+                        parent=dependency_obj,
+                        child=instance
+                    ))
+                FollowUpEventDependency.objects.bulk_create(dependencies)
 
         return instance
