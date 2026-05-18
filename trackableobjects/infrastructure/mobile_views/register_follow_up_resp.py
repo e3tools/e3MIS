@@ -69,7 +69,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
-            if isinstance(cleaned_data[key], TrackableObjectInstance):
+            if hasattr(cleaned_data[key], 'id') and hasattr(cleaned_data[key], '_meta'):
                 cleaned_data[key] = cleaned_data[key].id
 
         if self.instance is None:
@@ -306,14 +306,12 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             )
 
     def get_descendants(self, administrative_unit):
-        descendants = list()
+        descendants = []
 
         def recurse(node):
-            if node.children.exists():
-                for child in node.children.all():
-                    recurse(child)
-            else:
-                descendants.append(node.id)
+            descendants.append(node.id)
+            for child in node.children.all():
+                recurse(child)
 
         recurse(administrative_unit)
         return descendants

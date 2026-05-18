@@ -61,103 +61,199 @@
 {% block extrajs %}
 <script src="{% static 'AdminLTE/plugins/bs-custom-file-input/bs-custom-file-input.js' %}"></script>
 <script type="text/javascript">
-    $(Document).ready(function () {
-        
+    $(document).ready(function () {
+
         bsCustomFileInput.init();
 
         // Initialize conditional display on page load
         initConditionalDisplay();
-        
+
         // Re-evaluate whenever any form field changes
-        $('form').on('change', 'input, select, textarea', function() {
+        $('form').on('change keyup', 'input, select, textarea', function() {
             evaluateAllConditionalFields();
         });
-    
+
         function initConditionalDisplay() {
-            // Hide all conditional fields initially
-            $('[data-conditional="true"]').each(function() {
-                const $field = $(this);
-                const $formGroup = $field.closest('.form-group');
-                $formGroup.hide();
-            });
-    
             // Evaluate all conditions on load
             evaluateAllConditionalFields();
         }
-    
+
         function evaluateAllConditionalFields() {
             $('[data-conditional="true"]').each(function() {
                 const $field = $(this);
                 const $formGroup = $field.closest('.form-group');
-                
-                const dependsOn = $field.data('depends-on');
-                const operator = $field.data('depends-operator');
-                const expectedValue = String($field.data('depends-value'));
-    
-                // Find the field this depends on
-                const $dependentField = $(`[name="${dependsOn}"]`);
-                
-                if ($dependentField.length === 0) {
-                    console.warn(`Dependent field "${dependsOn}" not found`);
-                    return;
-                }
-    
-                // Get the current value of the dependent field
-                let actualValue;
-                if ($dependentField.attr('type') === 'checkbox') {
-                    actualValue = $dependentField.is(':checked') ? 'true' : 'false';
-                } else if ($dependentField.attr('type') === 'radio') {
-                    actualValue = $dependentField.filter(':checked').val() || '';
+
+                // Check if field has multiple conditions (new format)
+                const conditionsData = $field.data('conditions');
+
+                if (conditionsData) {
+                    // Multiple conditions
+                    const shouldShow = evaluateMultipleConditions(conditionsData);
+
+                    if (shouldShow) {
+                        $formGroup.slideDown(200);
+                        if ($field.data('originally-required')) {
+                            $field.prop('required', true);
+                        }
+                    } else {
+                        $formGroup.slideUp(200);
+                        if ($field.prop('required')) {
+                            $field.data('originally-required', true);
+                            $field.prop('required', false);
+                        }
+                        clearFieldValue($field);
+                    }
                 } else {
-                    actualValue = $dependentField.val() || '';
-                }
-    
-                // Evaluate the condition
-                const shouldShow = evaluateCondition(String(actualValue), operator, expectedValue);
-    
-                // Show or hide the form group
-                if (shouldShow) {
-                    $formGroup.slideDown(200);
-                } else {
-                    $formGroup.slideUp(200);
-                    // Clear the value when hiding (optional)
-                    clearFieldValue($field);
+                    // Single condition (legacy format)
+                    const dependsOn = $field.data('depends-on');
+                    const operator = $field.data('depends-operator');
+                    const expectedValue = String($field.data('depends-value'));
+
+                    if (!dependsOn) {
+                        return;
+                    }
+
+                    const $dependentField = $(`[name="${dependsOn}"]`);
+
+                    if ($dependentField.length === 0) {
+                        $formGroup.hide();
+                        return;
+                    }
+
+                    const actualValue = getFieldValue($dependentField);
+                    const shouldShow = evaluateCondition(String(actualValue), operator, expectedValue);
+
+                    if (shouldShow) {
+                        $formGroup.slideDown(200);
+                        if ($field.data('originally-required')) {
+                            $field.prop('required', true);
+                        }
+                    } else {
+                        $formGroup.slideUp(200);
+                        if ($field.prop('required')) {
+                            $field.data('originally-required', true);
+                            $field.prop('required', false);
+                        }
+                        clearFieldValue($field);
+                    }
                 }
             });
         }
-    
+
+        function evaluateMultipleConditions(conditions) {
+            if (!conditions || conditions.length === 0) {
+                return true;
+            }
+
+            const results = [];
+
+            for (let i = 0; i < conditions.length; i++) {
+                const condition = conditions[i];
+                const field = condition.field;
+                const operator = condition.operator;
+                const expectedValue = String(condition.value);
+
+                const $dependentField = $(`[name="${field}"]`);
+
+                if ($dependentField.length === 0) {
+                    return false;
+                }
+
+                const actualValue = getFieldValue($dependentField);
+                const result = evaluateCondition(String(actualValue), operator, expectedValue);
+                results.push(result);
+            }
+
+            // Apply AND/OR logic
+            let finalResult = results[0];
+
+            for (let i = 0; i < conditions.length - 1; i++) {
+                const logic = conditions[i].logic || 'AND';
+                const nextResult = results[i + 1];
+
+                if (logic === 'AND') {
+                    finalResult = finalResult && nextResult;
+                } else if (logic === 'OR') {
+                    finalResult = finalResult || nextResult;
+                }
+            }
+
+            return finalResult;
+        }
+
+        function getFieldValue($field) {
+            if ($field.is(':checkbox')) {
+                return $field.is(':checked') ? 'true' : 'false';
+            } else if ($field.is(':radio')) {
+                return $field.filter(':checked').val() || '';
+            } else if ($field.is('select[multiple]')) {
+                return $field.val() || [];
+            } else {
+                return $field.val() || '';
+            }
+        }
+
         function evaluateCondition(actualValue, operator, expectedValue) {
+            if (actualValue === 'undefined' || actualValue === 'null' || actualValue === '') {
+                return false;
+            }
+
             switch(operator) {
                 case 'equals':
                     return actualValue === expectedValue;
-                
+
                 case 'not_equals':
                     return actualValue !== expectedValue;
-                
+
                 case 'contains':
                     return actualValue.toLowerCase().includes(expectedValue.toLowerCase());
-                
+
                 case 'greater_than':
-                    return parseFloat(actualValue) > parseFloat(expectedValue);
-                
+                    try {
+                        return parseFloat(actualValue) > parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
+
                 case 'less_than':
-                    return parseFloat(actualValue) < parseFloat(expectedValue);
-                
+                    try {
+                        return parseFloat(actualValue) < parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
+
                 case 'greater_or_equal':
-                    return parseFloat(actualValue) >= parseFloat(expectedValue);
-                
+                    try {
+                        return parseFloat(actualValue) >= parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
+
                 case 'less_or_equal':
-                    return parseFloat(actualValue) <= parseFloat(expectedValue);
-                
+                    try {
+                        return parseFloat(actualValue) <= parseFloat(expectedValue);
+                    } catch(e) {
+                        return false;
+                    }
+
+                case 'between':
+                    try {
+                        const [minVal, maxVal] = expectedValue.split(',').map(v => parseFloat(v.trim()));
+                        const fieldVal = parseFloat(actualValue);
+                        return fieldVal >= minVal && fieldVal <= maxVal;
+                    } catch(e) {
+                        return false;
+                    }
+
                 default:
                     console.warn(`Unknown operator: ${operator}`);
                     return false;
             }
         }
-    
+
         function clearFieldValue($field) {
             const fieldType = $field.attr('type');
-            
+
             if (fieldType === 'checkbox' || fieldType === 'radio') {
                 $field.prop('checked', false);
             } else if ($field.is('select')) {
@@ -166,7 +262,7 @@
                 $field.val('');
             }
         }
-                
+
     });
 </script>
 {% if custom_form.get_geoloc %}

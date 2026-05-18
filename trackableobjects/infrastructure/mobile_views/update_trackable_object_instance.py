@@ -54,6 +54,9 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
             if key in form.files.keys():
                 cleaned_data[key] = 'Attachment'
 
+            if hasattr(cleaned_data[key], 'id') and hasattr(cleaned_data[key], '_meta'):
+                cleaned_data[key] = cleaned_data[key].id
+
         self.object.filled_by = self.request.user
         self.object.jsonForm = cleaned_data
         self.object.save()
@@ -121,7 +124,10 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
                 ]
             }
 
-        form_class = parse_custom_jsonschema(schema_json, page_index=0)
+        form_class = parse_custom_jsonschema(
+            schema_json, page_index=0,
+            administrative_level_ids=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
+        )
 
         return form_class(**self.get_form_kwargs())
 
@@ -147,3 +153,14 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
             if not self.request.user.groups.filter(id=group.id).exists():
                 return False
         return True
+
+    def get_descendants(self, administrative_unit):
+        descendants = []
+
+        def recurse(node):
+            descendants.append(node.id)
+            for child in node.children.all():
+                recurse(child)
+
+        recurse(administrative_unit)
+        return descendants

@@ -290,6 +290,10 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
             number_attrs = {'class': 'form-control', 'type': 'number'}
             if field_type == 'number':
                 number_attrs['step'] = 'any'
+            else:  # integer
+                number_attrs['step'] = '1'
+                if 'min_value' not in validators:
+                    number_attrs['min'] = 0
             if 'min_value' in validators:
                 number_attrs['min'] = validators['min_value']
             if 'max_value' in validators:
