@@ -22,6 +22,26 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 
+class AppSettings(models.Model):
+    show_all_activities_button = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Settings'
+        verbose_name_plural = 'Settings'
+
+    def __str__(self):
+        return 'App Settings'
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
 class CustomUser(AbstractUser):
     username = None
     email = models.EmailField('email address', unique=True)

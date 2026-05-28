@@ -83,6 +83,17 @@
         border: 1px solid #e2e6eb;
         height: 44px;
     }
+    .cascade-select {
+        border-radius: 10px;
+        border: 1px solid #e2e6eb;
+        height: 44px;
+        padding: 6px 12px;
+        font-size: .9rem;
+        color: #2c3e50;
+        background: #fff;
+        margin-bottom: 8px;
+        width: 100%;
+    }
 </style>
 {% endblock %}
 
@@ -111,6 +122,7 @@
             <div class="card-body">
 
                 <!-- "See all my activities" shortcut -->
+                {% if show_all_activities_btn %}
                 <a href="{% url 'trackableobjects:mobile:all_activities' %}"
                    class="object-card mb-3" data-searchable="{% translate 'All activities' %}"
                    style="background: linear-gradient(135deg, #3498db, #2471a3); border:none; color:#fff; box-shadow: 0 3px 10px rgba(52,152,219,.3);">
@@ -125,6 +137,10 @@
                     </div>
                     <i class="fas fa-chevron-right ml-2" style="color:rgba(255,255,255,.7);"></i>
                 </a>
+                {% endif %}
+
+                <!-- Cascading administrative unit filters -->
+                <div id="cascade-filters" data-all-label="{% translate 'All' %}"></div>
 
                 <!-- Search -->
                 <div class="search-wrap">
@@ -210,6 +226,96 @@
 {% block extrajs %}
 <script>
 $(function() {
+    // ── Cascading admin unit filters ─────────────────────────────
+    const allUnits = JSON.parse('{{ units_json|escapejs }}');
+    const allLabel = $('#cascade-filters').data('all-label');
+    const selectedAdminUnit = '{{ selected_admin_unit|escapejs }}';
+
+    function getChildren(parentId) {
+        if (parentId === null) return allUnits.filter(u => u.parent_id === null);
+        return allUnits.filter(u => u.parent_id === parentId);
+    }
+
+    function getAncestorChain(unitId) {
+        const chain = [];
+        let current = allUnits.find(u => u.id === unitId);
+        while (current) {
+            chain.unshift(current.id);
+            current = current.parent_id ? allUnits.find(u => u.id === current.parent_id) : null;
+        }
+        return chain;
+    }
+
+    let suppressNav = false;
+
+    function buildCascade(parentId, depth) {
+        $('#cascade-filters .cascade-select').each(function() {
+            if (parseInt($(this).data('depth')) >= depth) $(this).remove();
+        });
+
+        const children = getChildren(parentId);
+        if (children.length === 0) return;
+
+        const levelNames = [...new Set(children.map(u => u.level_name))];
+        const levelLabel = levelNames.length === 1 ? levelNames[0] : '{% translate "Administrative Unit" %}';
+
+        const $select = $(`<select class="cascade-select" data-depth="${depth}"></select>`);
+        $select.append(`<option value="">${allLabel} ${levelLabel}</option>`);
+
+        children.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(u => {
+            $select.append(`<option value="${u.id}">${u.name} (${u.instance_count})</option>`);
+        });
+
+        $('#cascade-filters').append($select);
+
+        $select.on('change', function() {
+            const val = $(this).val();
+            if (val) {
+                buildCascade(parseInt(val), depth + 1);
+            } else {
+                $('#cascade-filters .cascade-select').each(function() {
+                    if (parseInt($(this).data('depth')) > depth) $(this).remove();
+                });
+            }
+
+            if (!suppressNav) {
+                let deepest = '';
+                $('#cascade-filters .cascade-select').each(function() {
+                    const v = $(this).val();
+                    if (v) deepest = v;
+                });
+                const url = new URL(window.location.href);
+                if (deepest) {
+                    url.searchParams.set('admin_unit', deepest);
+                } else {
+                    url.searchParams.delete('admin_unit');
+                }
+                window.location.href = url.toString();
+            }
+        });
+
+        if (children.length === 1) {
+            $select.val(children[0].id);
+            buildCascade(children[0].id, depth + 1);
+        }
+    }
+
+    suppressNav = true;
+    buildCascade(null, 0);
+
+    if (selectedAdminUnit) {
+        const chain = getAncestorChain(parseInt(selectedAdminUnit));
+        chain.forEach((unitId, i) => {
+            const $sel = $(`#cascade-filters .cascade-select[data-depth="${i}"]`);
+            if ($sel.length && String($sel.val()) !== String(unitId)) {
+                $sel.val(unitId);
+                buildCascade(unitId, i + 1);
+            }
+        });
+    }
+
+    suppressNav = false;
+
     // Toggle global activities list
     $('#global-activities-toggle').on('click', function(e) {
         e.preventDefault();

@@ -19,7 +19,7 @@ class FollowUpEventForm(forms.ModelForm):
             'Check mark to denote this Follow Up Event will be visible for field agents.'), required=False)
     groups = forms.ModelMultipleChoiceField(queryset=Group.objects.all(), label=_('Groups'))
     trackable_objects = forms.ModelMultipleChoiceField(queryset=TrackableObject.objects.all(),
-                                                       label=_('Trackable Objects'))
+                                                       label=_('Trackable Objects'), required=False)
 
     class Meta:
         model = FollowUpEvent
