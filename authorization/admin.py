@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
+from .models import CustomUser, AppSettings
 
 
 @admin.register(CustomUser)
@@ -24,3 +24,14 @@ class CustomUserAdmin(UserAdmin):
     )
     search_fields = ('email',)
     ordering = ('email',)
+
+
+@admin.register(AppSettings)
+class AppSettingsAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'show_all_activities_button')
+
+    def has_add_permission(self, request):
+        return not AppSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False

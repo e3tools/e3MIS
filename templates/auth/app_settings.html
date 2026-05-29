@@ -1,0 +1,39 @@
+{% extends 'layout/base.html' %}
+{% load static i18n %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% translate 'Application Settings' %}</h3>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="form-group">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox"
+                                       class="custom-control-input"
+                                       id="id_show_all_activities_button"
+                                       name="show_all_activities_button"
+                                       {% if app_settings.show_all_activities_button %}checked{% endif %}>
+                                <label class="custom-control-label" for="id_show_all_activities_button">
+                                    {% translate 'Show "See all my activities" button' %}
+                                </label>
+                            </div>
+                            <small class="form-text text-muted">
+                                {% translate 'Controls whether field agents see the "See all my activities" shortcut in the mobile activity view.' %}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-primary">
+                            {% translate 'Save' %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

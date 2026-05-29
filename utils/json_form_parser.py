@@ -211,6 +211,8 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
             if administrative_level_restriction == 'true':
                 queryset = queryset.filter(id__in=administrative_level_ids)
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
+            widget_attrs['data-field-type'] = 'administrative_level'
+            widget_attrs['data-admin-level-restriction'] = administrative_level_restriction
             field_instance = forms.ModelChoiceField(
                 queryset=queryset,
                 widget=forms.Select(attrs=widget_attrs),

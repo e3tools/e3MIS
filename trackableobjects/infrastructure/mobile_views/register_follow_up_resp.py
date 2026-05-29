@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.utils.translation import gettext as _
 from subprojects.models import Attachment
 from trackableobjects.models import FollowUpEvent, FollowUpEventResponse, TrackableObjectInstance
+from administrativelevels.models import AdministrativeLevel
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
 
@@ -144,6 +145,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                 )
 
         context['parent_form_data_json'] = self.get_parent_form_data_json()
+        context['administrative_levels'] = AdministrativeLevel.objects.all().order_by('order')
 
         return context
 
