@@ -65,6 +65,160 @@
 
         bsCustomFileInput.init();
 
+        // ── Cascading Administrative Level Selects ──
+        const adminLevels = [
+            {% for level in administrative_levels %}
+            { order: {{ level.order }}, name: "{{ level.name }}" }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+        const rootUrl = "{% url 'administrativelevels:api:administrative-unit-root' %}";
+        const childrenUrlTemplate = "{% url 'administrativelevels:api:administrative-level-children' pk=9999 %}";
+        const ancestorsUrlTemplate = "{% url 'administrativelevels:api:administrative-unit-ancestors' pk=9999 %}";
+
+        function getChildrenUrl(parentId) {
+            return childrenUrlTemplate.replace('9999', parentId);
+        }
+        function getAncestorsUrl(unitId) {
+            return ancestorsUrlTemplate.replace('9999', unitId);
+        }
+
+        $('select[data-field-type="administrative_level"]').each(function () {
+            const $originalSelect = $(this);
+            const $formGroup = $originalSelect.closest('.form-group');
+            const originalName = $originalSelect.attr('name');
+            const initialValue = $originalSelect.val();
+            const maxLevelOrder = parseInt($originalSelect.data('max-level-order')) || 0;
+
+            // Filter admin levels by max order if set
+            const effectiveLevels = maxLevelOrder
+                ? adminLevels.filter(function (l) { return l.order <= maxLevelOrder; })
+                : adminLevels;
+
+            // Destroy select2 on the original select if applied
+            if ($originalSelect.data('select2')) {
+                $originalSelect.select2('destroy');
+            }
+            // Hide original select, keep it as hidden input carrier
+            $originalSelect.hide();
+
+            // Build cascading selects container
+            const $container = $('<div class="cascading-admin-selects"></div>');
+            $originalSelect.after($container);
+
+            effectiveLevels.forEach(function (level) {
+                const $wrapper = $('<div class="au-select-wrapper mb-2" data-level-order="' + level.order + '" style="display:none;"></div>');
+                const $sel = $('<select class="form-control au-cascade-select" data-level-order="' + level.order + '" data-level-name="' + level.name + '">' +
+                    '<option value="">-- ' + level.name + ' --</option></select>');
+                $wrapper.append($sel);
+                $container.append($wrapper);
+            });
+
+            function showSelect(order) {
+                const $wrapper = $container.find('.au-select-wrapper[data-level-order="' + order + '"]');
+                $wrapper.show();
+                const $sel = $wrapper.find('.au-cascade-select');
+                if ($sel.data('select2')) $sel.select2('destroy');
+                $sel.select2({ width: '100%' });
+            }
+
+            function hideAfterOrder(order) {
+                $container.find('.au-select-wrapper').each(function () {
+                    if ($(this).data('level-order') > order) {
+                        const $sel = $(this).find('.au-cascade-select');
+                        if ($sel.data('select2')) $sel.select2('destroy');
+                        const levelName = $sel.data('level-name');
+                        $sel.html('<option value="">-- ' + levelName + ' --</option>');
+                        $(this).hide();
+                    }
+                });
+            }
+
+            function loadRootUnits(callback) {
+                $.ajax({
+                    url: rootUrl,
+                    success: function (data) {
+                        const $sel = $container.find('.au-cascade-select[data-level-order="1"]');
+                        const levelName = $sel.data('level-name');
+                        $sel.html('<option value="">-- ' + levelName + ' --</option>');
+                        $.each(data, function () {
+                            $sel.append($('<option>').val(this.id).text(this.name));
+                        });
+                        showSelect(1);
+                        if (callback) callback();
+                    }
+                });
+            }
+
+            function loadChildren(parentId, targetOrder, callback) {
+                $.ajax({
+                    url: getChildrenUrl(parentId),
+                    success: function (data) {
+                        if (data.length > 0) {
+                            const $sel = $container.find('.au-cascade-select[data-level-order="' + targetOrder + '"]');
+                            const levelName = $sel.data('level-name');
+                            $sel.html('<option value="">-- ' + levelName + ' --</option>');
+                            $.each(data, function () {
+                                $sel.append($('<option>').val(this.id).text(this.name));
+                            });
+                            showSelect(targetOrder);
+                        }
+                        if (callback) callback();
+                    }
+                });
+            }
+
+            // Update the original hidden select when cascading changes
+            function syncOriginal() {
+                let lastVal = '';
+                $container.find('.au-select-wrapper:visible .au-cascade-select').each(function () {
+                    if ($(this).val()) lastVal = $(this).val();
+                });
+                $originalSelect.val(lastVal);
+            }
+
+            $container.on('change', '.au-cascade-select', function () {
+                const currentOrder = $(this).data('level-order');
+                const selectedValue = $(this).val();
+                hideAfterOrder(currentOrder);
+                const nextOrder = currentOrder + 1;
+                if (selectedValue && (!maxLevelOrder || nextOrder <= maxLevelOrder)) {
+                    loadChildren(selectedValue, nextOrder);
+                }
+                syncOriginal();
+            });
+
+            // Initialize: load root, then restore initial value if editing
+            loadRootUnits(function () {
+                if (initialValue) {
+                    $.ajax({
+                        url: getAncestorsUrl(initialValue),
+                        success: function (resp) {
+                            const chain = resp.chain || [];
+                            let i = 0;
+                            function selectNext() {
+                                if (i >= chain.length) return;
+                                const node = chain[i];
+                                // Skip levels beyond max order
+                                if (maxLevelOrder && node.level_order > maxLevelOrder) return;
+                                const $sel = $container.find('.au-cascade-select[data-level-order="' + node.level_order + '"]');
+                                $sel.val(String(node.id));
+                                if ($sel.data('select2')) {
+                                    $sel.trigger('change.select2');
+                                }
+                                i++;
+                                if (i < chain.length && (!maxLevelOrder || chain[i].level_order <= maxLevelOrder)) {
+                                    loadChildren(node.id, chain[i].level_order, selectNext);
+                                } else {
+                                    syncOriginal();
+                                }
+                            }
+                            selectNext();
+                        }
+                    });
+                }
+            });
+        });
+
         // Initialize conditional display on page load
         initConditionalDisplay();
 

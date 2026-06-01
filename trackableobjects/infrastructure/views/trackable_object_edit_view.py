@@ -8,6 +8,7 @@ from trackableobjects.infrastructure.forms.trackable_object_create_form import T
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
 from src.permissions import IsStaffMemberMixin
+from administrativelevels.models import AdministrativeLevel
 
 
 class TrackableObjectEditView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView):
@@ -21,6 +22,7 @@ class TrackableObjectEditView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
         context['title'] = '{} - {}'.format(self.object.name, _('Edit'))
         context.update({'custom_forms': self.model.objects.exclude(id=self.object.id)})
         context.update({'trackable_objects': self.model.objects.all()})
+        context.update({'administrative_levels': AdministrativeLevel.objects.all().order_by('order')})
 
         context.update({'groups': Group.objects.all()})
         context.update({'trackable_object_groups': list(self.object.groups.all().values_list(

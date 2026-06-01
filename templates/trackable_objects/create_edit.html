@@ -329,7 +329,7 @@
                     <div class="form-group" id="admin-level-restrictions-group" style="display: none;">
                         <label class="font-weight-bold">Administrative Level Restrictions</label>
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label>Pull only from assigned administrative levels?</label><br>
                                 <div class="btn-group btn-group-toggle" data-toggle="buttons">
                                     <label class="btn btn-outline-danger" id="btn-admin-level-restriction-no">
@@ -339,6 +339,16 @@
                                         <input type="radio" name="admin-level-options" value="yes" checked> Yes
                                     </label>
                                 </div>
+                            </div>
+                            <div class="col-md-4 form-group">
+                                <label for="admin-level-max-order">Max Level (depth)</label>
+                                <select class="form-control" id="admin-level-max-order">
+                                    <option value="">All levels</option>
+                                    {% for level in administrative_levels %}
+                                        <option value="{{ level.order }}">{{ level.order }} - {{ level.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Limit how deep in the hierarchy the user can select</small>
                             </div>
                         </div>
                     </div>

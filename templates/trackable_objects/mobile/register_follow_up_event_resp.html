@@ -81,6 +81,12 @@
             const $formGroup = $originalSelect.closest('.form-group');
             const originalName = $originalSelect.attr('name');
             const initialValue = $originalSelect.val();
+            const maxLevelOrder = parseInt($originalSelect.data('max-level-order')) || 0;
+
+            // Filter admin levels by max order if set
+            const effectiveLevels = maxLevelOrder
+                ? adminLevels.filter(function (l) { return l.order <= maxLevelOrder; })
+                : adminLevels;
 
             // Destroy select2 on the original select if applied
             if ($originalSelect.data('select2')) {
@@ -93,7 +99,7 @@
             const $container = $('<div class="cascading-admin-selects"></div>');
             $originalSelect.after($container);
 
-            adminLevels.forEach(function (level) {
+            effectiveLevels.forEach(function (level) {
                 const $wrapper = $('<div class="au-select-wrapper mb-2" data-level-order="' + level.order + '" style="display:none;"></div>');
                 const $sel = $('<select class="form-control au-cascade-select" data-level-order="' + level.order + '" data-level-name="' + level.name + '">' +
                     '<option value="">-- ' + level.name + ' --</option></select>');
@@ -168,8 +174,9 @@
                 const currentOrder = $(this).data('level-order');
                 const selectedValue = $(this).val();
                 hideAfterOrder(currentOrder);
-                if (selectedValue) {
-                    loadChildren(selectedValue, currentOrder + 1);
+                const nextOrder = currentOrder + 1;
+                if (selectedValue && (!maxLevelOrder || nextOrder <= maxLevelOrder)) {
+                    loadChildren(selectedValue, nextOrder);
                 }
                 syncOriginal();
             });
@@ -185,13 +192,15 @@
                             function selectNext() {
                                 if (i >= chain.length) return;
                                 const node = chain[i];
+                                // Skip levels beyond max order
+                                if (maxLevelOrder && node.level_order > maxLevelOrder) return;
                                 const $sel = $container.find('.au-cascade-select[data-level-order="' + node.level_order + '"]');
                                 $sel.val(String(node.id));
                                 if ($sel.data('select2')) {
                                     $sel.trigger('change.select2');
                                 }
                                 i++;
-                                if (i < chain.length) {
+                                if (i < chain.length && (!maxLevelOrder || chain[i].level_order <= maxLevelOrder)) {
                                     loadChildren(node.id, chain[i].level_order, selectNext);
                                 } else {
                                     syncOriginal();

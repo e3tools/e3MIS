@@ -7,6 +7,7 @@ from trackableobjects.infrastructure.forms.trackable_object_create_form import T
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Group
 from src.permissions import IsStaffMemberMixin
+from administrativelevels.models import AdministrativeLevel
 
 
 class TrackableObjectCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView):
@@ -24,6 +25,7 @@ class TrackableObjectCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateVi
             'groups': Group.objects.all(),
             'color_tokens': COLOR_TOKENS,
             'color_map': COLOR_MAP,
+            'administrative_levels': AdministrativeLevel.objects.all().order_by('order'),
         })
         return super().get_context_data(**kwargs)
 

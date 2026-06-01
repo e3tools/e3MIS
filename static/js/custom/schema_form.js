@@ -418,6 +418,11 @@ $(document).ready(function () {
                     "btn-admin-level-restriction",
                     fieldSchema.validators.administrative_level_restriction === "true" ? "yes" : "no"
                 );
+                if (fieldSchema.validators.max_admin_level_order) {
+                    $("#admin-level-max-order").val(fieldSchema.validators.max_admin_level_order);
+                } else {
+                    $("#admin-level-max-order").val("");
+                }
             }
 
             // Populate conditional field options before loading conditions
@@ -621,6 +626,10 @@ $(document).ready(function () {
                     const schema = { type: fieldType, validators: {} };
                     if ($("#btn-admin-level-restriction-yes").hasClass("active")) {
                         schema.validators.administrative_level_restriction = "true";
+                    }
+                    const maxOrder = $("#admin-level-max-order").val();
+                    if (maxOrder) {
+                        schema.validators.max_admin_level_order = parseInt(maxOrder);
                     }
                     return schema;
                 }
@@ -1002,6 +1011,7 @@ $(document).ready(function () {
             // Clear validators
             $("#min-length-input, #max-length-input, #min-number-input, #max-number-input, #min-date-input, #max-date-input").val("");
             $("#trackable-object-restriction-input").val("");
+            $("#admin-level-max-order").val("");
 
             // Reset button groups to defaults
             this.setActiveButton("btn-trackable-object-adm-lvl", "yes");

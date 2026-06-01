@@ -7,6 +7,7 @@ from trackableobjects.models import FollowUpEvent, TrackableObject
 from trackableobjects.infrastructure.forms.follow_up_event_create_form import FollowUpEventForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from src.permissions import IsStaffMemberMixin
+from administrativelevels.models import AdministrativeLevel
 
 
 class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView):
@@ -23,6 +24,7 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
         context.update({
             'follow_up_event_objects': self.model.objects.all(),
             'trackable_objects': TrackableObject.objects.all(),
+            'administrative_levels': AdministrativeLevel.objects.all().order_by('order'),
         })
 
         # NEW: Pass ALL available schemas for dynamic loading
