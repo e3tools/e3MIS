@@ -104,6 +104,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             'custom_form': self.get_custom_form(),
             'object': self.object,
             'parent_form_data_json': self.get_parent_form_data_json(),
+            'administrative_levels': AdministrativeLevel.objects.all().order_by('order'),
         })
 
     def get_context_data(self, **kwargs):

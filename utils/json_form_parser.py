@@ -207,12 +207,19 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         # AdministrativeLevel
         elif field_schema.get('type') == 'administrative_level':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
+            max_admin_level_order = validators.get('max_admin_level_order', None)
+            if max_admin_level_order is not None:
+                max_admin_level_order = int(max_admin_level_order)
             queryset = AdministrativeUnit.objects.all()
             if administrative_level_restriction == 'true':
                 queryset = queryset.filter(id__in=administrative_level_ids)
+            if max_admin_level_order:
+                queryset = queryset.filter(level__order__lte=max_admin_level_order)
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
             widget_attrs['data-field-type'] = 'administrative_level'
             widget_attrs['data-admin-level-restriction'] = administrative_level_restriction
+            if max_admin_level_order:
+                widget_attrs['data-max-level-order'] = str(max_admin_level_order)
             field_instance = forms.ModelChoiceField(
                 queryset=queryset,
                 widget=forms.Select(attrs=widget_attrs),

@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from subprojects.models import Attachment
 from trackableobjects.models import TrackableObject, TrackableObjectInstance
+from administrativelevels.models import AdministrativeLevel
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema
 from django.contrib import messages
@@ -86,14 +87,17 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
     def form_invalid(self, form):
         return TemplateResponse(self.request, self.template_name, {
             'form': form,
-            'custom_form': self.get_custom_form(),  # ensure custom form is re-included on error
+            'custom_form': self.get_custom_form(),
             'object': self.object,
+            'trackable_object': self.object,
+            'administrative_levels': AdministrativeLevel.objects.all().order_by('order'),
         })
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['custom_form'] = self.get_custom_form()
         context['trackable_object'] = self.object
+        context['administrative_levels'] = AdministrativeLevel.objects.all().order_by('order')
         return context
 
     def get_custom_form(self):
