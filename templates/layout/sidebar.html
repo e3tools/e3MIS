@@ -82,12 +82,30 @@
                     </a>
                 </li>
                 {% if user.is_staff %}
-                    <li class="nav-item">
-                        <a href="{% url 'authorization:field_agent_list' %}"
-                           class="nav-link {% if url_name == 'field_agent_list' %}active{% endif %}">
-                            <i class="nav-icon fas fa-tags"></i>
-                            <p>{% translate "Field agents" %}</p>
+                    <li class="nav-item {% if url_name == 'field_agent_list' or url_name == 'group_list' %}menu-open{% endif %}">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-users-cog"></i>
+                            <p>
+                                {% translate "User Management" %}
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
                         </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{% url 'authorization:field_agent_list' %}"
+                                   class="nav-link {% if url_name == 'field_agent_list' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-user-ninja"></i>
+                                    <p>{% translate "Field agents" %}</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'authorization:group_list' %}"
+                                   class="nav-link {% if url_name == 'group_list' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-users"></i>
+                                    <p>{% translate "Groups" %}</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item {% if url_name == 'administrative_levels_list' or url_name == 'administrative_unit_root' or url_name == 'administrative_unit_detail' %}menu-open{% endif %}">
                         <a href="#" class="nav-link">

@@ -1,0 +1,161 @@
+{% extends 'layout/base.html' %}
+{% load static i18n bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <div class="input-group mb-3 search-bar">
+                <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                </div>
+                <input class="form-control" id="search" placeholder="{% translate 'Search' %}...">
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="col-12">
+                        <a class="btn btn-primary pull-right group-modal-show" data-name="" data-id=""
+                        >{% translate 'Create' %} {% translate 'Group' %}</a>
+                    </div>
+                </div>
+                <div class="card-body table-responsive">
+                    <table id="table-groups" class="table table-striped" style="width: 100%;">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Members' %}</th>
+                            <th>{% translate 'Actions' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for group in object_list %}
+                            <tr>
+                                <td>{{ group.name }}</td>
+                                <td>{{ group.member_count }}</td>
+                                <td>
+                                  <div class="btn-group">
+                                    <button type="button"
+                                            data-name="{{ group.name }}"
+                                            data-id="{{ group.id }}"
+                                            class="btn btn-default btn-flat group-modal-show">
+                                      <i class="fas fa-pencil-alt text-primary"></i>
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-default btn-flat"
+                                            data-toggle="modal"
+                                            data-target="#confirmDeleteModal"
+                                            data-url="{% url 'authorization:group_delete' group.pk %}"
+                                            data-name="{{ group.name }}">
+                                      <i class="fas fa-trash text-danger"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal fade" id="groupModal" tabindex="-1" role="dialog" aria-labelledby="groupModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="." id="groupForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupModalLabel">{% translate 'Group' %}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <input type="hidden" name="group_id" id="id_group_id" value="">
+                    {% bootstrap_field form.name %}
+                </div>
+                <div class="modal-footer">
+                    <input type="submit" class="btn btn-primary pull-right" value="{% translate 'Submit' %}">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteLabel">{% translate 'Confirm deletion' %}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>{% translate 'This action cannot be undone. Delete' %} "<span class="delete-group-name"></span>"?</p>
+                <div class="form-group">
+                    <label for="delete-confirm-input">{% translate 'Type' %} <strong>delete</strong> {% translate 'to confirm' %}:</label>
+                    <input type="text" class="form-control" id="delete-confirm-input" autocomplete="off">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-dismiss="modal">{% translate 'Cancel' %}</button>
+                <form method="post" action="" id="deleteGroupForm" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" id="delete-confirm-btn" disabled>{% translate 'Delete' %}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            {% get_current_language as lang %}
+
+            let table = $('#table-groups').DataTable({
+                language: {
+                    url: '{% static 'AdminLTE/plugins/datatables/locale/lang.json' %}'.replace('lang', '{{ lang }}')
+                },
+                dom: "ltipr",
+                columnDefs: [
+                    {
+                        targets: 2,
+                        orderable: false,
+                        searchable: false,
+                    }
+                ],
+                lengthMenu: [10, 50, 100],
+                pageLength: 10,
+                order: [[0, 'asc']]
+            });
+            $('#search').on('keyup', function () {
+                table.search($(this).val()).draw();
+            });
+
+            $(".group-modal-show").on("click", function () {
+                $("#id_group_id").val($(this).data("id"));
+                $("#id_name").val($(this).data("name"));
+                $('#groupModal').modal('show');
+            });
+
+            // Delete confirmation modal
+            $('#confirmDeleteModal').on('show.bs.modal', function (event) {
+                const button = $(event.relatedTarget);
+                const url = button.data('url');
+                const name = button.data('name');
+                const modal = $(this);
+                modal.find('#deleteGroupForm').attr('action', url);
+                modal.find('.delete-group-name').text(name || '');
+                modal.find('#delete-confirm-input').val('');
+                modal.find('#delete-confirm-btn').prop('disabled', true);
+            });
+
+            $('#delete-confirm-input').on('input', function() {
+                $('#delete-confirm-btn').prop('disabled', $(this).val().toLowerCase() !== 'delete');
+            });
+        });
+    </script>
+{% endblock %}
