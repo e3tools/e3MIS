@@ -133,8 +133,8 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
                 linked_tos = event_to_map.get(event.id, set())
                 is_global = len(linked_tos) == 0
 
-                # Event must apply to this instance's trackable object or be global
-                if not is_global and to_id not in linked_tos:
+                # Event must apply to this instance's trackable object (skip global/standalone)
+                if to_id not in linked_tos:
                     continue
 
                 # Check dependencies are fulfilled for this instance

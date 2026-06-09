@@ -75,6 +75,10 @@ $(document).ready(function () {
 
             $("#field-type-input").on("change", () => this.toggleFieldTypeOptions());
 
+            $("#btn-admin-level-restriction-yes, #btn-admin-level-restriction-no").on("click", () => {
+                setTimeout(() => this.toggleAdminLevelMaxOrder(), 0);
+            });
+
             $("#enable-conditional").on("change", (e) => {
                 $("#conditional-display-group").toggle(e.target.checked);
             });
@@ -423,6 +427,7 @@ $(document).ready(function () {
                 } else {
                     $("#admin-level-max-order").val("");
                 }
+                this.toggleAdminLevelMaxOrder();
             }
 
             // Populate conditional field options before loading conditions
@@ -624,12 +629,14 @@ $(document).ready(function () {
                 }
                 case "administrative_level": {
                     const schema = { type: fieldType, validators: {} };
-                    if ($("#btn-admin-level-restriction-yes").hasClass("active")) {
+                    const restrictToAssigned = $("#btn-admin-level-restriction-yes").hasClass("active");
+                    if (restrictToAssigned) {
                         schema.validators.administrative_level_restriction = "true";
-                    }
-                    const maxOrder = $("#admin-level-max-order").val();
-                    if (maxOrder) {
-                        schema.validators.max_admin_level_order = parseInt(maxOrder);
+                    } else {
+                        const maxOrder = $("#admin-level-max-order").val();
+                        if (maxOrder) {
+                            schema.validators.max_admin_level_order = parseInt(maxOrder);
+                        }
                     }
                     return schema;
                 }
@@ -1057,6 +1064,20 @@ $(document).ready(function () {
             };
 
             (visibilityMap[fieldType] || []).forEach(g => $(g).show());
+
+            if (fieldType === "administrative_level") {
+                this.toggleAdminLevelMaxOrder();
+            }
+        },
+
+        toggleAdminLevelMaxOrder() {
+            const restrictToAssigned = $("#btn-admin-level-restriction-yes").hasClass("active");
+            if (restrictToAssigned) {
+                $("#admin-level-max-order").val("");
+                $("#admin-level-max-order-group").hide();
+            } else {
+                $("#admin-level-max-order-group").show();
+            }
         },
 
         /**
