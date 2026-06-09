@@ -24,7 +24,7 @@ class FollowUpEventForm(forms.ModelForm):
     class Meta:
         model = FollowUpEvent
         fields = ['name', 'description', 'jsonForm', 'dependencies', 'groups',
-                  'trackable_objects', 'is_one_off', 'is_active']
+                  'trackable_objects', 'is_one_off', 'is_active', 'identifier_field']
 
     def __init__(self, *args, **kwargs):
         self.trackable_object = TrackableObject.objects.filter(id=kwargs.pop('trackable_object', None)).first()

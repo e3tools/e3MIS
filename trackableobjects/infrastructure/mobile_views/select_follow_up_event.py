@@ -78,7 +78,7 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
             is_global=~Exists(has_trackable_objects),
         ).filter(
             # Event applies to this trackable object
-            Q(trackable_objects=trackable_object_instance.trackable_object) | Q(trackable_objects=None),
+            Q(trackable_objects=trackable_object_instance.trackable_object),
             # User has permission (at least one shared group)
             has_matched_groups=True,
             # Event is active and has no unfulfilled dependencies
