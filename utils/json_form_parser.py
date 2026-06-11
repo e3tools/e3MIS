@@ -207,16 +207,19 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         # AdministrativeLevel
         elif field_schema.get('type') == 'administrative_level':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
+            max_admin_level_order = validators.get('max_admin_level_order', None)
             queryset = AdministrativeUnit.objects.all()
             if administrative_level_restriction == 'true':
                 queryset = queryset.filter(id__in=administrative_level_ids)
-            else:
-                max_admin_level_order = validators.get('max_admin_level_order', None)
-                if max_admin_level_order is not None:
-                    queryset = queryset.filter(level__order__lte=int(max_admin_level_order))
+            elif max_admin_level_order is not None:
+                queryset = queryset.filter(level__order__lte=int(max_admin_level_order))
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
             widget_attrs['data-field-type'] = 'administrative_level'
             widget_attrs['data-admin-level-restriction'] = administrative_level_restriction
+            # Expose the max level so the cascading selects on mobile can limit depth.
+            # Without this attribute the mobile JS defaults to 0 (no limit) and shows all levels.
+            if administrative_level_restriction != 'true' and max_admin_level_order is not None:
+                widget_attrs['data-max-level-order'] = int(max_admin_level_order)
             field_instance = forms.ModelChoiceField(
                 queryset=queryset,
                 widget=forms.Select(attrs=widget_attrs),
