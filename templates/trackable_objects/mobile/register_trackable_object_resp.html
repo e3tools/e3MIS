@@ -89,6 +89,19 @@
             const initialValue = $originalSelect.val();
             const maxLevelOrder = parseInt($originalSelect.data('max-level-order')) || 0;
 
+            // When the field is restricted to the user's assigned administrative units, the
+            // server has already filtered the <select> options to those units (+ descendants).
+            // Keep that native select (just make it searchable) instead of building the cascade,
+            // which loads the full tree from the API and would ignore the restriction.
+            const restrictToAssigned = String($originalSelect.data('admin-level-restriction')) === 'true';
+            if (restrictToAssigned) {
+                if ($originalSelect.data('select2')) {
+                    $originalSelect.select2('destroy');
+                }
+                $originalSelect.select2({ width: '100%' });
+                return;
+            }
+
             // Filter admin levels by max order if set
             const effectiveLevels = maxLevelOrder
                 ? adminLevels.filter(function (l) { return l.order <= maxLevelOrder; })
