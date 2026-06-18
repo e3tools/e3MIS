@@ -13,9 +13,17 @@
 {% block content %}
     <section class="content">
 
+        <style>
+            /* Soft read-only lock: blocks interaction with inputs but keeps file
+               links clickable. Removed by the Edit button. */
+            .answers-locked { pointer-events: none; opacity: 0.85; }
+            .answers-locked a { pointer-events: auto; }
+        </style>
+
         <!-- Default box -->
         <div class="card">
             <div class="card-body">
+                {% bootstrap_messages %}
                 <div class="row">
                     <div class="col-12 order-2 order-md-1">
                         <div class="row">
@@ -44,33 +52,47 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-12 order-1 order-md-2">
-                                <div class="info-box bg-light">
-                                    <div class="info-box-content">
-                                        <div class="row">
-                                            {% for field in form %}
-                                                <div class="col-12 col-md-6">
-                                                    {% if field.field.widget.input_type == "file" %}
-                                                        {% for attachment in attachments %}
-                                                            {% if field.name == attachment.field_name %}
-                                                                {% bootstrap_label field.label %}
-                                                                <a href="{{ attachment.file.url }}" target="_blank">
-                                                                    <img src="{{ attachment.file.url }}" alt="{{ field.label }}" class="img-thumbnail" style="width: 100%; height: auto;">
-                                                                </a>
-                                                                <small class="form-text text-muted text-right">{{ field.help_text }}</small>
-                                                            {% endif %}
-                                                        {% endfor %}
-                                                    {% else %}
-                                                        {% bootstrap_field field %}
-                                                    {% endif %}
-                                                </div>
-                                            {% endfor %}
+                        <form method="post" id="answers-form" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-12 order-1 order-md-2">
+                                    <div class="info-box bg-light">
+                                        <div class="info-box-content">
+                                            <div id="answers-fields" class="row {% if not editing %}answers-locked{% endif %}">
+                                                {% for field in form %}
+                                                    <div class="col-12 col-md-6">
+                                                        {% if field.field.widget.input_type == "file" %}
+                                                            {% for attachment in attachments %}
+                                                                {% if field.name == attachment.field_name %}
+                                                                    {% bootstrap_label field.label %}
+                                                                    <a href="{{ attachment.file.url }}" target="_blank">
+                                                                        <img src="{{ attachment.file.url }}" alt="{{ field.label }}" class="img-thumbnail" style="width: 100%; height: auto;">
+                                                                    </a>
+                                                                    <small class="form-text text-muted text-right">{{ field.help_text }}</small>
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            {% bootstrap_field field %}
+                                                        {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            <div class="mt-2">
+                                <button type="button" id="edit-btn" class="btn btn-primary {% if editing %}d-none{% endif %}">
+                                    <i class="fas fa-edit mr-1"></i>{% translate 'Edit' %}
+                                </button>
+                                <button type="submit" id="save-btn" class="btn btn-success {% if not editing %}d-none{% endif %}">
+                                    <i class="fas fa-save mr-1"></i>{% translate 'Save' %}
+                                </button>
+                                <button type="button" id="cancel-btn" class="btn btn-secondary {% if not editing %}d-none{% endif %}">
+                                    {% translate 'Cancel' %}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -82,6 +104,22 @@
 {% endblock %}
 
 {% block extrajs %}
+    {% include 'trackable_objects/_dynamic_form_config.html' %}
+
+    <script type="text/javascript">
+        // Read-only by default; "Edit" unlocks the answer inputs and reveals Save / Cancel.
+        $(document).ready(function () {
+            $('#edit-btn').on('click', function () {
+                $('#answers-fields').removeClass('answers-locked');
+                $(this).addClass('d-none');
+                $('#save-btn, #cancel-btn').removeClass('d-none');
+            });
+            $('#cancel-btn').on('click', function () {
+                window.location.reload();
+            });
+        });
+    </script>
+
     {% if form.get_geoloc %}
         <script type="text/javascript">
             async function initPosition(latitude, longitude, accuracy) {

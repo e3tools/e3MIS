@@ -1,0 +1,17 @@
+{% load static %}
+{% comment %}
+  Emits the runtime config consumed by dynamic_form_runtime.js and loads it.
+  Expects in context:
+    administrative_levels   - iterable of admin levels with .order and .name (for the cascade)
+    parent_form_data_json   - optional JSON string of parent-form responses (cross-form conditionals)
+{% endcomment %}
+<script>
+    window.DynamicFormConfig = {
+        adminLevels: [{% for level in administrative_levels %}{ order: {{ level.order }}, name: "{{ level.name|escapejs }}" }{% if not forloop.last %},{% endif %}{% endfor %}],
+        rootUrl: "{% url 'administrativelevels:api:administrative-unit-root' %}",
+        childrenUrlTemplate: "{% url 'administrativelevels:api:administrative-level-children' pk=9999 %}",
+        ancestorsUrlTemplate: "{% url 'administrativelevels:api:administrative-unit-ancestors' pk=9999 %}",
+        parentFormData: {% if parent_form_data_json %}{{ parent_form_data_json|safe }}{% else %}{}{% endif %}
+    };
+</script>
+<script src="{% static 'js/custom/dynamic_form_runtime.js' %}"></script>

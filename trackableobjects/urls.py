@@ -12,6 +12,10 @@ from trackableobjects.infrastructure.views.follow_up_event_edit_view import Foll
 from trackableobjects.infrastructure.views.follow_up_event_delete_view import FollowUpEventDeleteView
 from trackableobjects.infrastructure.views.follow_up_event_responses_detail_view import FollowUpEventResponseDetailView
 from trackableobjects.infrastructure.views.follow_up_event_list_view import FollowUpEventListView
+from trackableobjects.infrastructure.views.submission_export_views import (
+    TrackableObjectInstancesExportView,
+    FollowUpEventResponsesExportView,
+)
 
 from trackableobjects.infrastructure.mobile_views.index import IndexTemplateView
 from trackableobjects.infrastructure.mobile_views.select_trackable_object import SelectSubprojectCustomFieldView
@@ -40,6 +44,10 @@ urlpatterns = [
     path('<int:pk>/edit/', TrackableObjectEditView.as_view(), name='trackable_object_edit'),
     path('<int:pk>/delete/', TrackableObjectDeleteView.as_view(), name='trackable_object_delete'),
     path('response/<int:pk>/', TrackableObjectInstanceDetailView.as_view(), name='trackable_object_instance_detail'),
+    path('<int:pk>/instances/export/<str:fmt>/', TrackableObjectInstancesExportView.as_view(),
+         name='trackable_object_instances_export'),
+    path('follow-up-event/<int:pk>/responses/export/<str:fmt>/', FollowUpEventResponsesExportView.as_view(),
+         name='follow_up_event_responses_export'),
     path('follow-up-event/', FollowUpEventListView.as_view(), name='follow_up_event_list'),
     path('<int:pk>/follow-up-event/', FollowUpEventDetailView.as_view(), name='follow_up_event_object_detail'),
     path('<int:pk>/follow-up-event/create/', FollowUpEventCreateView.as_view(),

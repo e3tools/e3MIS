@@ -435,6 +435,7 @@ $(document).ready(function () {
 
             // Load conditions
             this.currentConditions = [];
+            this.resetConditionForm();
             if (fieldOptions.dependencies && fieldOptions.dependencies.conditions) {
                 fieldOptions.dependencies.conditions.forEach(cond => {
                     this.currentConditions.push({
@@ -467,6 +468,7 @@ $(document).ready(function () {
             } else {
                 $("#enable-conditional").prop("checked", false);
                 $("#conditional-display-group").hide();
+                this.renderConditionsList();
             }
 
             this.toggleFieldTypeOptions();
@@ -769,15 +771,25 @@ $(document).ready(function () {
                 logic: 'AND'
             });
 
-            // Clear the condition form
-            $("#conditional-field-select").val('');
-            $("#conditional-operator-select").val('equals');
-            $("#conditional-value-input").val('');
-            $("#conditional-value-select").val('').hide();
-            $("#conditional-value-input").show();
+            // Clear the condition entry form
+            this.resetConditionForm();
 
             this.renderConditionsList();
             return true;
+        },
+
+        // Reset only the "Add Condition" entry form (field/operator/value inputs),
+        // leaving the list of already-added conditions untouched.
+        resetConditionForm() {
+            $("#conditional-field-select").val('');
+            $("#conditional-operator-select").val('equals');
+            $("#conditional-operator-group-form").show();
+            $("#conditional-value-input").attr('type', 'text').val('').show();
+            $("#conditional-value-select")
+                .empty()
+                .append('<option value="">Select a value...</option>')
+                .val('')
+                .hide();
         },
 
         editCondition(index) {
@@ -1034,6 +1046,7 @@ $(document).ready(function () {
             $("#conditional-display-group").hide();
             this.currentConditions = [];
             this.renderConditionsList();
+            this.resetConditionForm();
 
             // Update modal title
             $("#addFieldModalLabel").text("Add New Field");
