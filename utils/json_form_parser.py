@@ -44,6 +44,46 @@ class ButtonField(forms.Field):
         return bool(value)
 
 
+class CascadeAdminUnitSelect(forms.Select):
+    """Render only the blank option plus the currently-selected one.
+
+    For non-restricted ``administrative_level`` fields the cascading selects in
+    ``dynamic_form_runtime.js`` hide this ``<select>`` and rebuild the choices
+    from the API, so materializing the full AdministrativeUnit tree server-side
+    is wasted work (and an N+1 over ``obj.level``). The field keeps its full
+    queryset for validation; we only skip rendering the options here. The
+    selected value is still emitted so the JS can read it (``$select.val()``) and
+    preselect the cascade when editing an existing response.
+    """
+
+    def optgroups(self, name, value, attrs=None):
+        options = [self.create_option(name, '', '', False, 0, attrs=attrs)]
+        for index, option_value in enumerate(value):
+            if option_value in ('', None):
+                continue
+            options.append(
+                self.create_option(name, option_value, option_value, True, index + 1, attrs=attrs)
+            )
+        return [(None, options, 0)]
+
+
+def schema_requires_assigned_units(schema_json, page_index=0):
+    """True if any field on the page restricts choices to the user's assigned units.
+
+    Lets the views skip the expensive descendant lookup entirely when no field
+    needs it (the common case).
+    """
+    try:
+        page_schema = schema_json['form'][page_index]['page']
+    except (KeyError, IndexError, TypeError):
+        return False
+    for field_schema in page_schema.get('properties', {}).values():
+        if field_schema.get('type') in ('administrative_level', 'trackable_object'):
+            if field_schema.get('validators', {}).get('administrative_level_restriction') == 'true':
+                return True
+    return False
+
+
 def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=[], parent_form_data=None):
     """
     Parse JSON schema and create Django form.
@@ -192,7 +232,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         # TrackableObject
         elif field_schema.get('type') == 'trackable_object':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
-            queryset = TrackableObjectInstance.objects.filter(
+            queryset = TrackableObjectInstance.objects.select_related('trackable_object').filter(
                 trackable_object__id=validators.get('trackable_object_id', None)
             )
             if administrative_level_restriction == 'true':
@@ -208,7 +248,7 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         elif field_schema.get('type') == 'administrative_level':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
             max_admin_level_order = validators.get('max_admin_level_order', None)
-            queryset = AdministrativeUnit.objects.all()
+            queryset = AdministrativeUnit.objects.select_related('level').all()
             if administrative_level_restriction == 'true':
                 queryset = queryset.filter(id__in=administrative_level_ids)
             elif max_admin_level_order is not None:
@@ -220,9 +260,16 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
             # Without this attribute the mobile JS defaults to 0 (no limit) and shows all levels.
             if administrative_level_restriction != 'true' and max_admin_level_order is not None:
                 widget_attrs['data-max-level-order'] = int(max_admin_level_order)
+            # When the field is restricted the server-rendered options are the ones
+            # actually used (the JS keeps the native select). Otherwise the cascade JS
+            # rebuilds the options from the API, so we avoid rendering the full tree.
+            if administrative_level_restriction == 'true':
+                widget = forms.Select(attrs=widget_attrs)
+            else:
+                widget = CascadeAdminUnitSelect(attrs=widget_attrs)
             field_instance = forms.ModelChoiceField(
                 queryset=queryset,
-                widget=forms.Select(attrs=widget_attrs),
+                widget=widget,
                 **common_args
             )
             field_instance.label_from_instance = lambda obj: "{} ({})".format(obj.name, obj.level.name)

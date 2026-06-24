@@ -61,33 +61,69 @@
       <!-- Responses -->
       <div class="card">
         <div class="card-body">
-          <h4 class="mb-2">{% translate 'Responses' %}</h4>
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h4 class="mb-0">{% translate 'Responses' %}</h4>
+            <div class="btn-group">
+              <a href="{% url 'trackableobjects:follow_up_event_responses_export' object.pk 'csv' %}"
+                 class="btn btn-sm btn-outline-success">
+                <i class="fas fa-file-csv mr-1"></i>{% translate 'CSV' %}
+              </a>
+              <a href="{% url 'trackableobjects:follow_up_event_responses_export' object.pk 'xlsx' %}"
+                 class="btn btn-sm btn-outline-success">
+                <i class="fas fa-file-excel mr-1"></i>{% translate 'Excel' %}
+              </a>
+            </div>
+          </div>
           <div class="table-responsive">
             <table id="table-subprojects" class="table table-striped mb-0">
               <thead>
                 <tr>
                   <th class="text-nowrap">{% translate 'Actions' %}</th>
+                  <th class="text-nowrap">{% translate 'ID' %}</th>
                   <th>{% translate 'Created by' %}</th>
+                  <th>{% translate 'User group' %}</th>
+                  <th>{% translate 'Depends on' %}</th>
+                  {% for field in schema_fields %}
+                    <th class="text-nowrap">{{ field.label }}</th>
+                  {% endfor %}
                   <th class="text-nowrap">{% translate 'Date' %}</th>
                 </tr>
               </thead>
               <tbody>
-                {% for response in responses %}
+                {% for row in submission_rows %}
                   <tr>
                     <td class="text-nowrap">
                       <div class="btn-group">
-                        <a href="{% url 'trackableobjects:follow_up_event_response_detail' response.id %}"
+                        <a href="{% url 'trackableobjects:follow_up_event_response_detail' row.instance.id %}"
                            class="btn btn-sm btn-info" title="{% translate 'Details' %}">
                           <i class="fas fa-info-circle"></i>
                         </a>
                       </div>
                     </td>
-                    <td>{{ response.created_by.get_full_name|default:object.created_by.email }}</td>
-                    <td class="text-nowrap">{{ response.updated_at|date:"d M, Y - P" }}</td>
+                    <td class="text-nowrap">{{ row.instance.id }}</td>
+                    <td>{{ row.instance.created_by.get_full_name|default:row.instance.created_by.email }}</td>
+                    <td>
+                      {% for group in event_groups %}
+                        {{ group.name }}{% if not forloop.last %}, {% endif %}
+                      {% empty %}
+                        <span class="text-muted">{% translate 'None' %}</span>
+                      {% endfor %}
+                    </td>
+                    <td>
+                      {% for parent in depends_on %}
+                        {{ parent.name }}{% if not forloop.last %}, {% endif %}
+                      {% empty %}
+                        <span class="text-muted">{% translate 'None' %}</span>
+                      {% endfor %}
+                    </td>
+                    {% for cell in row.cells %}
+                      <td>{{ cell }}</td>
+                    {% endfor %}
+                    <td class="text-nowrap">{{ row.instance.updated_at|date:"d M, Y - P" }}</td>
                   </tr>
                 {% empty %}
                   <tr>
-                    <td colspan="3" class="text-muted">{% translate 'No responses yet.' %}</td>
+                    <td colspan="{{ schema_fields|length|add:6 }}" class="text-muted">{% translate 'No responses yet.' %}</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -143,6 +179,8 @@
           <h5 class="mb-0">{% translate 'Form Preview' %}</h5>
         </div>
         <div class="card-body">
+          {% bootstrap_messages %}
+          <!-- Preview only: validates (client + server) but never saves. -->
           <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% for field in form %}
@@ -152,6 +190,12 @@
                 {% bootstrap_field field %}
               {% endif %}
             {% endfor %}
+            <button type="submit" class="btn btn-outline-primary btn-block mt-2">
+              <i class="fas fa-check-circle mr-1"></i> {% translate 'Test validation' %}
+            </button>
+            <small class="form-text text-muted text-center">
+              {% translate 'Preview only — nothing is saved.' %}
+            </small>
           </form>
         </div>
       </div>
@@ -160,4 +204,8 @@
 
   </div>
 </section>
+{% endblock %}
+
+{% block extrajs %}
+{% include 'trackable_objects/_dynamic_form_config.html' %}
 {% endblock %}
