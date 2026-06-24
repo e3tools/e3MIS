@@ -5,9 +5,9 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from subprojects.models import Attachment
 from trackableobjects.models import TrackableObject, TrackableObjectInstance
-from administrativelevels.models import AdministrativeLevel
+from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
 from src.permissions import IsFieldAgentUserMixin
-from utils.json_form_parser import parse_custom_jsonschema
+from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units
 from django.contrib import messages
 
 
@@ -125,9 +125,15 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
                 ]
             }
 
+        admin_level_ids = []
+        if schema_requires_assigned_units(schema_json):
+            admin_level_ids = AdministrativeUnit.get_descendant_ids(
+                self.request.user.administrative_units.values_list('id', flat=True)
+            )
+
         form_class = parse_custom_jsonschema(
             schema_json, page_index=0,
-            administrative_level_ids=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
+            administrative_level_ids=admin_level_ids
         )
 
         return form_class(**self.get_form_kwargs())
@@ -154,14 +160,3 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             if not self.request.user.groups.filter(id=group.id).exists():
                 return False
         return True
-
-    def get_descendants(self, administrative_unit):
-        descendants = []
-
-        def recurse(node):
-            descendants.append(node.id)
-            for child in node.children.all():
-                recurse(child)
-
-        recurse(administrative_unit)
-        return descendants

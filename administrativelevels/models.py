@@ -37,6 +37,27 @@ class AdministrativeUnit(models.Model):
             ),
         ]
 
+    @classmethod
+    def get_descendant_ids(cls, root_ids):
+        """Return all descendant ids (inclusive of the roots) for the given units.
+
+        Walks the tree one hierarchy level at a time, so the number of queries is
+        bounded by the depth of the tree (~4-5) instead of one query per node as a
+        naive ``node.children.all()`` recursion would do. ``parent_id`` is an
+        indexed FK, so each level is a single cheap lookup.
+        """
+        ids = set(root_ids)
+        frontier = list(ids)
+        while frontier:
+            children = [
+                child_id
+                for child_id in cls.objects.filter(parent_id__in=frontier).values_list('id', flat=True)
+                if child_id not in ids
+            ]
+            ids.update(children)
+            frontier = children
+        return ids
+
     def save(self, *args, **kwargs):
         self.hierarchy_name = self.__get_hierarchy_name(self)
         super().save(*args, **kwargs)

@@ -3,10 +3,10 @@ from django.utils.translation import gettext as _
 from django.contrib import messages
 from trackableobjects.models import TrackableObject
 from trackableobjects.infrastructure.forms.trackable_object_create_form import TrackableObjectForm
-from administrativelevels.models import AdministrativeLevel
+from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
 from django.contrib.auth.mixins import LoginRequiredMixin
 from src.permissions import IsStaffMemberMixin
-from utils.json_form_parser import parse_custom_jsonschema
+from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units
 from utils.submission_table import build_submission_table
 
 
@@ -65,9 +65,15 @@ class TrackableObjectDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailVi
                 ]
             }
 
+        admin_level_ids = []
+        if schema_requires_assigned_units(schema_json):
+            admin_level_ids = AdministrativeUnit.get_descendant_ids(
+                self.request.user.administrative_units.values_list('id', flat=True)
+            )
+
         form_class = parse_custom_jsonschema(
             schema_json, page_index=0,
-            administrative_level_ids=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
+            administrative_level_ids=admin_level_ids
         )
 
         return form_class(**self.get_form_kwargs())
@@ -87,14 +93,3 @@ class TrackableObjectDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailVi
                 }
             )
         return kwargs
-
-    def get_descendants(self, administrative_unit):
-        descendants = []
-
-        def recurse(node):
-            descendants.append(node.id)
-            for child in node.children.all():
-                recurse(child)
-
-        recurse(administrative_unit)
-        return descendants

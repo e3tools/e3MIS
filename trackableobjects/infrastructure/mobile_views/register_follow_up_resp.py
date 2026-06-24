@@ -8,9 +8,9 @@ from django.contrib import messages
 from django.utils.translation import gettext as _
 from subprojects.models import Attachment
 from trackableobjects.models import FollowUpEvent, FollowUpEventResponse, TrackableObjectInstance
-from administrativelevels.models import AdministrativeLevel
+from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
 from src.permissions import IsFieldAgentUserMixin
-from utils.json_form_parser import parse_custom_jsonschema
+from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units
 
 
 def serialize_for_json(data):
@@ -158,6 +158,9 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
 
         Returns a dictionary of field_name: value pairs
         """
+        if getattr(self, '_parent_form_data', None) is not None:
+            return self._parent_form_data
+
         parent_form_data = {}
 
         # Get the trackable object instance
@@ -196,6 +199,7 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
                         # Merge parent response data
                         parent_form_data.update(parent_response.jsonForm)
 
+        self._parent_form_data = parent_form_data
         return parent_form_data
 
     def get_parent_form_data_json(self):
@@ -248,10 +252,16 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
         # NEW: Pass parent form data to the parser
         parent_form_data = self.get_parent_form_data()
 
+        admin_level_ids = []
+        if schema_requires_assigned_units(schema_json):
+            admin_level_ids = AdministrativeUnit.get_descendant_ids(
+                self.request.user.administrative_units.values_list('id', flat=True)
+            )
+
         form_class = parse_custom_jsonschema(
             schema_json,
             page_index=0,
-            administrative_level_ids=[id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)],
+            administrative_level_ids=admin_level_ids,
             parent_form_data=parent_form_data  # NEW: Pass parent data
         )
 
@@ -307,14 +317,3 @@ class FollowUpEventResponseCreateView(IsFieldAgentUserMixin, CreateView):
             return reverse_lazy(
                 'trackableobjects:mobile:standalone_follow_up_event_detail', args=[fe.id]
             )
-
-    def get_descendants(self, administrative_unit):
-        descendants = []
-
-        def recurse(node):
-            descendants.append(node.id)
-            for child in node.children.all():
-                recurse(child)
-
-        recurse(administrative_unit)
-        return descendants
