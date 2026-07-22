@@ -12,6 +12,11 @@ from trackableobjects.infrastructure.views.follow_up_event_edit_view import Foll
 from trackableobjects.infrastructure.views.follow_up_event_delete_view import FollowUpEventDeleteView
 from trackableobjects.infrastructure.views.follow_up_event_responses_detail_view import FollowUpEventResponseDetailView
 from trackableobjects.infrastructure.views.follow_up_event_list_view import FollowUpEventListView
+from trackableobjects.infrastructure.views.relationship_overview_view import RelationshipOverviewView
+from trackableobjects.infrastructure.views.relationship_object_detail_partial_view import \
+    RelationshipObjectDetailPartialView
+from trackableobjects.infrastructure.views.relationship_event_detail_partial_view import \
+    RelationshipEventDetailPartialView
 from trackableobjects.infrastructure.views.submission_export_views import (
     TrackableObjectInstancesExportView,
     FollowUpEventResponsesExportView,
@@ -49,6 +54,11 @@ urlpatterns = [
     path('follow-up-event/<int:pk>/responses/export/<str:fmt>/', FollowUpEventResponsesExportView.as_view(),
          name='follow_up_event_responses_export'),
     path('follow-up-event/', FollowUpEventListView.as_view(), name='follow_up_event_list'),
+    path('relationships/', RelationshipOverviewView.as_view(), name='relationship_overview'),
+    path('relationships/object/<int:pk>/detail/', RelationshipObjectDetailPartialView.as_view(),
+         name='relationship_object_detail'),
+    path('relationships/event/<int:pk>/detail/', RelationshipEventDetailPartialView.as_view(),
+         name='relationship_event_detail'),
     path('<int:pk>/follow-up-event/', FollowUpEventDetailView.as_view(), name='follow_up_event_object_detail'),
     path('<int:pk>/follow-up-event/create/', FollowUpEventCreateView.as_view(),
          name='trackable_object_follow_up_event_object_create'),
