@@ -31,15 +31,29 @@ env.read_env()
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-j90lb^5w#_51jeepqdu%72jym7z@#h*0_#f=j2kd3xql&!*4@@'
-SECRET_KEY = env('SECRET_KEY')
+SECRET_KEY = 'django-insecure-j90lb^5w#_51jeepqdu%72jym7z@#h*0_#f=j2kd3xql&!*4@@'
+# SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
+DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "mis.coso.gouv.bj"]
+# ALLOWED_HOSTS = ["localhost", "127.0.0.1", "mis.coso.gouv.bj"]
 
-CSRF_TRUSTED_ORIGINS = ["https://*.mis.coso.gouv.bj","https://*.127.0.0.1"]
+# CSRF_TRUSTED_ORIGINS = ["https://*.mis.coso.gouv.bj","https://*.127.0.0.1"]
 
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1"
+).split(",")
+
+ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS]
+
+
+CSRF_TRUSTED_ORIGINS = os.getenv(
+    "CSRF_TRUSTED_ORIGINS",
+    "https://localhost,https://127.0.0.1"
+).split(",")
+
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS]
 # Application definition
 
 INSTALLED_APPS = [
@@ -119,13 +133,13 @@ API_KEY_CONFIG = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# DATABASES = {
-#     "default": env.db(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-# }
-
 DATABASES = {
-    "default": env.db("DATABASE_URL")
+    "default": env.db(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
+
+# DATABASES = {
+#     "default": env.db("DATABASE_URL")
+# }
 
 # DATABASES = {
 #     'default': {
@@ -206,4 +220,4 @@ AUTH_USER_MODEL = 'authorization.CustomUser'
 LOGIN_URL = '/'
 
 # Mapbox
-MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN')
+# MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN')
