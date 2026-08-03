@@ -142,7 +142,7 @@
                         <i class="fas fa-info-circle"></i>
                       </a>
                     </td>
-                    <td class="text-nowrap">{{ row.instance.id }}</td>
+                    <td class="text-nowrap">{{ row.instance.display_id }}</td>
                     <td>{{ row.instance.created_by.get_full_name|default:row.instance.created_by.email }}</td>
                     <td>
                       {% for group in row.instance.groups.all %}
