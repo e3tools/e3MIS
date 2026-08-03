@@ -100,7 +100,7 @@
                         </a>
                       </div>
                     </td>
-                    <td class="text-nowrap">{{ row.instance.id }}</td>
+                    <td class="text-nowrap">{{ row.instance.display_id }}</td>
                     <td>{{ row.instance.created_by.get_full_name|default:row.instance.created_by.email }}</td>
                     <td>
                       {% for group in event_groups %}
@@ -141,6 +141,7 @@
               <thead>
                 <tr>
                   <th class="text-nowrap">{% translate 'Actions' %}</th>
+                  <th>{% translate 'Id' %}</th>
                   <th>{% translate 'Name' %}</th>
                   <th class="text-nowrap">{% translate 'Description' %}</th>
                 </tr>
@@ -156,6 +157,7 @@
                         </a>
                       </div>
                     </td>
+                    <td>{{ trackable_object.display_id }}</td>
                     <td>{{ trackable_object.name }}</td>
                     <td>{{ trackable_object.description }}</td>
                   </tr>

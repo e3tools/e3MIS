@@ -32,6 +32,13 @@ COLOR_MAP = {
     "slate":  {"tint": "#eceff1", "solid": "#546e7a"},
 }
 
+# UI-only prefixes used to build a human-readable display id (e.g. "TO-45").
+# These do NOT replace the database primary key — they are purely presentational,
+# so that a TrackableObject and a FollowUpEvent (or their instances/responses)
+# never look identical just because they happen to share a numeric id.
+TRACKABLE_OBJECT_ID_PREFIX = "TO"
+FOLLOW_UP_EVENT_ID_PREFIX = "FE"
+
 
 class TrackableObject(models.Model):
     name = models.CharField(max_length=255)
@@ -55,6 +62,10 @@ class TrackableObject(models.Model):
     @property
     def color_solid(self):
         return COLOR_MAP.get(self.color, COLOR_MAP["slate"])["solid"]
+
+    @property
+    def display_id(self):
+        return f"{TRACKABLE_OBJECT_ID_PREFIX}-{self.id}" if self.id else ""
 
     def __str__(self):
         return self.name
@@ -86,6 +97,10 @@ class FollowUpEvent(models.Model):
     def trackable_objects_names(self):
         names = [obj.name for obj in self.trackable_objects.all()]
         return ", ".join(names)
+
+    @property
+    def display_id(self):
+        return f"{FOLLOW_UP_EVENT_ID_PREFIX}-{self.id}" if self.id else ""
 
 
 class FollowUpEventTrackableObject(models.Model):
@@ -126,6 +141,10 @@ class TrackableObjectInstance(models.Model):
             return self.jsonForm[self.trackable_object.identifier_field]
         return date(self.created_at, "N j, y")
 
+    @property
+    def display_id(self):
+        return f"{TRACKABLE_OBJECT_ID_PREFIX}-{self.id}" if self.id else ""
+
     def __str__(self):
         return "{}".format(self.identifier)
 
@@ -145,3 +164,7 @@ class FollowUpEventResponse(models.Model):
         if self.follow_up_event.identifier_field in self.jsonForm:
             return self.jsonForm[self.follow_up_event.identifier_field]
         return date(self.created_at, "N j, y")
+
+    @property
+    def display_id(self):
+        return f"{FOLLOW_UP_EVENT_ID_PREFIX}-{self.id}" if self.id else ""

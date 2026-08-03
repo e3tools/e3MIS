@@ -98,7 +98,7 @@
                                                 hx-target="#relationship-detail-panel"
                                                 hx-trigger="click"
                                                 hx-swap="innerHTML">
-                                                <td><code>#{{ trackable_object.pk }}</code></td>
+                                                <td><code>{{ trackable_object.display_id }}</code></td>
                                                 <td>
                                                     <i class="fas {{ trackable_object.icon }} mr-1"
                                                        style="color: {{ trackable_object.color_solid }};"></i>
@@ -139,7 +139,7 @@
                                                 hx-target="#relationship-detail-panel"
                                                 hx-trigger="click"
                                                 hx-swap="innerHTML">
-                                                <td><code>#{{ event.pk }}</code></td>
+                                                <td><code>{{ event.display_id }}</code></td>
                                                 <td>{{ event.name }}</td>
                                                 <td>
                                                     {% if event.is_active %}

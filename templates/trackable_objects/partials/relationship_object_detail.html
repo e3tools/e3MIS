@@ -3,7 +3,7 @@
     <h3 class="card-title">
         <i class="fas {{ trackable_object.icon }} mr-2" style="color: {{ trackable_object.color_solid }};"></i>
         {{ trackable_object.name }}
-        <code class="ml-1">#{{ trackable_object.pk }}</code>
+        <code class="ml-1">{{ trackable_object.display_id }}</code>
     </h3>
 </div>
 <div class="card-body">
@@ -21,7 +21,7 @@
             <li class="list-group-item relationship-highlight-target" data-event-id="{{ event.pk }}">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <code>#{{ event.pk }}</code> <strong>{{ event.name }}</strong>
+                        <code>{{ event.display_id }}</code> <strong>{{ event.name }}</strong>
                         <div>
                             {% if event.is_active %}
                                 <span class="badge badge-success">{% translate "Active" %}</span>

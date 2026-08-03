@@ -36,7 +36,7 @@ class TrackableObjectInstancesExportView(LoginRequiredMixin, IsStaffMemberMixin,
         schema_fields, rows = build_submission_table(trackable_object.jsonForm, instances, as_text=True)
 
         leading = [
-            (_('ID'), lambda obj: obj.id),
+            (_('ID'), lambda obj: obj.display_id),
             (_('Created by'), _created_by),
             (_('User group'), lambda obj: ', '.join(group.name for group in obj.groups.all())),
         ]
@@ -68,7 +68,7 @@ class FollowUpEventResponsesExportView(LoginRequiredMixin, IsStaffMemberMixin, V
         )
 
         leading = [
-            (_('ID'), lambda obj: obj.id),
+            (_('ID'), lambda obj: obj.display_id),
             (_('Created by'), _created_by),
             (_('User group'), lambda obj: event_groups),
             (_('Depends on'), lambda obj: depends_on),

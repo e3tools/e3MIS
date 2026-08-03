@@ -81,6 +81,4 @@ class FollowUpEventCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView
         return kwargs
 
     def get_success_url(self):
-        if 'pk' in self.kwargs:
-            return reverse_lazy("trackableobjects:trackable_object_detail", args=[self.kwargs['pk']])
         return reverse_lazy("trackableobjects:follow_up_event_list")
