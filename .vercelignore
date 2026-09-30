@@ -1,0 +1,10 @@
+.venv
+.env
+media
+collected_static
+tests
+**/__pycache__
+.pytest_cache
+.claude
+docker-compose.yml
+identifier.sqlite

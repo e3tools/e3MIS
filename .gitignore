@@ -83,3 +83,8 @@ env.bak/
 venv.bak/
 # Django collectstatic output
 collected_static/
+
+# Vercel
+.vercel
+.env*
+!.env.example
