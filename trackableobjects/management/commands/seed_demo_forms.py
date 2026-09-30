@@ -1,9 +1,13 @@
 """Sample MIS forms for the demo: a trackable object with follow-ups and a standalone form.
 
 Idempotent (matched by name), so it can run on a demo database that already has data. Forms are
-given to the Technical and Community facilitator groups. Development and demo only.
+given to one demo group that every field agent joins: the MIS lets an agent fill a form only when
+they are in *every* group the form has, so a form shared by the FT and FC groups could be filled
+by nobody. Development and demo only.
 """
 from django.contrib.auth.models import Group
+
+from authorization.models import User
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -14,7 +18,7 @@ from trackableobjects.models import (
     TrackableObject,
 )
 
-GROUPS = ("Technical facilitator", "Community facilitator")
+DEMO_GROUP = "Agents de terrain (démo)"
 
 
 def form(fields, required=()):
@@ -79,13 +83,15 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
-        groups = [Group.objects.get_or_create(name=name)[0] for name in GROUPS]
+        group = Group.objects.get_or_create(name=DEMO_GROUP)[0]
+        group.user_set.add(*User.objects.filter(is_field_agent=True))
+        groups = [group]
 
         def template(model, name, schema, **extra):
             obj, created = model.objects.get_or_create(
                 name=name, defaults={"description": extra.pop("description", ""), "jsonForm": schema, **extra}
             )
-            obj.groups.add(*groups)
+            obj.groups.set(groups)
             return obj
 
         water = template(TrackableObject, "Point d'eau", WATER_POINT, identifier_field="nom",

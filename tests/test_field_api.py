@@ -66,6 +66,7 @@ def test_full_sync_has_templates_events_records_and_units(agent, trackable_objec
     assert body["records"][0]["created_by_me"] is True
     assert body["response_ids"] == [response.pk]
     assert {u["id"] for u in body["administrative_units"]} == {unit.pk}
+    assert body["my_unit_ids"] == [unit.pk]
 
 
 def test_delta_sync_returns_only_changes_but_all_ids(agent, instance, response):
@@ -282,7 +283,6 @@ def test_demo_forms_work_end_to_end(agent):
 
     call_command("seed_demo_forms")
     call_command("seed_demo_forms")  # idempotent
-    agent.groups.add(Group.objects.get(name="Community facilitator"))
     body = api(agent).get(SYNC).json()
     water = next(t for t in body["trackable_objects"] if t["name"] == "Point d'eau")
     events = {e["name"]: e for e in body["follow_up_events"]}
@@ -294,7 +294,7 @@ def test_demo_forms_work_end_to_end(agent):
         agent,
         {"kind": "record", "op": "create", "client_uuid": key, "trackable_object_id": water["id"],
          "answers": {"nom": "Forage Godomey", "type": "Forage", "fonctionnel": False, "menages": 120,
-                     "position": "6.41,2.34,12", "photo": "Attachment"}},
+                     "position": "6.410000 2.340000 12.00", "photo": "Attachment"}},
         {"kind": "response", "op": "create", "client_uuid": str(uuid.uuid4()), "record_client_uuid": key,
          "follow_up_event_id": events["Inspection du point d'eau"]["id"],
          "answers": {"etat": "Mauvais", "reparation": True, "date": "2026-09-01"}},

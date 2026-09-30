@@ -186,6 +186,8 @@ class SyncView(APIView):
                 for e in events
             ],
             "administrative_units": self._units(unit_ids, schemas),
+            # For pickers restricted to "my units": the user's units and their descendants.
+            "my_unit_ids": sorted(AdministrativeUnit.get_descendant_ids(user.administrative_units.values_list("id", flat=True))),
             "trackable_object_options": self._trackable_object_options(user, schemas),
             "records": [_record(i, user, record_files) for i in changed_instances],
             "record_ids": instance_ids,
