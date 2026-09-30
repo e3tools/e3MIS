@@ -20,6 +20,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CSRF_TRUSTED_ORIGINS=(list, []),
+    CORS_ALLOWED_ORIGINS=(list, []),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -62,19 +63,32 @@ INSTALLED_APPS = [
     'administrativelevels',
     'authorization',
     'trackableobjects',
+    # Field monitoring (visits, compliance rules BR-1…BR-15, review, weekly warning).
+    'fieldmonitoring.core',
+    'fieldmonitoring.registry',
+    'fieldmonitoring.visits',
+    'fieldmonitoring.review',
+    'fieldmonitoring.compliance',
+    'fieldmonitoring.warning',
 ]
 
 
 THIRD_PARTY_APPS = [
     'bootstrap4',
+    'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
+    'drf_spectacular',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -113,12 +127,29 @@ REST_FRAMEWORK = {
         # The MIS pages call their JSON endpoints from the browser with the session cookie.
         'rest_framework.authentication.SessionAuthentication',
     ],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    # drf-spectacular documents the field monitoring API (/api/docs/); the MIS read-only API keeps
+    # its drf-yasg pages (/fr/api/v1/swagger/).
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+# Long-lived refresh tokens: field staff may be offline for days between syncs (merge plan Q7).
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env.int('JWT_ACCESS_MINUTES', default=60)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=env.int('JWT_REFRESH_DAYS', default=30)),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'e3MIS field monitoring API',
+    'DESCRIPTION': 'Worksite visit verification API for the field app and the supervision dashboard.',
+    'VERSION': '0.2.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'ENUM_NAME_OVERRIDES': {'FieldReasonCodeEnum': 'fieldmonitoring.visits.models.FieldReasonCode'},
+}
+
+CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
 
 API_KEY_CONFIG = {
     # Changing SECRET_KEY invalidates every issued API token.
@@ -175,7 +206,14 @@ LOCALE_PATHS = [
     BASE_DIR / 'locale',  # or os.path.join(BASE_DIR, 'locale')
 ]
 
+# Storage and server zone are UTC. Business-day logic uses the programme timezone from
+# ProgrammeConfig, never this value.
 TIME_ZONE = 'UTC'
+PROGRAMME_TIMEZONE_DEFAULT = env('PROGRAMME_TIMEZONE', default='Africa/Abidjan')
+
+# Shared secret for the scheduled-jobs endpoint (/api/v1/jobs/run/). Vercel Cron sends it as a
+# Bearer token; on a server, cron can call `manage.py run_jobs` instead.
+CRON_SECRET = env('CRON_SECRET', default=None)
 
 USE_I18N = True
 
@@ -189,6 +227,24 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
+
+# Uploaded files (visit photos, form attachments): local disk by default (government server);
+# a private Vercel Blob store when its token is set (demo); any S3-compatible bucket when
+# AWS_STORAGE_BUCKET_NAME is set. Visit photos are only served through a permission check.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+if env('BLOB_READ_WRITE_TOKEN', default=None) and not env('AWS_STORAGE_BUCKET_NAME', default=None):
+    STORAGES['default'] = {'BACKEND': 'fieldmonitoring.core.storage.VercelBlobStorage'}
+if env('AWS_STORAGE_BUCKET_NAME', default=None):
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3.S3Storage'}
+    AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', default=None)
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = True
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
@@ -206,3 +262,8 @@ LOGIN_URL = '/'
 
 # Mapbox
 MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN', default='')
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

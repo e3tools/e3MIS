@@ -19,12 +19,19 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.i18n import i18n_patterns
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from .views import set_language
 
 urlpatterns = [
     path('set-language/',
          set_language,
          name='set_language'),
+    # Field monitoring API for the field app and the supervision dashboard. Outside i18n_patterns:
+    # the apps call /api/v1/… without a language prefix. Photos are never public media; they go
+    # through /api/v1/visits/<id>/photo/, which checks who is asking.
+    path('api/v1/', include('fieldmonitoring.api_urls')),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),
 ]
 
 urlpatterns += i18n_patterns(
