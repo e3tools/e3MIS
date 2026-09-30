@@ -20,6 +20,42 @@ setup (Dockerfile, `run.sh`, gunicorn, `DATABASE_URL`/`SECRET_KEY`/`ALLOWED_HOST
 also comments out the `/api/v1/` router registrations, so do not merge it back into `develop`
 blindly. `main` is stale (July 2025).
 
+## Field monitoring (`fieldmonitoring/`)
+
+Worksite visit verification, moved in from `suivi-terrain-backend` (Phase 1 of `../MERGE_PLAN.md`).
+Apps: `core` (ProgrammeConfig, jobs, storage, geography), `registry` (worksites), `visits`
+(check-in/out, photos, state machine), `review`, `compliance` (rules BR-1…BR-15), `warning`.
+`fieldmonitoring/accounts/` is not an app: permissions, serializers and sign-in views for the API.
+Tests in `tests/fieldmonitoring/`, named after rule IDs. The spec is `../spec/` in the workspace.
+
+Its API is `/api/v1/…` **outside** the language prefix (docs `/api/docs/`), used by the Expo field
+app and the React supervision dashboard. The MIS read-only API stays at `/fr/api/v1/…`.
+
+Non-negotiables (from the spec; they govern visits, not MIS forms):
+1. A failed check is never automatically `missed`: it is `unverified` and goes to a human. Every
+   state change goes through `fieldmonitoring/visits/state_machine.py` (`apply()`), and a DB
+   constraint enforces it.
+2. Server time only; never store or compare device time.
+3. The worksite is the unit; villages are labels.
+4. Check-out is mandatory.
+5. The tool warns, it does not enforce: no acknowledgement, escalation or action tracking.
+6. Paused people are excluded from evaluation but always counted and shown.
+
+How it maps onto the MIS:
+- **Users:** `CustomUser.role` (ft, fc, sc, regional/national specialist, rdp, admin), `supervisor`,
+  `commune`, `region`. Roles drive visit rules; groups still decide which forms a user sees. Saving
+  a user with a visiting role sets `is_field_agent`. `authorization.models.User` is an alias.
+- **Geography:** the AdministrativeUnit tree. `ProgrammeConfig.region_level/commune_level/
+  village_level` say which levels play those roles; unset, the tree position is used
+  (`fieldmonitoring/core/geography.py`). Worksites derive `commune`/`region` from `village`.
+- **Sign-in:** `POST /api/v1/auth/token/` with `email` (or `username`, which old app builds send;
+  exact match). User ids are **strings** in this API (clients compare them with URL params).
+- DRF answers 401 (with WWW-Authenticate) when signed out or expired; the apps refresh only on 401.
+- CSV exports read `?format=csv` themselves (`IgnoreFormatParamNegotiation`); DRF's global format
+  override stays on for drf-yasg.
+- Keep old app builds working: accept old field names until those builds are gone
+  (`grievance_raised` is still accepted as `issue_reported`).
+
 ## Domain model
 
 | App | Models |
@@ -93,7 +129,20 @@ Setup data: create `AdministrativeLevel`s first (`order` is required), then load
 `manage.py sync_administrative_levels <excel>`. `create_administrative_levels_users` creates one
 agent per unit and **prints passwords** — do not run it where output is logged.
 
-API: JWT at `/api/login/`, docs at `/api/v1/swagger/`; `/api/v1/` also accepts `MIS-…` API tokens.
+APIs: field monitoring at `/api/v1/` (JWT from `/api/v1/auth/token/`, docs `/api/docs/`); MIS
+read-only at `/fr/api/v1/` (JWT from `/fr/api/login/` or `MIS-…` API tokens, docs `/fr/api/v1/swagger/`).
+`manage.py seed_demo` loads field monitoring demo data (its own small tree; empty databases only).
+`manage.py run_jobs` runs the 20:00 auto-close and Monday warning (cron on a server).
+
+## Deployments
+
+- **Production:** government server (`mis.coso.gouv.bj`), Docker image from Florentin's `prod_config`.
+- **Internal demo:** https://e3mis-demo.vercel.app — Vercel project `e3mis-demo`, container runtime
+  (`Dockerfile.vercel`, `vercel.json`), Neon (PostGIS) and a private Vercel Blob store, Vercel Cron.
+  Deploy with `vercel deploy --prod`. Migrate Neon right after a schema change, from this Mac:
+  `vercel env pull <scratch file> --environment production`, run `manage.py migrate` with
+  `DATABASE_URL` set to its `DATABASE_URL_UNPOOLED`, delete the file. Demo users are
+  `<name>@example.org`; signing in on the deployed site is for the user, not for agents.
 
 ## Testing
 
@@ -132,3 +181,9 @@ version when filled). Trackable objects and follow-up events have `schema_versio
 - `/api/v1/` sits inside `i18n_patterns`, so paths are `/fr/api/v1/…`.
 - Several packages lack `__init__.py` (work as namespace packages). `identifier.sqlite` is a stray file.
 - The production Docker image (`prod_config`) needs GDAL/GEOS installed for PostGIS.
+
+## Working rules
+
+- Stage files explicitly; do not `git add -A` (local-only files: `.env.local`, `.agents/`, `.claude/`).
+- Finished phases merge directly into `develop` (Leonardo is lead developer).
+- End commit messages with the `Co-Authored-By` line the session provides.
