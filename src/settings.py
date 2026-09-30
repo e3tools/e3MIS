@@ -194,4 +194,4 @@ AUTH_USER_MODEL = 'authorization.CustomUser'
 LOGIN_URL = '/'
 
 # Mapbox
-MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN')
+MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN', default='')
