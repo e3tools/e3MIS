@@ -1,4 +1,4 @@
-# e3MIS — field monitoring MIS (Django 4.2)
+# e3MIS — field monitoring MIS (Django 5.2 + PostGIS)
 
 Management information system for a community-development programme (admin-unit data is Benin:
 Department → Commune → Arrondissement). UI is French by default (`LANGUAGE_CODE='fr'`, `en` too).
@@ -13,8 +13,9 @@ Two kinds of user (`authorization.CustomUser`, logs in by **email**, no username
 
 ## Branches
 
-`develop` is the integration branch and holds all current work; feature branches are cut from it
-and merged back (`trackable_objects` is the active one). `prod_config` = latest work + deployment
+`develop` is the integration branch (NestorBracho's work lands here). **`feature/field-monitoring`**
+(from `develop`) is where the field monitoring tool is being merged in — plan and decisions in
+`../MERGE_PLAN.md` in the local workspace. Merge `develop` into it regularly. `prod_config` = latest work + deployment
 setup (Dockerfile, `run.sh`, gunicorn, `DATABASE_URL`/`SECRET_KEY`/`ALLOWED_HOSTS` from env); it
 also comments out the `/api/v1/` router registrations, so do not merge it back into `develop`
 blindly. `main` is stale (July 2025).
@@ -76,12 +77,17 @@ Every `jsonForm` / `config_schema` **template** has this shape (a dict, not a li
 ## Running locally
 
 ```bash
-uv venv -p 3.12 .venv && uv pip install -p .venv -r requirements.txt   # numpy 2.0 has no 3.13 wheels
-echo "MAPBOX_ACCESS_TOKEN=dummy" > .env    # required, no default; DB defaults to ./db.sqlite3
+uv venv -p 3.12 .venv && uv pip install -p .venv -r requirements-dev.txt   # numpy 2.0 has no 3.13 wheels
+cp .env.example .env                  # SECRET_KEY and DEBUG=True are required locally
+docker compose up -d db               # PostGIS on localhost:5434 (5433 is the old field monitoring DB)
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py createsuperuser          # asks for email
 .venv/bin/python manage.py runserver
 ```
+
+Settings come from the environment (`SECRET_KEY`, `DEBUG`, `DATABASE_URL`, `ALLOWED_HOSTS`,
+`CSRF_TRUSTED_ORIGINS`, `MEDIA_ROOT`). Any `postgres://` URL runs on the PostGIS engine. The same
+code serves production (government server) and the internal demo (Vercel + Neon).
 
 Setup data: create `AdministrativeLevel`s first (`order` is required), then load units with
 `manage.py sync_administrative_levels <excel>`. `create_administrative_levels_users` creates one
@@ -91,22 +97,38 @@ API: JWT at `/api/login/`, docs at `/api/v1/swagger/`; `/api/v1/` also accepts `
 
 ## Testing
 
-There are **no tests** (every `tests.py` is a stub). Until there are, verify changes with:
+```bash
+.venv/bin/pytest                      # tests/ — needs the db container
+.venv/bin/python manage.py makemigrations --check --dry-run
+```
 
-- `manage.py check` and `manage.py makemigrations --check --dry-run` (currently reports one
-  pre-existing drift in `api` — the `ApiToken.prefix` default — which is not yours to fix unless asked)
-- a Django test-client smoke run that logs in as a superuser and as a field agent (in a group, with
-  an administrative unit) and requests every page, then POSTs a trackable-object instance and a
-  follow-up response. Seed forms in the dict shape above; a list makes the mobile views crash.
+`tests/conftest.py` has the fixtures (desktop user, field agent in a group with a unit, a form, a
+record, a follow-up). Tests cover every page for both roles, the field agent flows, the API and the
+access rules. Seed forms in the dict shape above; a list makes the mobile views crash.
+
+Adding a field with `auto_now_add` to an existing model makes `makemigrations` prompt (and hang
+under a non-interactive shell): write that migration by hand with `preserve_default=False`.
+
+## Access rules
+
+- Pages: `src/permissions.py` — `IsStaffMemberMixin` (desktop), `IsFieldAgentUserMixin` (mobile),
+  `IsAdminMemberMixin` (delete: superuser or `Admin` group). Every view needs one.
+- `/api/v1/` is read-only for signed-in desktop users or API tokens (`MIS-…`); field agents are
+  refused. DRF accepts API token, JWT and session (the MIS pages call their JSON endpoints with the
+  session cookie). Never take the user's identity from a request parameter or header.
+
+## Offline sync fields
+
+Records, follow-up responses and attachments have `client_uuid` (phone-generated, unique),
+records/follow-ups have `version` (bumped when answers change) and `schema_version` (the form's
+version when filled). Trackable objects and follow-up events have `schema_version`, bumped when their
+`jsonForm` changes (`VersionedSchemaMixin`, `SyncedAnswerMixin` in `trackableobjects/models.py`).
 
 ## Known issues (do not "discover" these again)
 
-- `src/settings.py` hardcodes `SECRET_KEY`, `DEBUG=True`, `ALLOWED_HOSTS=[]` (production uses
-  `prod_config`). `SECRET_KEY` is also the API-token pepper. `MEDIA_ROOT` is undefined.
-- `TrackableObjectDeleteView` and `FollowUpEventDeleteView` have no permission mixin.
-- `trackable-objects/api/trackable-object-instance` trusts an `HTTP_USER` header and 500s without
-  it; `subprojects/api/custom-fields` 500s without its parameters.
-- `/api/v1/user/` 500s (`UserSerializer` lists `username`, `administrative_unit`); check
-  `FollowUpEventSerializer` field names too. `TokenViewSet` exists but is not routed.
+- `SECRET_KEY` is also the API-token pepper: changing it invalidates every API token.
+- `TokenViewSet` (create/list/revoke API tokens) exists but is not routed.
 - No view sets `TrackableObjectInstance.administrative_units` (admin only).
+- `/api/v1/` sits inside `i18n_patterns`, so paths are `/fr/api/v1/…`.
 - Several packages lack `__init__.py` (work as namespace packages). `identifier.sqlite` is a stray file.
+- The production Docker image (`prod_config`) needs GDAL/GEOS installed for PostGIS.
