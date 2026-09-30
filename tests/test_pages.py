@@ -98,3 +98,9 @@ def test_subproject_registration_needs_community_facilitator(agent, agent_client
 
 def test_contractor_registration_for_technical_facilitator(agent_client):
     assert agent_client.get(reverse("subprojects:mobile:register-contractor")).status_code == 200
+
+
+def test_logout_by_post(staff_client):
+    r = staff_client.post(reverse("authorization:logout"))
+    assert r.status_code == 302
+    assert staff_client.get(reverse("trackableobjects:trackable_object_list")).status_code == 302
