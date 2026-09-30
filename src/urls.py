@@ -29,6 +29,7 @@ urlpatterns = [
     # Field monitoring API for the field app and the supervision dashboard. Outside i18n_patterns:
     # the apps call /api/v1/… without a language prefix. Photos are never public media; they go
     # through /api/v1/visits/<id>/photo/, which checks who is asking.
+    path('api/v1/forms/', include('trackableobjects.field_api.urls')),
     path('api/v1/', include('fieldmonitoring.api_urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),

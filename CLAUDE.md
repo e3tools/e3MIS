@@ -56,6 +56,25 @@ How it maps onto the MIS:
 - Keep old app builds working: accept old field names until those builds are gone
   (`grievance_raised` is still accepted as `issue_reported`).
 
+## Forms API for the field app (`trackableobjects/field_api/`)
+
+Offline-first API the Expo app uses for MIS forms (Phase 2 of `../MERGE_PLAN.md`), at
+`/api/v1/forms/` (field agents only):
+- `GET sync/?since=<iso>`: templates, follow-up events (with `depends_on`, `standalone`,
+  `can_create`/`can_fill`), administrative units for pickers, `trackable_object_options`, changed
+  records/responses, and the full `record_ids`/`response_ids` so the phone drops what it can't see.
+- `POST push/`: `{items: [...]}` (≤100), applied in order, one result each: `created`, `updated`,
+  `duplicate` (replay), `conflict` (`stale` edit or one-off `already_answered`, with the server copy),
+  `invalid` (per-field `errors`), `forbidden`, `not_found`. Creates carry `client_uuid`; updates carry
+  `base_version`. A response can point at a record created in the same batch (`record_client_uuid`).
+- `POST attachments/` (multipart, idempotent by `client_uuid`) after the answers carry the
+  `"Attachment"` marker; `GET attachments/<id>/` streams it after a permission check.
+
+Rules: `trackableobjects/visibility.py` is the single source of who sees and fills what; the MIS
+mobile screens use it too. Answers are re-checked with the MIS parser
+(`field_api/validation.py`): every page, fields hidden by display conditions dropped, files via the
+marker. Unknown answer keys are dropped. `manage.py seed_demo_forms` adds sample forms (idempotent).
+
 ## Domain model
 
 | App | Models |

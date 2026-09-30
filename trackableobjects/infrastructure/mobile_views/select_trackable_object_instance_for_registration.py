@@ -1,5 +1,5 @@
 from django.views.generic.detail import DetailView
-from django.db.models import OuterRef, Exists
+from trackableobjects import visibility
 from trackableobjects.models import TrackableObject
 
 from src.permissions import IsFieldAgentUserMixin
@@ -10,16 +10,7 @@ class MobileViewsTrackableObjectInstanceRegistrationListView(IsFieldAgentUserMix
     queryset = TrackableObject.objects.all()
 
     def get_queryset(self):
-        user_group_ids = list(self.request.user.groups.values_list('id', flat=True))
-
-        matched_groups = TrackableObject.groups.through.objects.filter(
-            trackableobject_id=OuterRef('pk'),
-            group_id__in=user_group_ids
-        )
-
-        return TrackableObject.objects.filter(
-            Exists(matched_groups)
-        )
+        return visibility.listed_trackable_objects(self.request.user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

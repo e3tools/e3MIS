@@ -14,6 +14,7 @@ from datetime import date, datetime, timedelta
 from django.contrib.auth.models import Group
 from django.contrib.gis.geos import Point
 from django.core.files.base import ContentFile
+from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from PIL import Image
@@ -72,6 +73,7 @@ class Command(BaseCommand):
         for week in (this_monday - timedelta(weeks=1), this_monday):
             generate(week)
 
+        call_command("seed_demo_forms", stdout=self.stdout)
         self.stdout.write(self.style.SUCCESS("Demo data created."))
         self.stdout.write("Users (<name>@example.org): admin, rdp, koffi (SC), awa (SC), amadou (FC), "
                           "ibrahim (FT), fatou (regional specialist), konan (national specialist) …")

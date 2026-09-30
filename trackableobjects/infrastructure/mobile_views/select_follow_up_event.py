@@ -1,12 +1,11 @@
 from django.views.generic import TemplateView
-from django.db.models import Q, OuterRef, Subquery, Exists
+from django.db.models import OuterRef, Exists
 from src.permissions import IsFieldAgentUserMixin
+from trackableobjects import visibility
 from trackableobjects.models import (
-    FollowUpEvent,
     FollowUpEventResponse,
     FollowUpEventTrackableObject,
     TrackableObjectInstance,
-    FollowUpEventDependency
 )
 
 
@@ -48,43 +47,11 @@ class SelectFollowUpEventView(IsFieldAgentUserMixin, TemplateView):
         return context
 
     def _get_follow_up_events_queryset(self, user_group_ids, trackable_object_instance):
-        """Returns queryset of FollowUpEvents filtered by permissions and dependencies."""
-
-        # Subquery: groups on this event that the user IS in
-        matched_groups = FollowUpEvent.groups.through.objects.filter(
-            followupevent_id=OuterRef('pk'),
-            group_id__in=user_group_ids,
-        )
-
-        # Subquery: Check for unfulfilled parent dependencies
-        unfulfilled_dependencies = FollowUpEventDependency.objects.filter(
-            child_id=OuterRef('pk')
-        ).exclude(
-            parent_id__in=Subquery(
-                FollowUpEventResponse.objects.filter(
-                    trackable_object_instance=trackable_object_instance
-                ).values('follow_up_event_id')
-            )
-        )
-
-        # Subquery: check if event has any trackable objects (global = no TOs)
-        has_trackable_objects = FollowUpEventTrackableObject.objects.filter(
-            follow_up_event=OuterRef('pk'),
-        )
-
-        return FollowUpEvent.objects.annotate(
-            has_matched_groups=Exists(matched_groups),
-            has_unfulfilled_deps=Exists(unfulfilled_dependencies),
+        """Events the user can fill on this record now (shared rule, see trackableobjects.visibility)."""
+        has_trackable_objects = FollowUpEventTrackableObject.objects.filter(follow_up_event=OuterRef('pk'))
+        return visibility.available_follow_up_events(self.request.user, trackable_object_instance).annotate(
             is_global=~Exists(has_trackable_objects),
-        ).filter(
-            # Event applies to this trackable object
-            Q(trackable_objects=trackable_object_instance.trackable_object),
-            # User has permission (at least one shared group)
-            has_matched_groups=True,
-            # Event is active and has no unfulfilled dependencies
-            is_active=True,
-            has_unfulfilled_deps=False
-        ).distinct().order_by('order', 'name')
+        )
 
     def _annotate_response_status(self, follow_up_events, trackable_object_instance):
         """Adds has_no_response and response_id attributes to one-off events."""

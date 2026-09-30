@@ -146,6 +146,7 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Worksite visit verification API for the field app and the supervision dashboard.',
     'VERSION': '0.2.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'PREPROCESSING_HOOKS': ['fieldmonitoring.core.schema.only_app_api'],
     'ENUM_NAME_OVERRIDES': {'FieldReasonCodeEnum': 'fieldmonitoring.visits.models.FieldReasonCode'},
 }
 

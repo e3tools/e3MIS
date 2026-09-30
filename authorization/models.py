@@ -118,7 +118,7 @@ class CustomUser(AbstractUser):
         return self.full_name or self.email
 
     @property
-    def username(self):
+    def username(self) -> str:
         """Read-only alias: the field monitoring API and apps call the sign-in name 'username'."""
         return self.email
 
