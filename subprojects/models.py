@@ -205,8 +205,10 @@ class Attachment(models.Model):
                                                  on_delete=models.CASCADE, related_name="attachments")
     field_name = models.CharField(max_length=255, blank=True, null=True)
     file = models.FileField(upload_to='media/attachments/')
-    # upload_at = models.DateTimeField(auto_now_add=True)
-    # updated_at = models.DateTimeField(auto_now=True)
+    # Generated on the phone for files attached offline; re-uploading the same file is a no-op.
+    client_uuid = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class DisplayFieldSetting(models.Model):

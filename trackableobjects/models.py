@@ -40,7 +40,74 @@ TRACKABLE_OBJECT_ID_PREFIX = "TO"
 FOLLOW_UP_EVENT_ID_PREFIX = "FE"
 
 
-class TrackableObject(models.Model):
+class VersionedSchemaMixin(models.Model):
+    """A form template whose schema version goes up each time its jsonForm changes.
+
+    Answers record the schema_version they were filled against, so an answer filled offline on
+    an older version can be recognised when it syncs.
+    """
+    schema_version = models.PositiveIntegerField(default=1, editable=False)
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        obj = super().from_db(db, field_names, values)
+        obj._loaded_json_form = obj.__dict__.get("jsonForm")
+        return obj
+
+    def save(self, *args, **kwargs):
+        loaded = getattr(self, "_loaded_json_form", None)
+        if self.pk and loaded is not None and loaded != self.jsonForm:
+            self.schema_version += 1
+            if kwargs.get("update_fields") is not None:
+                kwargs["update_fields"] = {*kwargs["update_fields"], "schema_version"}
+        super().save(*args, **kwargs)
+        self._loaded_json_form = self.jsonForm
+
+
+class SyncedAnswerMixin(models.Model):
+    """An answer (record or follow-up) that the field app can create offline and sync later.
+
+    - client_uuid: generated on the phone; uploading the same item twice creates nothing new.
+    - version: goes up each time the answers change, to detect a stale offline edit.
+    - schema_version: the template's schema_version when the answer was created.
+    """
+    client_uuid = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    version = models.PositiveIntegerField(default=1, editable=False)
+    schema_version = models.PositiveIntegerField(null=True, blank=True, editable=False)
+
+    class Meta:
+        abstract = True
+
+    def _template(self):
+        raise NotImplementedError
+
+    @classmethod
+    def from_db(cls, db, field_names, values):
+        obj = super().from_db(db, field_names, values)
+        obj._loaded_json_form = obj.__dict__.get("jsonForm")
+        return obj
+
+    def save(self, *args, **kwargs):
+        loaded = getattr(self, "_loaded_json_form", None)
+        extra = set()
+        if self.pk is None and self.schema_version is None:
+            template = self._template()
+            if template is not None:
+                self.schema_version = template.schema_version
+                extra.add("schema_version")
+        elif self.pk and loaded is not None and loaded != self.jsonForm:
+            self.version += 1
+            extra.add("version")
+        if extra and kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = {*kwargs["update_fields"], *extra}
+        super().save(*args, **kwargs)
+        self._loaded_json_form = self.jsonForm
+
+
+class TrackableObject(VersionedSchemaMixin, models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     identifier_field = models.CharField(max_length=255, null=True, blank=True)
@@ -71,7 +138,7 @@ class TrackableObject(models.Model):
         return self.name
 
 
-class FollowUpEvent(models.Model):
+class FollowUpEvent(VersionedSchemaMixin, models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     identifier_field = models.CharField(max_length=255, null=True, blank=True)
@@ -87,7 +154,8 @@ class FollowUpEvent(models.Model):
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
 
-    class Meta:
+    class Meta(VersionedSchemaMixin.Meta):
+        abstract = False
         ordering = ['order', 'name']
 
     def __str__(self):
@@ -122,7 +190,7 @@ class FollowUpEventDependency(models.Model):
         return "{} depends on  {}".format(self.child.name, self.parent.name)
 
 
-class TrackableObjectInstance(models.Model):
+class TrackableObjectInstance(SyncedAnswerMixin, models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
@@ -134,6 +202,12 @@ class TrackableObjectInstance(models.Model):
     restrict_by_administrative_units = models.BooleanField(default=True,
                                                            verbose_name=_('Restrict by administrative units'))
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
+
+    class Meta:
+        indexes = [models.Index(fields=["updated_at"])]
+
+    def _template(self):
+        return self.trackable_object
 
     @property
     def identifier(self):
@@ -149,7 +223,7 @@ class TrackableObjectInstance(models.Model):
         return "{}".format(self.identifier)
 
 
-class FollowUpEventResponse(models.Model):
+class FollowUpEventResponse(SyncedAnswerMixin, models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(AUTH_USER_MODEL, blank=True, null=True, on_delete=models.SET_NULL)
@@ -158,6 +232,12 @@ class FollowUpEventResponse(models.Model):
                                                   on_delete=models.SET_NULL,
                                                   related_name="follow_up_responses", )
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
+
+    class Meta:
+        indexes = [models.Index(fields=["updated_at"])]
+
+    def _template(self):
+        return self.follow_up_event
 
     @property
     def identifier(self):
