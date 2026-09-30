@@ -36,3 +36,4 @@ typing_extensions==4.12.2
 tzdata==2025.2
 uritemplate==4.2.0
 virtualenv==20.29.3
+psycopg2-binary==2.9.10

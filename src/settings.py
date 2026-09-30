@@ -17,7 +17,9 @@ from pathlib import Path
 # https://django-environ.readthedocs.io/en/latest/
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    CSRF_TRUSTED_ORIGINS=(list, []),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,13 +32,19 @@ env.read_env()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j90lb^5w#_51jeepqdu%72jym7z@#h*0_#f=j2kd3xql&!*4@@'
+# Everything environment-specific comes from the environment (or .env, see .env.example).
+# The same code runs the production server and the Vercel demo.
+SECRET_KEY = env('SECRET_KEY')
+DEBUG = env('DEBUG')
+ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+# GeoDjango needs GDAL/GEOS. On macOS with Homebrew they are usually found
+# automatically; set these when they are not.
+if env('GDAL_LIBRARY_PATH', default=None):
+    GDAL_LIBRARY_PATH = env('GDAL_LIBRARY_PATH')
+if env('GEOS_LIBRARY_PATH', default=None):
+    GEOS_LIBRARY_PATH = env('GEOS_LIBRARY_PATH')
 
 
 # Application definition
@@ -48,6 +56,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'api.apps.ApiConfig',
     'subprojects',
     'administrativelevels',
@@ -110,6 +119,7 @@ SIMPLE_JWT = {
 }
 
 API_KEY_CONFIG = {
+    # Changing SECRET_KEY invalidates every issued API token.
     'TOKEN_PEPPER': SECRET_KEY,
     'COMPANY_PREFIX': 'MIS',
 }
@@ -118,16 +128,13 @@ API_KEY_CONFIG = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Postgres with PostGIS everywhere (field visits need geographic queries). Local default is the
+# docker-compose database. A plain postgres:// URL (e.g. Neon) is switched to the PostGIS engine.
 DATABASES = {
-    'default': {
-        'ENGINE': env('DB_ENGINE', default='django.db.backends.sqlite3'),
-        'NAME': env('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
-        'USER': env('DB_USER', default=''),
-        'PASSWORD': env('DB_PASSWORD', default=''),
-        'HOST': env('DB_HOST', default=''),
-        'PORT': env('DB_PORT', default=''),
-    }
+    'default': env.db('DATABASE_URL', default='postgis://mis:mis@localhost:5434/mis'),
 }
+DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+DATABASES['default']['CONN_MAX_AGE'] = env.int('DB_CONN_MAX_AGE', default=0)
 
 
 # Password validation
@@ -177,7 +184,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'collected_static'
 MEDIA_URL = '/media/'
+MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",

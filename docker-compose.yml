@@ -1,0 +1,17 @@
+# Local development database: Postgres + PostGIS on localhost:5434.
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    # The official PostGIS image is amd64-only; Apple Silicon runs it under emulation.
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: mis
+      POSTGRES_USER: mis
+      POSTGRES_PASSWORD: mis
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
