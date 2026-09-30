@@ -1,10 +1,11 @@
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils.translation import gettext_lazy as _
+from src.permissions import IsStaffMemberMixin
 from trackableobjects.models import FollowUpEvent, TrackableObject
 
 
-class FollowUpEventListView(LoginRequiredMixin, ListView):
+class FollowUpEventListView(LoginRequiredMixin, IsStaffMemberMixin, ListView):
     template_name = 'trackable_objects/follow_up_event_list.html'
     model = FollowUpEvent
     ordering = ['order', 'name']

@@ -110,6 +110,8 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'api.authentication.BearerApiTokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # The MIS pages call their JSON endpoints from the browser with the session cookie.
+        'rest_framework.authentication.SessionAuthentication',
     ],
 }
 

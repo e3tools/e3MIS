@@ -18,7 +18,8 @@ class BearerApiTokenAuthentication(authentication.BaseAuthentication):
         token_str = auth[len(self.keyword) + 1:].strip()
         m = TOKEN_RE.match(token_str)
         if not m:
-            raise exceptions.AuthenticationFailed("Invalid token format.")
+            # Not an API token (e.g. a JWT): let the next authentication class try.
+            return None
 
         public_id = m.group("public_id")
         secret = m.group("secret")

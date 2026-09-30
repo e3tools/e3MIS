@@ -33,7 +33,7 @@ class FollowUpEventSerializer(serializers.ModelSerializer):
         model = FollowUpEvent
         fields = [
             'id', 'name', 'description',
-            'identifier_field', 'is_one_off', 'trackable_object',
+            'identifier_field', 'is_one_off', 'trackable_objects',
             'jsonForm', 'groups', 'created_by',
             'created_at', 'updated_at',
         ]

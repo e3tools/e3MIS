@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import generic
 from django.contrib import messages
 from django.utils.translation import gettext as _
@@ -8,7 +9,7 @@ from subprojects.models import Contractor
 from subprojects.infrastructure.forms.contractor_create_form import ContractorCreateForm
 
 
-class ContractorListView(IsStaffMemberMixin, generic.edit.FormMixin, generic.ListView):
+class ContractorListView(LoginRequiredMixin, IsStaffMemberMixin, generic.edit.FormMixin, generic.ListView):
     model = Contractor
     context_object_name = 'contractors'
     form_class = ContractorCreateForm
