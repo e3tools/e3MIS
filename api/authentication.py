@@ -10,6 +10,12 @@ TOKEN_RE = re.compile(r"^(?P<prefix>[A-Za-z0-9_-]+)-(?P<public_id>[a-f0-9]{8})\.
 class BearerApiTokenAuthentication(authentication.BaseAuthentication):
     keyword = "Bearer"
 
+    def authenticate_header(self, request):
+        # DRF takes the WWW-Authenticate header from the first authentication class. Without it,
+        # a missing or expired token is answered 403 instead of 401, and the apps only refresh
+        # their JWT on a 401.
+        return 'Bearer realm="api"'
+
     def authenticate(self, request):
         auth = authentication.get_authorization_header(request).decode("utf-8")
         if not auth or not auth.startswith(self.keyword + " "):

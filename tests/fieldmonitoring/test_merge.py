@@ -110,3 +110,12 @@ def test_seed_demo_runs_on_an_empty_database(capsys):
     assert Worksite.objects.filter(commune__name="Dabou").exists()
     r = APIClient().post("/api/v1/auth/token/", {"username": "koffi@example.org", "password": "demo-pass-123"}, format="json")
     assert r.status_code == 200
+
+
+@pytest.mark.parametrize("header", [None, "Bearer not-a-valid-jwt"])
+def test_signed_out_or_expired_is_401_so_apps_refresh(header):
+    client = APIClient()
+    if header:
+        client.credentials(HTTP_AUTHORIZATION=header)
+    r = client.get("/api/v1/me/worksites/")
+    assert r.status_code == 401 and r["WWW-Authenticate"].startswith("Bearer")

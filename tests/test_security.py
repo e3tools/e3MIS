@@ -52,7 +52,7 @@ class TestInstanceListEndpoint:
     url = "/fr/trackable-objects/api/trackable-object-instance"
 
     def test_needs_sign_in(self, client, instance):
-        assert client.get(self.url, {"trackable-object": instance.trackable_object_id}).status_code == 403
+        assert client.get(self.url, {"trackable-object": instance.trackable_object_id}).status_code == 401
 
     def test_uses_the_signed_in_agent_not_a_header(self, agent_client, other_agent, instance):
         r = agent_client.get(self.url, {"administrative-unit": "", "trackable-object": instance.trackable_object_id})
@@ -74,7 +74,7 @@ class TestInstanceListEndpoint:
 
 def test_admin_unit_api_needs_sign_in(client, agent_client, unit):
     url = reverse("administrativelevels:api:administrative-unit-root")
-    assert client.get(url).status_code == 403
+    assert client.get(url).status_code == 401
     assert agent_client.get(url).status_code == 200
 
 

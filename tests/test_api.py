@@ -31,7 +31,7 @@ def test_desktop_user_reads_with_jwt(staff_user, trackable_object, follow_up_eve
 
 @pytest.mark.parametrize("path", READ_ENDPOINTS)
 def test_anonymous_cannot_read(instance, path):
-    assert APIClient().get(f"/fr/api/v1/{path}").status_code in (401, 403)
+    assert APIClient().get(f"/fr/api/v1/{path}").status_code == 401
 
 
 @pytest.mark.parametrize("path", READ_ENDPOINTS)
@@ -56,4 +56,4 @@ def test_api_token_authenticates(staff_user, trackable_object):
 def test_malformed_api_token_is_rejected(instance):
     c = APIClient()
     c.credentials(HTTP_AUTHORIZATION="Bearer MIS-deadbeef.wrong")
-    assert c.get("/fr/api/v1/trackable-object/").status_code in (401, 403)
+    assert c.get("/fr/api/v1/trackable-object/").status_code == 401
