@@ -31,7 +31,7 @@
                                 <div class="info-box bg-light">
                                     <div class="info-box-content">
                                         <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
-                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_by.get_full_name|default:object.created_by.email }}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{% firstof object.created_by.get_full_name object.created_by.email "—" %}</span>
                                     </div>
                                 </div>
                             </div>

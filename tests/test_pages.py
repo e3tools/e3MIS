@@ -70,6 +70,18 @@ def test_detail_pages_render_for_staff(staff_client, trackable_object, follow_up
         assert staff_client.get(reverse(name, kwargs={"pk": pk})).status_code == 200, name
 
 
+def test_detail_pages_render_without_creator(staff_client, trackable_object, follow_up_event, instance, response):
+    # Seeded forms and records have no created_by; the "Report by" box must not crash the page.
+    for obj in (trackable_object, follow_up_event, instance, response):
+        type(obj).objects.filter(pk=obj.pk).update(created_by=None)
+    for name, pk in [
+        ("trackableobjects:trackable_object_detail", trackable_object.pk),
+        ("trackableobjects:follow_up_event_object_detail", follow_up_event.pk),
+        ("trackableobjects:follow_up_event_response_detail", response.pk),
+    ]:
+        assert staff_client.get(reverse(name, kwargs={"pk": pk})).status_code == 200, name
+
+
 @pytest.mark.parametrize("fmt", ["csv", "xlsx"])
 def test_exports(staff_client, trackable_object, follow_up_event, instance, response, fmt):
     r = staff_client.get(reverse("trackableobjects:trackable_object_instances_export", kwargs={"pk": trackable_object.pk, "fmt": fmt}))
@@ -104,3 +116,28 @@ def test_logout_by_post(staff_client):
     r = staff_client.post(reverse("authorization:logout"))
     assert r.status_code == 302
     assert staff_client.get(reverse("trackableobjects:trackable_object_list")).status_code == 302
+
+
+def test_editing_a_follow_up_keeps_its_dependency(staff_client, tf_group, trackable_object, follow_up_event):
+    # The edit view used to look up a trackable object with the event's own pk, so the saved parent
+    # was missing from the choices and saving the edit silently removed the dependency.
+    from trackableobjects.models import FollowUpEvent, FollowUpEventDependency, FollowUpEventTrackableObject
+
+    child = FollowUpEvent.objects.create(name="Handover", jsonForm=follow_up_event.jsonForm, is_one_off=True)
+    child.groups.add(tf_group)
+    FollowUpEventTrackableObject.objects.create(follow_up_event=child, trackable_object=trackable_object)
+    FollowUpEventDependency.objects.create(parent=follow_up_event, child=child)
+    url = reverse("trackableobjects:follow_up_event_object_edit", kwargs={"pk": child.pk})
+
+    form = staff_client.get(url).context["form"]
+    assert list(form.fields["dependencies"].queryset) == [follow_up_event]
+    assert form.initial["dependencies"] == [follow_up_event.pk]
+
+    import json
+    r = staff_client.post(url, {
+        "name": "Handover", "description": "", "jsonForm": json.dumps(child.jsonForm),
+        "groups": [tf_group.pk], "trackable_objects": [trackable_object.pk],
+        "dependencies": [follow_up_event.pk], "is_one_off": "on",
+    })
+    assert r.status_code == 302
+    assert list(FollowUpEventDependency.objects.filter(child=child).values_list("parent_id", flat=True)) == [follow_up_event.pk]
