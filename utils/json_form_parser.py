@@ -465,9 +465,14 @@ def evaluate_condition(field_value, operator, expected_value):
     if field_value is None or field_value == '':
         return False
 
-    # Convert to string for comparison if needed
+    # Convert to string for comparison if needed. Yes/No answers are compared case-insensitively: the
+    # form builder saves "true"/"false", older forms have "True"/"False", answers are Python booleans.
     field_value_str = str(field_value)
     expected_value_str = str(expected_value)
+    if isinstance(field_value, bool) or field_value_str in ('true', 'false'):
+        field_value_str = field_value_str.lower()
+        if expected_value_str.lower() in ('true', 'false'):
+            expected_value_str = expected_value_str.lower()
 
     if operator == 'equals':
         return field_value_str == expected_value_str

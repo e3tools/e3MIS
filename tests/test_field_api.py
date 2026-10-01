@@ -244,6 +244,30 @@ def test_field_hidden_by_a_condition_is_not_required(agent, trackable_object):
     assert "reason" not in TrackableObjectInstance.objects.get(pk=hidden["id"]).jsonForm
 
 
+@pytest.mark.parametrize("expected", ["false", "False"])
+def test_yes_no_condition_from_the_form_builder_keeps_the_answer(agent, trackable_object, expected):
+    # The MIS form builder saves Yes/No conditions as "true"/"false"; seeded forms use "True"/"False".
+    with_fields(trackable_object, reason=(
+        {"type": "string"},
+        {"label": "Why", "dependencies": {"conditions": [{"field": "ok", "operator": "equals", "value": expected}]}},
+        True,
+    ))
+    [created] = push(agent, new_record(trackable_object, {"name": "A", "ok": False, "reason": "Broken door"}))
+    assert created["status"] == "created"
+    assert TrackableObjectInstance.objects.get(pk=created["id"]).jsonForm["reason"] == "Broken door"
+
+
+def test_yes_no_condition_matches_web_and_python_values():
+    from utils.json_form_parser import evaluate_condition
+
+    assert evaluate_condition(False, "equals", "false")
+    assert evaluate_condition(True, "equals", "True")
+    assert evaluate_condition("true", "equals", "True")
+    assert not evaluate_condition(True, "equals", "false")
+    assert evaluate_condition(True, "not_equals", "false")
+    assert evaluate_condition("Mauvais", "equals", "Mauvais") and not evaluate_condition("mauvais", "equals", "Mauvais")
+
+
 def test_required_file_needs_the_marker_then_the_upload(agent, other_agent, trackable_object):
     with_fields(trackable_object, photo=({"type": "file"}, {"label": "Photo"}, True))
     assert push(agent, new_record(trackable_object, {"name": "A"}))[0]["status"] == "invalid"

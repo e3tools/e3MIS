@@ -358,6 +358,11 @@ $(document).ready(function () {
             return false;
         }
 
+        // Yes/No answers are 'true'/'false'; older forms saved the expected value as 'True'/'False'.
+        if ((actualValue === 'true' || actualValue === 'false') && typeof expectedValue === 'string') {
+            expectedValue = /^(true|false)$/i.test(expectedValue) ? expectedValue.toLowerCase() : expectedValue;
+        }
+
         switch (operator) {
             case 'equals':
                 return actualValue === expectedValue;
