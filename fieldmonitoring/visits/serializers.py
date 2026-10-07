@@ -10,6 +10,16 @@ from .models import FieldReasonCode, Visit, VisitEvent, VisitFlag, VisitStatus, 
 QUEUED_GAP_S = 3600
 
 
+class ClockEvidenceSerializer(serializers.Serializer):
+    """Trusted-clock evidence for a visit recorded offline (core/trusted_clock.py). No wall-clock time."""
+
+    anchor = serializers.CharField(max_length=200)
+    anchor_elapsed_ms = serializers.IntegerField(min_value=0)
+    elapsed_ms = serializers.IntegerField(min_value=0)
+    anchor_boot_id = serializers.CharField(max_length=64)
+    boot_id = serializers.CharField(max_length=64)
+
+
 class CheckInSerializer(serializers.Serializer):
     """No timestamp field: checked_in_at is set by the server (non-negotiable 2).
     Unknown fields, including any client-supplied checked_in_at, are ignored."""
@@ -23,6 +33,7 @@ class CheckInSerializer(serializers.Serializer):
     idempotency_key = serializers.CharField(max_length=64)
     # Metadata only (Story 2.7): when the client captured a queued submission.
     client_captured_at = serializers.DateTimeField(required=False, allow_null=True)
+    clock = ClockEvidenceSerializer(required=False, allow_null=True)
 
 
 class CheckOutSerializer(serializers.Serializer):
@@ -30,6 +41,7 @@ class CheckOutSerializer(serializers.Serializer):
     lng = serializers.FloatField(required=False, allow_null=True, min_value=-180, max_value=180)
     accuracy_m = serializers.FloatField(required=False, allow_null=True, min_value=0)
     idempotency_key = serializers.CharField(max_length=64)
+    clock = ClockEvidenceSerializer(required=False, allow_null=True)
 
 
 class VisitStatusSerializer(serializers.ModelSerializer):
@@ -117,6 +129,7 @@ class VisitSerializer(serializers.ModelSerializer):
             "has_photo", "auto_closed", "status", "flags", "field_reason_code", "field_reason",
             "field_reason_at", "awaiting_review", "needs_reason", "resolved_by", "resolved_at",
             "resolution_note", "client_captured_at", "queued_submission", "short_visit",
+            "checkin_received_at", "checkout_received_at", "checkin_time_source", "checkout_time_source",
         )
 
     def get_checkin(self, obj) -> dict:

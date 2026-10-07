@@ -42,6 +42,8 @@ class ProgrammeConfig(models.Model):
     # Verified visits shorter than this are flagged to the supervisor as possible drive-bys. A
     # warning only: the visit stays verified (non-negotiable 5).
     short_visit_minutes = models.PositiveIntegerField(default=5)
+    # How long a phone may stay offline and still prove when a visit happened (trusted clock, Q7).
+    max_offline_hours = models.PositiveIntegerField(default=72)
     # Which administrative levels play the field monitoring roles. Left empty, the tree position
     # is used: a worksite's unit is the village, its parent the commune, the next one the region.
     region_level = models.ForeignKey(

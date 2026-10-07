@@ -10,7 +10,11 @@ from rest_framework.response import Response
 @extend_schema(
     responses=inline_serializer(
         "Health",
-        {"status": serializers.CharField(), "server_time": serializers.DateTimeField()},
+        {
+            "status": serializers.CharField(),
+            "server_time": serializers.DateTimeField(),
+            "clock_anchor": serializers.CharField(),
+        },
     )
 )
 @api_view(["GET"])
@@ -19,7 +23,10 @@ def health(request):
     """Liveness/readiness probe; also lets the app check connectivity and server time."""
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1")
-    return Response({"status": "ok", "server_time": timezone.now().isoformat()})
+    from .trusted_clock import issue_anchor
+
+    # clock_anchor: a signed server time the app measures offline time from (trusted clock).
+    return Response({"status": "ok", "server_time": timezone.now().isoformat(), "clock_anchor": issue_anchor()})
 
 
 @extend_schema(exclude=True)

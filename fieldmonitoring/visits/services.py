@@ -11,7 +11,8 @@ from PIL import Image, UnidentifiedImageError
 
 from authorization.models import SPECIALIST_ROLES
 from fieldmonitoring.compliance import rules
-from fieldmonitoring.core import clock
+from fieldmonitoring.core import clock, trusted_clock
+from fieldmonitoring.core.trusted_clock import TimeSource
 from fieldmonitoring.core.models import ProgrammeConfig
 from fieldmonitoring.registry.models import ProvisionalCoordinate, Worksite
 
@@ -151,6 +152,8 @@ class CheckIn:
     is_mock_location: bool
     idempotency_key: str
     client_captured_at: datetime | None = None
+    # Trusted-clock evidence from a phone that recorded the arrival offline (core/trusted_clock.py).
+    clock: dict | None = None
 
 
 def check_in(user, data: CheckIn) -> tuple[Visit, bool]:
@@ -187,11 +190,17 @@ def _check_in(user, data: CheckIn) -> Visit:
         tolerance_m=worksite.tolerance_m,
         max_accuracy_m=config.max_accuracy_m,
     )
+    when = trusted_clock.resolve(data.clock, max_age=timedelta(hours=config.max_offline_hours))
+    if when.source == TimeSource.UNPROVEN and not reason:
+        reason = UnverifiedReason.TIME_UNPROVEN
 
     visit = Visit(
         user=user,
         worksite=worksite,
-        checked_in_at=clock.now(),  # server time at receipt; any client time is ignored
+        # The server's receipt time, or the time proven by the trusted clock. Never the phone's own clock.
+        checked_in_at=when.at,
+        checkin_received_at=when.received_at,
+        checkin_time_source=when.source,
         checkin_location=point,
         checkin_accuracy_m=round(data.accuracy_m) if data.accuracy_m is not None else None,
         checkin_distance_m=round(distance) if distance is not None else None,
@@ -310,19 +319,23 @@ def submit_status(
 
 
 @transaction.atomic
-def check_out(visit: Visit, *, idempotency_key: str, lat=None, lng=None, accuracy_m=None) -> Visit:
+def check_out(visit: Visit, *, idempotency_key: str, lat=None, lng=None, accuracy_m=None, clock=None) -> Visit:
     visit = Visit.objects.select_for_update().get(pk=visit.pk)
     if visit.checked_out_at is not None:
         return visit  # a retry; the first check-out stands
     if visit.auto_closed or visit.state not in (VisitState.IN_PROGRESS, VisitState.UNVERIFIED):
         raise VisitError("visit_closed")
-    now = clock.now()
-    visit.checked_out_at = now
-    visit.time_on_site_s = int((now - visit.checked_in_at).total_seconds())
+    config = ProgrammeConfig.get()
+    when = trusted_clock.resolve(clock, max_age=timedelta(hours=config.max_offline_hours))
+    unproven = when.source == TimeSource.UNPROVEN or when.at < visit.checked_in_at
+    visit.checked_out_at = when.received_at if unproven else when.at
+    visit.checkout_received_at = when.received_at
+    visit.checkout_time_source = TimeSource.UNPROVEN if unproven else when.source
+    visit.time_on_site_s = max(0, int((visit.checked_out_at - visit.checked_in_at).total_seconds()))
     visit.checkout_location = make_point(lat, lng)
     visit.checkout_accuracy_m = round(accuracy_m) if accuracy_m is not None else None
     visit.checkout_idempotency_key = idempotency_key
-    return apply(visit, Event.CHECK_OUT)
+    return apply(visit, Event.CHECK_OUT, time_unproven=unproven)
 
 
 def submit_reason(visit: Visit, *, code: str, note: str | None) -> Visit:

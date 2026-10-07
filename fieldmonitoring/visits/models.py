@@ -5,6 +5,7 @@ from django.contrib.gis.db import models
 from django.db.models import Q
 
 from fieldmonitoring.core.models import UUIDModel
+from fieldmonitoring.core.trusted_clock import TimeSource
 
 
 class VisitState(models.TextChoices):
@@ -23,6 +24,8 @@ class UnverifiedReason(models.TextChoices):
     NO_COORDINATE = "no_coordinate", "Worksite has no coordinate"
     # Extension: checked out, but the queued arrival photo never reached the server.
     NO_PHOTO = "no_photo", "Arrival photo not received"
+    # Recorded offline and the phone could not prove when (trusted clock, merge plan Q8).
+    TIME_UNPROVEN = "time_unproven", "Offline time could not be proven"
 
 
 class FieldReasonCode(models.TextChoices):
@@ -68,9 +71,15 @@ class Visit(UUIDModel):
     unverified_reason = models.CharField(
         max_length=32, choices=UnverifiedReason.choices, null=True, blank=True
     )
-    # Server time only (CLAUDE.md non-negotiable 2).
+    # When it happened, by the server's clock: the receipt time, or for a visit recorded offline
+    # the time proven by the trusted clock (fieldmonitoring/core/trusted_clock.py). Never the
+    # phone's wall clock (CLAUDE.md non-negotiable 2).
     checked_in_at = models.DateTimeField(db_index=True)
     checked_out_at = models.DateTimeField(null=True, blank=True)
+    checkin_received_at = models.DateTimeField(null=True, blank=True)
+    checkout_received_at = models.DateTimeField(null=True, blank=True)
+    checkin_time_source = models.CharField(max_length=16, choices=TimeSource.choices, default=TimeSource.SERVER)
+    checkout_time_source = models.CharField(max_length=16, choices=TimeSource.choices, null=True, blank=True)
     time_on_site_s = models.PositiveIntegerField(null=True, blank=True)
     checkin_location = models.PointField(geography=True, srid=4326, null=True, blank=True)
     checkin_accuracy_m = models.PositiveIntegerField(null=True, blank=True)

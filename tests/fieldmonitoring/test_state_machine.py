@@ -17,6 +17,8 @@ TABLE = {
     (None, E.CHECK_IN_FAILED, ()): (S.UNVERIFIED, R.LOCATION_FAILED),
     (S.IN_PROGRESS, E.CHECK_OUT, ("photo",)): (S.VERIFIED, None),
     (S.IN_PROGRESS, E.CHECK_OUT, ()): (S.IN_PROGRESS, None),
+    (S.IN_PROGRESS, E.CHECK_OUT, ("unproven",)): (S.UNVERIFIED, R.TIME_UNPROVEN),
+    (S.IN_PROGRESS, E.CHECK_OUT, ("photo", "unproven")): (S.UNVERIFIED, R.TIME_UNPROVEN),
     (S.IN_PROGRESS, E.PHOTO_ATTACHED, ("out",)): (S.VERIFIED, None),
     (S.IN_PROGRESS, E.PHOTO_ATTACHED, ()): (S.IN_PROGRESS, None),
     (S.IN_PROGRESS, E.AUTO_CLOSE, ()): (S.UNVERIFIED, R.NO_CHECKOUT),
@@ -39,6 +41,7 @@ def run(state, event, guards=()):
         has_photo="photo" in guards,
         checked_out="out" in guards,
         current_reason=R.LOCATION_FAILED if state == S.UNVERIFIED else None,
+        time_unproven="unproven" in guards,
     )
 
 
