@@ -288,12 +288,24 @@ def _check_rotation(visit: Visit, config: ProgrammeConfig):
 # --- Status, check-out, reason (Stories 2.5, 2.6, 2.8) -------------------------------
 
 
-def submit_status(visit: Visit, *, works_progress: str, issue_reported: bool, note: str | None = None):
+def submit_status(
+    visit: Visit,
+    *,
+    works_progress: str,
+    issue_reported: bool,
+    issue_description: str | None = None,
+    note: str | None = None,
+):
     if visit.checked_out_at or visit.auto_closed:
         raise VisitError("visit_closed")
     VisitStatus.objects.update_or_create(
         visit=visit,
-        defaults={"works_progress": works_progress, "issue_reported": issue_reported, "note": note},
+        defaults={
+            "works_progress": works_progress,
+            "issue_reported": issue_reported,
+            "issue_description": issue_description if issue_reported else None,
+            "note": note,
+        },
     )
 
 

@@ -122,6 +122,11 @@ class Visit(UUIDModel):
         return self.state == VisitState.UNVERIFIED and self.resolved_by_id is None
 
 
+def is_short_visit(visit, threshold_s: int) -> bool:
+    """Checked out, with less than ``threshold_s`` seconds on site. Auto-closed visits have no time on site."""
+    return visit.checked_out_at is not None and visit.time_on_site_s is not None and visit.time_on_site_s < threshold_s
+
+
 class WorksProgress(models.TextChoices):
     ON_SCHEDULE = "on_schedule", "On schedule"
     MINOR_DELAY = "minor_delay", "Minor delay"
@@ -136,6 +141,9 @@ class VisitStatus(models.Model):
     # Any problem at the worksite since the last visit. Not a grievance channel:
     # grievances are handled outside this app.
     issue_reported = models.BooleanField()
+    # What the problem is, when one is reported. Required by the app from build 13; optional here so
+    # older builds, which never send it, keep working.
+    issue_description = models.TextField(null=True, blank=True)
     note = models.TextField(null=True, blank=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
 

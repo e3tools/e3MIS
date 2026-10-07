@@ -3,7 +3,9 @@ from rest_framework import serializers
 from fieldmonitoring.accounts.serializers import UserSummarySerializer
 from fieldmonitoring.registry.serializers import VillageSerializer
 
-from .models import FieldReasonCode, Visit, VisitEvent, VisitFlag, VisitStatus, WorksProgress
+from fieldmonitoring.core.models import ProgrammeConfig
+
+from .models import FieldReasonCode, Visit, VisitEvent, VisitFlag, VisitStatus, WorksProgress, is_short_visit
 
 QUEUED_GAP_S = 3600
 
@@ -39,7 +41,7 @@ class VisitStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VisitStatus
-        fields = ("works_progress", "issue_reported", "grievance_raised", "note", "submitted_at")
+        fields = ("works_progress", "issue_reported", "issue_description", "grievance_raised", "note", "submitted_at")
         read_only_fields = ("submitted_at",)
 
     def validate(self, attrs):
@@ -48,6 +50,8 @@ class VisitStatusSerializer(serializers.ModelSerializer):
             if legacy is None:
                 raise serializers.ValidationError({"issue_reported": "This field is required."})
             attrs["issue_reported"] = legacy
+        description = (attrs.get("issue_description") or "").strip()
+        attrs["issue_description"] = description if attrs["issue_reported"] and description else None
         return attrs
 
 
@@ -103,6 +107,7 @@ class VisitSerializer(serializers.ModelSerializer):
     needs_reason = serializers.SerializerMethodField()
     resolved_by = serializers.CharField(source="resolved_by.full_name", default=None)
     queued_submission = serializers.SerializerMethodField()
+    short_visit = serializers.SerializerMethodField()
 
     class Meta:
         model = Visit
@@ -111,7 +116,7 @@ class VisitSerializer(serializers.ModelSerializer):
             "checked_out_at", "time_on_site_s", "checkin", "checkout", "is_mock_location",
             "has_photo", "auto_closed", "status", "flags", "field_reason_code", "field_reason",
             "field_reason_at", "awaiting_review", "needs_reason", "resolved_by", "resolved_at",
-            "resolution_note", "client_captured_at", "queued_submission",
+            "resolution_note", "client_captured_at", "queued_submission", "short_visit",
         )
 
     def get_checkin(self, obj) -> dict:
@@ -135,6 +140,18 @@ class VisitSerializer(serializers.ModelSerializer):
         if not obj.client_captured_at:
             return False
         return abs((obj.checked_in_at - obj.client_captured_at).total_seconds()) > QUEUED_GAP_S
+
+    def get_short_visit(self, obj) -> bool:
+        """Checked out after less than the configured minutes on site: a warning, never a state change."""
+        return is_short_visit(obj, self._short_visit_s())
+
+    def _short_visit_s(self) -> int:
+        if not hasattr(self, "_short_s"):
+            root = self.root if self.root is not None else self
+            if not hasattr(root, "_short_s"):
+                root._short_s = ProgrammeConfig.get().short_visit_minutes * 60
+            self._short_s = root._short_s
+        return self._short_s
 
 
 class VisitDetailSerializer(VisitSerializer):

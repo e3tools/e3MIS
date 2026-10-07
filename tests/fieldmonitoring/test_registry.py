@@ -71,6 +71,23 @@ def test_story_2_2_not_listed_creates_provisional_worksite(regional, village, cl
     assert body["is_provisional"] and not body["has_coordinate"]
 
 
+def test_story_2_2_provisional_worksite_village_must_be_in_scope(ft, levels, other_commune, client_for):
+    # The app only offers villages in the agent's commune; the server enforces the same rule.
+    elsewhere = AdministrativeUnit.objects.create(name="Lakota", level=levels["village"], parent=other_commune)
+    response = client_for(ft).post(
+        "/api/v1/worksites/provisional/", {"name": "Puits", "village_id": str(elsewhere.id)}, format="json"
+    )
+    assert response.status_code == 400
+    assert not Worksite.objects.filter(name="Puits").exists()
+
+
+def test_story_2_2_provisional_worksite_in_own_commune_is_accepted(ft, village, client_for):
+    response = client_for(ft).post(
+        "/api/v1/worksites/provisional/", {"name": "Puits", "village_id": str(village.id)}, format="json"
+    )
+    assert response.status_code == 201
+
+
 def test_br15_high_risk_needs_rdp_approval(national, rdp, worksite, client_for):
     proposal = client_for(national).post(
         f"/api/v1/worksites/{worksite.id}/high-risk/",

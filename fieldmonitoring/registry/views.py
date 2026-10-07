@@ -151,6 +151,15 @@ class NearbyWorksitesView(APIView):
         return Response(NearbyWorksiteSerializer(items, many=True).data)
 
 
+def villages_in_scope(user):
+    """The villages a user may pick: their region for regional specialists, else their commune."""
+    if user.role == Role.REGIONAL_SPECIALIST and user.region_id:
+        return villages_under(user.region)
+    if user.commune_id:
+        return villages_under(user.commune)
+    return AdministrativeUnit.objects.none()
+
+
 class VillagesView(APIView):
     """Villages in the user's scope, for 'not listed — add a worksite'."""
 
@@ -158,13 +167,7 @@ class VillagesView(APIView):
 
     @extend_schema(responses=VillageSerializer(many=True))
     def get(self, request):
-        user = request.user
-        if user.role == Role.REGIONAL_SPECIALIST and user.region_id:
-            villages = villages_under(user.region)
-        elif user.commune_id:
-            villages = villages_under(user.commune)
-        else:
-            villages = AdministrativeUnit.objects.none()
+        villages = villages_in_scope(request.user)
         return Response(VillageSerializer(villages.order_by("name"), many=True).data)
 
 
@@ -178,6 +181,8 @@ class ProvisionalWorksiteView(APIView):
         data = ProvisionalWorksiteSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         village = get_object_or_404(AdministrativeUnit, pk=data.validated_data["village_id"])
+        if not villages_in_scope(request.user).filter(pk=village.pk).exists():
+            return Response({"detail": "village_out_of_scope"}, status=status.HTTP_400_BAD_REQUEST)
         worksite = Worksite.objects.create(
             name=data.validated_data["name"],
             village=village,

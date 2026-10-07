@@ -134,6 +134,18 @@ def test_story_5_3_team_view_shows_paused_people(sc, ft, fc, client_for):
     assert body["thresholds"] == {"fc": 10, "ft": 10}
 
 
+def test_story_5_3_team_row_counts_short_visits(sc, ft, worksite, check_in, client_for):
+    for day, minutes in ((22, 2), (23, 3), (24, 40)):
+        with time_machine.travel(utc(2026, 9, day, 8, 0), tick=False):
+            visit_id = check_in(ft, worksite).json()["id"]
+        with time_machine.travel(utc(2026, 9, day, 8, minutes), tick=False):
+            client_for(ft).post(f"/api/v1/visits/{visit_id}/check-out/", {"idempotency_key": visit_id}, format="json")
+    with time_machine.travel(utc(2026, 9, 28, 9), tick=False):
+        body = client_for(sc).get("/api/v1/team/presence/").json()
+    row = next(r for r in body["rows"] if r["full_name"] == ft.full_name)
+    assert row["short_visits_4w"] == 2
+
+
 # --- BR-14 / Story 5.4 / 5.5 ----------------------------------------------------------------
 
 

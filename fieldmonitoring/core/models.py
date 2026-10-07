@@ -39,6 +39,9 @@ class ProgrammeConfig(models.Model):
     photo_hash_max_distance = models.PositiveSmallIntegerField(default=6)
     national_at_risk_working_days = models.PositiveSmallIntegerField(default=10)
     capture_token_ttl_minutes = models.PositiveIntegerField(default=15)
+    # Verified visits shorter than this are flagged to the supervisor as possible drive-bys. A
+    # warning only: the visit stays verified (non-negotiable 5).
+    short_visit_minutes = models.PositiveIntegerField(default=5)
     # Which administrative levels play the field monitoring roles. Left empty, the tree position
     # is used: a worksite's unit is the village, its parent the commune, the next one the region.
     region_level = models.ForeignKey(

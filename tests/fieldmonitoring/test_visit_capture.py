@@ -214,3 +214,52 @@ def test_story_2_5_issue_reported_is_required(ft, worksite, check_in, client_for
         f"/api/v1/visits/{visit_id}/status/", {"works_progress": "on_schedule"}, format="json"
     )
     assert response.status_code == 400
+
+
+def test_story_2_5_issue_description_saved_and_returned(ft, worksite, check_in, client_for):
+    visit_id = check_in(ft, worksite).json()["id"]
+    body = client_for(ft).post(
+        f"/api/v1/visits/{visit_id}/status/",
+        {"works_progress": "stopped", "issue_reported": True, "issue_description": "  Fissure dans le mur nord  "},
+        format="json",
+    ).json()
+    assert body["issue_description"] == "Fissure dans le mur nord"
+    detail = client_for(ft).get(f"/api/v1/visits/{visit_id}/").json()
+    assert detail["status"]["issue_description"] == "Fissure dans le mur nord"
+
+
+def test_story_2_5_status_without_description_still_accepted(ft, worksite, check_in, client_for):
+    # App builds up to 12 never send it, and the retry queue drops ops that get a 4xx.
+    visit_id = check_in(ft, worksite).json()["id"]
+    response = client_for(ft).post(
+        f"/api/v1/visits/{visit_id}/status/", {"works_progress": "on_schedule", "issue_reported": True}, format="json"
+    )
+    assert response.status_code == 200
+    assert response.json()["issue_description"] is None
+
+
+def test_story_2_5_description_dropped_when_no_issue(ft, worksite, check_in, client_for):
+    visit_id = check_in(ft, worksite).json()["id"]
+    body = client_for(ft).post(
+        f"/api/v1/visits/{visit_id}/status/",
+        {"works_progress": "on_schedule", "issue_reported": False, "issue_description": "leftover text"},
+        format="json",
+    ).json()
+    assert body["issue_description"] is None
+
+
+@pytest.mark.parametrize("minutes, short", [(4, True), (5, False), (49, False)])
+def test_short_visit_flag_below_threshold(ft, worksite, check_in, client_for, minutes, short):
+    # A warning only (non-negotiable 5): the visit stays verified either way.
+    with time_machine.travel(utc(2026, 9, 28, 8, 0), tick=False):
+        visit_id = check_in(ft, worksite).json()["id"]
+    with time_machine.travel(utc(2026, 9, 28, 8, minutes), tick=False):
+        body = client_for(ft).post(
+            f"/api/v1/visits/{visit_id}/check-out/", {"idempotency_key": f"o-{minutes}"}, format="json"
+        ).json()
+    assert body["state"] == "verified"
+    assert body["short_visit"] is short
+
+
+def test_short_visit_not_flagged_while_in_progress(ft, worksite, check_in):
+    assert check_in(ft, worksite).json()["short_visit"] is False

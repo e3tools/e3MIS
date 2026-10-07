@@ -116,6 +116,12 @@ def team_row(user: User, today: date, config, thresholds) -> dict:
             user=user, state=VisitState.VERIFIED, checked_in_at__gte=lo, time_on_site_s__isnull=False
         ).values_list("time_on_site_s", flat=True)
     )
+    # Verified visits checked out after only a few minutes: flagged to the SC, never changed.
+    short_s = config.short_visit_minutes * 60
+    short_visits = Visit.objects.filter(
+        user=user, state=VisitState.VERIFIED, checked_in_at__gte=lo, checked_out_at__isnull=False,
+        time_on_site_s__lt=short_s,
+    ).count()
     awaiting = Visit.objects.filter(
         user=user, state=VisitState.UNVERIFIED, resolved_by__isnull=True
     ).count()
@@ -135,6 +141,7 @@ def team_row(user: User, today: date, config, thresholds) -> dict:
         "worksites_visited": visited,
         "worksites_assigned": assigned,
         "median_time_on_site_s": int(statistics.median(durations)) if durations else None,
+        "short_visits_4w": short_visits,
         "awaiting_review": awaiting,
         "status": status,
     }
