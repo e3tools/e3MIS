@@ -153,3 +153,29 @@ def test_client_wall_clock_is_still_ignored(ft, worksite, check_in):
         body = check_in(ft, worksite, checked_in_at="2026-10-07T06:00:00Z").json()
     assert body["checked_in_at"].startswith("2026-10-07T17:00")
     assert body["checkin_time_source"] == "server"
+
+
+def test_queued_without_evidence_is_unproven_not_dated_at_receipt(ft, worksite, check_in):
+    # A phone with no anchor yet (or an older build) queued the check-in at 09:00; it arrives at 17:00.
+    with time_machine.travel(utc(2026, 10, 7, 17), tick=False):
+        body = check_in(ft, worksite, client_captured_at="2026-10-07T09:00:00Z").json()
+    assert body["state"] == "unverified" and body["unverified_reason"] == "time_unproven"
+    assert body["checkin_time_source"] == "unproven"
+
+
+def test_online_check_in_with_capture_time_is_server_time(ft, worksite, check_in):
+    with time_machine.travel(utc(2026, 10, 7, 17), tick=False):
+        body = check_in(ft, worksite, client_captured_at="2026-10-07T16:59:30Z").json()
+    assert body["checkin_time_source"] == "server" and body["state"] == "in_progress"
+
+
+def test_queued_check_out_without_evidence_goes_to_review(ft, worksite, check_in, client_for):
+    with time_machine.travel(utc(2026, 10, 7, 9), tick=False):
+        visit_id = check_in(ft, worksite).json()["id"]
+    with time_machine.travel(utc(2026, 10, 7, 17), tick=False):
+        body = client_for(ft).post(
+            f"/api/v1/visits/{visit_id}/check-out/",
+            {"idempotency_key": "out", "client_captured_at": "2026-10-07T09:40:00Z"},
+            format="json",
+        ).json()
+    assert body["unverified_reason"] == "time_unproven"

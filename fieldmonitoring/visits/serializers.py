@@ -42,6 +42,8 @@ class CheckOutSerializer(serializers.Serializer):
     accuracy_m = serializers.FloatField(required=False, allow_null=True, min_value=0)
     idempotency_key = serializers.CharField(max_length=64)
     clock = ClockEvidenceSerializer(required=False, allow_null=True)
+    # The phone's note of when it queued the check-out: a signal only, never a time.
+    client_captured_at = serializers.DateTimeField(required=False, allow_null=True)
 
 
 class VisitStatusSerializer(serializers.ModelSerializer):

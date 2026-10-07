@@ -35,7 +35,10 @@ Non-negotiables (from the spec; they govern visits, not MIS forms):
 1. A failed check is never automatically `missed`: it is `unverified` and goes to a human. Every
    state change goes through `fieldmonitoring/visits/state_machine.py` (`apply()`), and a DB
    constraint enforces it.
-2. Server time only; never store or compare device time.
+2. Server time only; never store or compare device time. Visits recorded offline are dated by the
+   trusted clock (`fieldmonitoring/core/trusted_clock.py`): a server-signed anchor from `/health/`
+   plus the phone's monotonic uptime, never its wall clock. Anything unprovable keeps the receipt
+   time and goes to review (`time_unproven`). `Visit.check{in,out}_time_source` records which.
 3. The worksite is the unit; villages are labels.
 4. Check-out is mandatory.
 5. The tool warns, it does not enforce: no acknowledgement, escalation or action tracking.

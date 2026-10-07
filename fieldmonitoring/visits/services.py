@@ -190,7 +190,9 @@ def _check_in(user, data: CheckIn) -> Visit:
         tolerance_m=worksite.tolerance_m,
         max_accuracy_m=config.max_accuracy_m,
     )
-    when = trusted_clock.resolve(data.clock, max_age=timedelta(hours=config.max_offline_hours))
+    when = trusted_clock.resolve(
+        data.clock, max_age=timedelta(hours=config.max_offline_hours), queued_at=data.client_captured_at
+    )
     if when.source == TimeSource.UNPROVEN and not reason:
         reason = UnverifiedReason.TIME_UNPROVEN
 
@@ -319,14 +321,18 @@ def submit_status(
 
 
 @transaction.atomic
-def check_out(visit: Visit, *, idempotency_key: str, lat=None, lng=None, accuracy_m=None, clock=None) -> Visit:
+def check_out(
+    visit: Visit, *, idempotency_key: str, lat=None, lng=None, accuracy_m=None, clock=None, client_captured_at=None
+) -> Visit:
     visit = Visit.objects.select_for_update().get(pk=visit.pk)
     if visit.checked_out_at is not None:
         return visit  # a retry; the first check-out stands
     if visit.auto_closed or visit.state not in (VisitState.IN_PROGRESS, VisitState.UNVERIFIED):
         raise VisitError("visit_closed")
     config = ProgrammeConfig.get()
-    when = trusted_clock.resolve(clock, max_age=timedelta(hours=config.max_offline_hours))
+    when = trusted_clock.resolve(
+        clock, max_age=timedelta(hours=config.max_offline_hours), queued_at=client_captured_at
+    )
     unproven = when.source == TimeSource.UNPROVEN or when.at < visit.checked_in_at
     visit.checked_out_at = when.received_at if unproven else when.at
     visit.checkout_received_at = when.received_at

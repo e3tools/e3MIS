@@ -52,10 +52,18 @@ class EventTime:
     source: str
 
 
-def resolve(evidence: dict | None, *, max_age: timedelta) -> EventTime:
-    """The time of an event from the phone's clock evidence, or the receipt time."""
+def resolve(evidence: dict | None, *, max_age: timedelta, queued_at: datetime | None = None) -> EventTime:
+    """The time of an event from the phone's clock evidence, or the receipt time.
+
+    ``queued_at`` is the phone's own note of when it queued the request. It is never used as a
+    time (non-negotiable 2), only as a signal: a request that waited on the phone but carries no
+    evidence (no anchor yet, or an app build without the trusted clock) cannot be dated, so it is
+    unproven and goes to review rather than being taken as happening at receipt.
+    """
     received = clock.now()
     if not evidence:
+        if queued_at is not None and received - queued_at > ONLINE_GAP:
+            return EventTime(received, received, TimeSource.UNPROVEN)
         return EventTime(received, received, TimeSource.SERVER)
     derived = _derive(evidence, max_age=max_age)
     if derived is None or derived > received + FUTURE_SLACK:
