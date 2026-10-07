@@ -23,6 +23,9 @@ class ProgrammeConfig(models.Model):
     timezone = models.CharField(max_length=64, default=settings.PROGRAMME_TIMEZONE_DEFAULT)
     working_days = models.JSONField(default=default_working_days)
     default_tolerance_m = models.PositiveIntegerField(default=100)
+    # Check-in radius by village zone (AdministrativeUnit.zone); default_tolerance_m when unknown.
+    urban_tolerance_m = models.PositiveIntegerField(default=50)
+    rural_tolerance_m = models.PositiveIntegerField(default=100)
     max_accuracy_m = models.PositiveIntegerField(default=100)
     auto_close_time = models.TimeField(default=time(20, 0))
     # Visits checked in less than this long before the auto-close time are left
@@ -78,6 +81,15 @@ class ProgrammeConfig(models.Model):
     @property
     def tz(self) -> ZoneInfo:
         return ZoneInfo(self.timezone)
+
+    def tolerance_for(self, village) -> int:
+        """Check-in radius for a new worksite in ``village``: 50 m urban, 100 m rural by default."""
+        zone = getattr(village, "zone", "")
+        if zone == "urban":
+            return self.urban_tolerance_m
+        if zone == "rural":
+            return self.rural_tolerance_m
+        return self.default_tolerance_m
 
 
 class ConfigChange(UUIDModel):

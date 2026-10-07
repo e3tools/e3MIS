@@ -26,7 +26,7 @@ from rest_framework.views import APIView
 
 from administrativelevels.models import AdministrativeUnit
 from subprojects.models import Attachment
-from trackableobjects import visibility
+from trackableobjects import lifecycle, visibility
 from trackableobjects.models import (
     FollowUpEvent,
     FollowUpEventDependency,
@@ -65,6 +65,7 @@ def _record(instance, user, attachments) -> dict:
         "trackable_object_id": instance.trackable_object_id,
         "identifier": str(instance.identifier),
         "answers": instance.jsonForm if isinstance(instance.jsonForm, dict) else {},
+        "stage": instance.stage,
         "version": instance.version,
         "schema_version": instance.schema_version,
         "created_by_me": instance.created_by_id == user.id,
@@ -163,6 +164,8 @@ class SyncView(APIView):
                     "schema": t.jsonForm,
                     "schema_version": t.schema_version,
                     "can_create": t.id in listed_tos and fillable(t),
+                    "stages": t.stages or [],
+                    "creates_worksite": t.creates_worksite,
                     "updated_at": t.updated_at,
                 }
                 for t in trackable_objects
@@ -178,6 +181,8 @@ class SyncView(APIView):
                     "trackable_object_ids": links.get(e.id, []),
                     "standalone": not links.get(e.id),
                     "depends_on": parents.get(e.id, []),
+                    "stages": e.stages or [],
+                    "stage_rules": e.stage_rules or [],
                     "schema": e.jsonForm,
                     "schema_version": e.schema_version,
                     "can_fill": fillable(e),
@@ -309,6 +314,7 @@ class PushView(APIView):
             )
         except (IntegrityError, ValueError):
             raise ItemError("invalid", errors={"client_uuid": ["Not a valid UUID."]}) from None
+        lifecycle.on_record_created(instance, user)
         return _done("created", instance, item)
 
     # responses
@@ -344,6 +350,9 @@ class PushView(APIView):
             )
         except (IntegrityError, ValueError):
             raise ItemError("invalid", errors={"client_uuid": ["Not a valid UUID."]}) from None
+        # Never rejected for the stage (answers made offline may arrive late); the stage only moves
+        # when the event was open in it.
+        lifecycle.apply_response(response, user)
         return _done("created", response, item)
 
     # updates
@@ -380,6 +389,10 @@ class PushView(APIView):
             raise ItemError("conflict", reason="stale", server=server_copy())
         target.jsonForm = answers
         target.save()
+        if model is TrackableObjectInstance:
+            lifecycle.on_record_updated(target, user)
+        else:
+            lifecycle.apply_response(target, user)
         return _done("updated", target, item)
 
 

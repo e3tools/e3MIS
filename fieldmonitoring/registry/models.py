@@ -72,7 +72,7 @@ class Worksite(UUIDModel):
         from fieldmonitoring.core.models import ProgrammeConfig
 
         if self.tolerance_m is None:
-            self.tolerance_m = ProgrammeConfig.get().default_tolerance_m
+            self.tolerance_m = ProgrammeConfig.get().tolerance_for(self.village if self.village_id else None)
         if self.village_id and not self.commune_id:
             from fieldmonitoring.core.geography import commune_of, region_of
 

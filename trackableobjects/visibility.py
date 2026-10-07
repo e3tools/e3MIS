@@ -11,7 +11,8 @@ the two can never disagree. The rules are the ones the mobile screens already ap
   units, or one of its units is among the user's units, their ancestors or descendants. A field
   agent also always sees the records they created.
 - A follow-up event is available on a record when it is linked to the record's trackable object,
-  is listed to the user, and every event it depends on has a response for that record.
+  is listed to the user, every event it depends on has a response for that record, and it is open
+  in the record's lifecycle stage (``lifecycle.py``; record types without stages skip this).
 """
 from django.db.models import Exists, OuterRef, Q, Subquery
 
@@ -86,14 +87,16 @@ def available_follow_up_events(user, instance):
             FollowUpEventResponse.objects.filter(trackable_object_instance=instance).values("follow_up_event_id")
         )
     )
-    return (
+    events = (
         listed_follow_up_events(user)
         .filter(trackable_objects=instance.trackable_object)
         .annotate(has_unfulfilled_deps=Exists(unfulfilled))
         .filter(has_unfulfilled_deps=False)
-        .distinct()
-        .order_by("order", "name")
     )
+    if instance.trackable_object.stages:
+        # Lifecycle (lifecycle.py): only the events open in the record's current stage.
+        events = events.filter(Q(stages=[]) | Q(stages__contains=[instance.stage]))
+    return events.distinct().order_by("order", "name")
 
 
 def unmet_dependencies(event, instance) -> list[int]:

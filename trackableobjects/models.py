@@ -121,6 +121,12 @@ class TrackableObject(VersionedSchemaMixin, models.Model):
     groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="trackable_objects",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
+    # Lifecycle (lifecycle.py): ordered stages a record goes through, e.g.
+    # [{"key": "works", "label": "Travaux"}, …]. The first one is where new records start.
+    # Empty: no lifecycle, every linked follow-up event is always available.
+    stages = models.JSONField(default=list, blank=True)
+    # A record of this type is a worksite for visits (lifecycle.create_worksite).
+    creates_worksite = models.BooleanField(default=False)
 
     @property
     def color_tint(self):
@@ -153,6 +159,11 @@ class FollowUpEvent(VersionedSchemaMixin, models.Model):
     groups = models.ManyToManyField(Group, verbose_name=_('Groups'), related_name="follow_up_events",
                                     blank=True)
     jsonForm = models.JSONField(help_text="JSON schema + options for the form", default=list)
+    # Record stages in which this event can be filled (keys of TrackableObject.stages). Empty: any.
+    stages = models.JSONField(default=list, blank=True)
+    # How an answer moves the record to another stage, first match wins:
+    # [{"field": "phase", "operator": "equals", "value": "Travaux achevés", "to": "acceptance"}].
+    stage_rules = models.JSONField(default=list, blank=True)
 
     class Meta(VersionedSchemaMixin.Meta):
         abstract = False
@@ -202,6 +213,8 @@ class TrackableObjectInstance(SyncedAnswerMixin, models.Model):
     restrict_by_administrative_units = models.BooleanField(default=True,
                                                            verbose_name=_('Restrict by administrative units'))
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
+    # Current lifecycle stage (a key of trackable_object.stages); blank when the type has none.
+    stage = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
         indexes = [models.Index(fields=["updated_at"])]
@@ -248,3 +261,19 @@ class FollowUpEventResponse(SyncedAnswerMixin, models.Model):
     @property
     def display_id(self):
         return f"{FOLLOW_UP_EVENT_ID_PREFIX}-{self.id}" if self.id else ""
+
+
+class RecordStageChange(models.Model):
+    """Every lifecycle move of a record: by a follow-up answer (``response``) or by a person (reopen)."""
+    instance = models.ForeignKey(TrackableObjectInstance, on_delete=models.CASCADE, related_name="stage_changes")
+    from_stage = models.CharField(max_length=32, blank=True)
+    to_stage = models.CharField(max_length=32)
+    response = models.ForeignKey(FollowUpEventResponse, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name="+")
+    changed_by = models.ForeignKey(AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="+")
+    changed_at = models.DateTimeField(auto_now_add=True)
+    note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-changed_at", "-id"]

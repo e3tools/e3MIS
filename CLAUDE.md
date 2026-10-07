@@ -78,6 +78,17 @@ mobile screens use it too. Answers are re-checked with the MIS parser
 (`field_api/validation.py`): every page, fields hidden by display conditions dropped, files via the
 marker. Unknown answer keys are dropped. `manage.py seed_demo_forms` adds sample forms (idempotent).
 
+Record lifecycle (`trackableobjects/lifecycle.py`, mirrored in the app's `src/lib/forms/lifecycle.ts`):
+`TrackableObject.stages` lists stages, `FollowUpEvent.stages` where an event is open and
+`stage_rules` how an answer moves the record (`RecordStageChange` keeps the history; MIS staff
+"Reopen" on the record page). Push never rejects an answer for its stage (offline answers arrive
+late); a rule only moves the record when the event was open in its stage. `creates_worksite`
+records become a visits worksite (village = first administrative-level answer, GPS = pending
+`ProvisionalCoordinate`, confirmed by an admin or the communal supervisor). `manage.py
+seed_suivi_chantier` creates the COSO sub-project forms (F1 identification, F2 inspection, F3
+provisional handover, F4 post-handover). Village zone (`AdministrativeUnit.zone`, `manage.py
+import_village_zones`) sets the radius: `ProgrammeConfig.urban_tolerance_m` / `rural_tolerance_m`.
+
 ## Domain model
 
 | App | Models |

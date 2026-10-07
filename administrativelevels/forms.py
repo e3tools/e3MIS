@@ -25,7 +25,8 @@ class AdministrativeUnitForm(forms.ModelForm):
 class AdministrativeUnitEditForm(forms.ModelForm):
     class Meta:
         model = AdministrativeUnit
-        fields = ['name']
+        fields = ['name', 'zone']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'zone': forms.Select(attrs={'class': 'form-control'}),
         }

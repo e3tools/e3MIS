@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
@@ -13,7 +14,7 @@ from rest_framework.views import APIView
 
 from administrativelevels.models import AdministrativeUnit
 from authorization.models import Role
-from fieldmonitoring.accounts.permissions import IsAdmin, IsRdpOrAdmin, RecordsVisits, has_role
+from fieldmonitoring.accounts.permissions import IsRdpOrAdmin, RecordsVisits, has_role
 from fieldmonitoring.compliance import rules
 from fieldmonitoring.compliance.services import last_verified_by_worksite, worksite_scope
 from fieldmonitoring.core import clock
@@ -257,15 +258,33 @@ class HighRiskDecideView(APIView):
 # --- Coordinate confirmation (Story 6.4) -----------------------------------------------
 
 
+def coordinate_scope(user):
+    """Worksites whose coordinates a user may confirm: all for an admin; for a communal supervisor,
+    those in their commune or created by their team (sub-project forms, Brice's answer 1)."""
+    if user.role == Role.ADMIN:
+        return Worksite.objects.all()
+    if user.role == Role.SC:
+        mine = Q(created_by__supervisor=user) | Q(created_by=user)
+        if user.commune_id:
+            mine |= Q(commune_id=user.commune_id)
+        return Worksite.objects.filter(mine)
+    return Worksite.objects.none()
+
+
+CanConfirmCoordinates = has_role(Role.ADMIN, Role.SC)
+
+
 class PendingCoordinatesView(APIView):
     """Worksites whose geofence is not live yet. This queue is when verification becomes true."""
 
-    permission_classes = [IsAdmin]
+    permission_classes = [CanConfirmCoordinates]
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         pending = (
-            ProvisionalCoordinate.objects.filter(status=DecisionStatus.PENDING)
+            ProvisionalCoordinate.objects.filter(
+                status=DecisionStatus.PENDING, worksite__in=coordinate_scope(request.user)
+            )
             .select_related("worksite__village", "worksite__commune", "captured_by", "visit")
         )
         groups = {}
@@ -290,7 +309,7 @@ class PendingCoordinatesView(APIView):
             })
         return Response({
             "count": len(result),
-            "worksites_without_coordinate": Worksite.objects.filter(
+            "worksites_without_coordinate": coordinate_scope(request.user).filter(
                 location__isnull=True, status="active"
             ).count(),
             "results": result,
@@ -298,14 +317,17 @@ class PendingCoordinatesView(APIView):
 
 
 class CoordinateDecideView(APIView):
-    permission_classes = [IsAdmin]
+    permission_classes = [CanConfirmCoordinates]
 
     @extend_schema(request=None, responses=WorksiteSerializer)
     @transaction.atomic
     def post(self, request, coordinate_id, decision):
         if decision not in ("confirm", "reject"):
             raise ValidationError("decision must be confirm or reject")
-        coord = get_object_or_404(ProvisionalCoordinate.objects.select_for_update(), pk=coordinate_id)
+        coord = get_object_or_404(
+            ProvisionalCoordinate.objects.select_for_update().filter(worksite__in=coordinate_scope(request.user)),
+            pk=coordinate_id,
+        )
         now = clock.now()
         worksite = coord.worksite
         if decision == "confirm":

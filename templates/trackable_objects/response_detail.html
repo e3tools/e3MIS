@@ -52,6 +52,28 @@
                                 </div>
                             </div>
                         </div>
+                        {% if stage_label %}
+                            <div class="callout callout-info d-flex flex-wrap align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted">{% translate 'Stage' %}:</span>
+                                    <strong>{{ stage_label }}</strong>
+                                    {% for change in stage_changes %}
+                                        <div class="small text-muted">
+                                            {{ change.changed_at|date:"d M, Y - P" }} · {{ change.from_label|default:"—" }} → {{ change.to_label }}
+                                            {% if change.by %}· {{ change.by }}{% endif %}
+                                            {% if change.note %}· {{ change.note }}{% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if can_reopen %}
+                                    <form method="post" action="{% url 'trackableobjects:trackable_object_instance_reopen' object.pk %}" class="form-inline mt-2 mt-md-0">
+                                        {% csrf_token %}
+                                        <input type="text" name="note" class="form-control form-control-sm mr-2" placeholder="{% translate 'Reason' %}" required>
+                                        <button type="submit" class="btn btn-sm btn-warning">{% translate 'Reopen' %}: {{ reopen_label }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                         <form method="post" id="answers-form" enctype="multipart/form-data">
                             {% csrf_token %}
                             <div class="row">
