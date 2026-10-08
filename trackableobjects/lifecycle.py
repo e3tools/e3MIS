@@ -93,13 +93,17 @@ def _move(instance, target, *, user=None, response=None, note=""):
     instance.save(update_fields=["stage", "updated_at"])
 
 
-def on_record_created(instance: TrackableObjectInstance, user) -> None:
-    """Start the lifecycle, and create the worksite when the record type is one."""
+def on_record_created(instance: TrackableObjectInstance, user, worksite_id=None) -> None:
+    """Start the lifecycle, and create (or complete) the worksite when the record type is one.
+
+    ``worksite_id``: the site the agent checked in at when filling the form, e.g. one just added
+    from the field as "not listed". The record then describes that site instead of a new one.
+    """
     if not instance.stage and (first := initial_stage(instance.trackable_object)):
         instance.stage = first
         instance.save(update_fields=["stage"])
     if instance.trackable_object.creates_worksite:
-        create_worksite(instance, user)
+        create_worksite(instance, user, worksite_id=worksite_id)
 
 
 # --- worksites -------------------------------------------------------------------------------
@@ -134,7 +138,37 @@ def _location(value):
     return parts[0], parts[1], (parts[2] if len(parts) > 2 else None)
 
 
-def create_worksite(instance: TrackableObjectInstance, user):
+def _existing_site(instance, user, worksite_id):
+    """The visited site this record should describe: named by the phone or by the linked visit,
+    not yet describing another record, and created by or assigned to the agent."""
+    from fieldmonitoring.registry.models import Worksite
+
+    candidates = []
+    if worksite_id:
+        candidates.append(Worksite.objects.filter(pk=worksite_id).first() if _is_uuid(worksite_id) else None)
+    if instance.visit_id:
+        candidates.append(instance.visit.worksite)
+    for site in candidates:
+        if site is None or site.trackable_object_instance_id is not None:
+            continue
+        if site.created_by_id == getattr(user, "pk", None) or site.assignments.filter(
+            user=user, unassigned_on__isnull=True
+        ).exists():
+            return site
+    return None
+
+
+def _is_uuid(value) -> bool:
+    import uuid
+
+    try:
+        uuid.UUID(str(value))
+    except ValueError:
+        return False
+    return True
+
+
+def create_worksite(instance: TrackableObjectInstance, user, worksite_id=None):
     """The worksite visits attach to, from a record such as a sub-project identification form.
 
     - village: the record's first administrative-level answer (and the record is placed in it);
@@ -143,12 +177,14 @@ def create_worksite(instance: TrackableObjectInstance, user):
       until a supervisor confirms it, so check-ins are unverified until then (BR-9), never missed;
     - the agent who filled the form is assigned to it.
 
+    When the agent filled the form at a site that has no record yet (checked in at a site added
+    from the field), that site is completed instead of creating another one.
+
     Returns None when the record names no village. Idempotent.
     """
     from administrativelevels.models import AdministrativeUnit
     from fieldmonitoring.core import clock
-    from fieldmonitoring.registry.models import ProvisionalCoordinate, Worksite, WorksiteAssignment
-    from fieldmonitoring.visits.services import make_point
+    from fieldmonitoring.registry.models import Worksite, WorksiteAssignment
 
     if existing := Worksite.objects.filter(trackable_object_instance=instance).first():
         return existing
@@ -156,10 +192,25 @@ def create_worksite(instance: TrackableObjectInstance, user):
         village = AdministrativeUnit.objects.filter(pk=int(_first_answer(instance, "administrative_level"))).first()
     except (TypeError, ValueError):
         village = None
+    name = str(instance.identifier)[:200]
+    if site := _existing_site(instance, user, worksite_id):
+        # The agent checked in at this site and identified it: the form completes it.
+        site.trackable_object_instance = instance
+        site.name = name
+        if village is not None and site.location is None and village.pk != site.village_id:
+            from fieldmonitoring.core.geography import commune_of, region_of
+            from fieldmonitoring.core.models import ProgrammeConfig
+
+            site.village, site.commune, site.region = village, commune_of(village), region_of(village)
+            site.tolerance_m = ProgrammeConfig.get().tolerance_for(village)
+        site.save()
+        instance.administrative_units.add(site.village)
+        if site.location is None:
+            _pending_coordinate(instance, site, user)
+        return site
     if village is None:
         return None
     instance.administrative_units.add(village)
-    name = str(instance.identifier)[:200]
     worksite = Worksite.objects.create(
         name=name,
         code=f"{instance.display_id}",
@@ -168,6 +219,16 @@ def create_worksite(instance: TrackableObjectInstance, user):
         created_by=user,
         trackable_object_instance=instance,
     )
+    _pending_coordinate(instance, worksite, user)
+    if user is not None and getattr(user, "records_visits", False):
+        WorksiteAssignment.objects.create(user=user, worksite=worksite, assigned_on=clock.today())
+    return worksite
+
+
+def _pending_coordinate(instance, worksite, user):
+    from fieldmonitoring.registry.models import ProvisionalCoordinate
+    from fieldmonitoring.visits.services import make_point
+
     if (where := _location(_first_answer(instance, "geolocation"))) and user is not None:
         lat, lng, accuracy = where
         ProvisionalCoordinate.objects.create(
@@ -175,10 +236,8 @@ def create_worksite(instance: TrackableObjectInstance, user):
             location=make_point(lat, lng),
             accuracy_m=round(accuracy) if accuracy is not None else None,
             captured_by=user,
+            visit=instance.visit,
         )
-    if user is not None and getattr(user, "records_visits", False):
-        WorksiteAssignment.objects.create(user=user, worksite=worksite, assigned_on=clock.today())
-    return worksite
 
 
 def on_record_updated(instance: TrackableObjectInstance, user) -> None:

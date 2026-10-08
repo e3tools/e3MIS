@@ -12,6 +12,7 @@ from PIL import Image, UnidentifiedImageError
 from authorization.models import SPECIALIST_ROLES
 from fieldmonitoring.compliance import rules
 from fieldmonitoring.core import clock, trusted_clock
+from fieldmonitoring.core import clock as clock_module  # check_out's ``clock`` argument shadows it
 from fieldmonitoring.core.trusted_clock import TimeSource
 from fieldmonitoring.core.models import ProgrammeConfig
 from fieldmonitoring.registry.models import ProvisionalCoordinate, Worksite
@@ -19,6 +20,7 @@ from fieldmonitoring.registry.models import ProvisionalCoordinate, Worksite
 from . import photos
 from .models import (
     CaptureToken,
+    FieldReasonCode,
     FlagKind,
     Photo,
     UnverifiedReason,
@@ -232,6 +234,10 @@ def _check_in(user, data: CheckIn) -> Visit:
             kind=FlagKind.MOCK_LOCATION,
             detail={"device_class": user.device_class},
         )
+    # Forms saved on the phone during this visit may have reached the server first.
+    from trackableobjects.visit_forms import link_waiting_forms
+
+    link_waiting_forms(visit)
     _check_impossible_travel(visit, config)
     _check_rotation(visit, config)
     if visit.photo_id:
@@ -322,7 +328,8 @@ def submit_status(
 
 @transaction.atomic
 def check_out(
-    visit: Visit, *, idempotency_key: str, lat=None, lng=None, accuracy_m=None, clock=None, client_captured_at=None
+    visit: Visit, *, idempotency_key: str, lat=None, lng=None, accuracy_m=None, clock=None, client_captured_at=None,
+    form_missing_note=None,
 ) -> Visit:
     visit = Visit.objects.select_for_update().get(pk=visit.pk)
     if visit.checked_out_at is not None:
@@ -341,7 +348,13 @@ def check_out(
     visit.checkout_location = make_point(lat, lng)
     visit.checkout_accuracy_m = round(accuracy_m) if accuracy_m is not None else None
     visit.checkout_idempotency_key = idempotency_key
-    return apply(visit, Event.CHECK_OUT, time_unproven=unproven)
+    form_missing = form_missing_note is not None
+    if form_missing:
+        # The agent's explanation is the field reason, so the app does not ask for one again.
+        visit.field_reason_code = FieldReasonCode.OTHER
+        visit.field_reason = form_missing_note.strip() or None
+        visit.field_reason_at = clock_module.now()
+    return apply(visit, Event.CHECK_OUT, time_unproven=unproven, form_missing=form_missing)
 
 
 def submit_reason(visit: Visit, *, code: str, note: str | None) -> Visit:

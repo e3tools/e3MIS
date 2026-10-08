@@ -44,6 +44,8 @@ class CheckOutSerializer(serializers.Serializer):
     clock = ClockEvidenceSerializer(required=False, allow_null=True)
     # The phone's note of when it queued the check-out: a signal only, never a time.
     client_captured_at = serializers.DateTimeField(required=False, allow_null=True)
+    # Sent when the agent could not save the visit's form; the visit then goes to review.
+    form_missing_note = serializers.CharField(required=False, allow_blank=True, max_length=2000)
 
 
 class VisitStatusSerializer(serializers.ModelSerializer):
@@ -122,6 +124,7 @@ class VisitSerializer(serializers.ModelSerializer):
     resolved_by = serializers.CharField(source="resolved_by.full_name", default=None)
     queued_submission = serializers.SerializerMethodField()
     short_visit = serializers.SerializerMethodField()
+    forms = serializers.SerializerMethodField()
 
     class Meta:
         model = Visit
@@ -132,6 +135,7 @@ class VisitSerializer(serializers.ModelSerializer):
             "field_reason_at", "awaiting_review", "needs_reason", "resolved_by", "resolved_at",
             "resolution_note", "client_captured_at", "queued_submission", "short_visit",
             "checkin_received_at", "checkout_received_at", "checkin_time_source", "checkout_time_source",
+            "forms",
         )
 
     def get_checkin(self, obj) -> dict:
@@ -155,6 +159,18 @@ class VisitSerializer(serializers.ModelSerializer):
         if not obj.client_captured_at:
             return False
         return abs((obj.checked_in_at - obj.client_captured_at).total_seconds()) > QUEUED_GAP_S
+
+    def get_forms(self, obj) -> list[dict]:
+        """Forms saved during this visit (sub-project identification and follow-ups)."""
+        records = [
+            {"kind": "record", "id": r.id, "name": r.trackable_object.name, "label": str(r.identifier)}
+            for r in obj.form_records.select_related("trackable_object")
+        ]
+        responses = [
+            {"kind": "response", "id": r.id, "name": r.follow_up_event.name, "label": r.follow_up_event.name}
+            for r in obj.form_responses.select_related("follow_up_event")
+        ]
+        return records + responses
 
     def get_short_visit(self, obj) -> bool:
         """Checked out after less than the configured minutes on site: a warning, never a state change."""

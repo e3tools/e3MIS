@@ -19,6 +19,8 @@ TABLE = {
     (S.IN_PROGRESS, E.CHECK_OUT, ()): (S.IN_PROGRESS, None),
     (S.IN_PROGRESS, E.CHECK_OUT, ("unproven",)): (S.UNVERIFIED, R.TIME_UNPROVEN),
     (S.IN_PROGRESS, E.CHECK_OUT, ("photo", "unproven")): (S.UNVERIFIED, R.TIME_UNPROVEN),
+    (S.IN_PROGRESS, E.CHECK_OUT, ("photo", "no_form")): (S.UNVERIFIED, R.FORM_MISSING),
+    (S.IN_PROGRESS, E.CHECK_OUT, ("no_form",)): (S.UNVERIFIED, R.FORM_MISSING),
     (S.IN_PROGRESS, E.PHOTO_ATTACHED, ("out",)): (S.VERIFIED, None),
     (S.IN_PROGRESS, E.PHOTO_ATTACHED, ()): (S.IN_PROGRESS, None),
     (S.IN_PROGRESS, E.AUTO_CLOSE, ()): (S.UNVERIFIED, R.NO_CHECKOUT),
@@ -42,6 +44,7 @@ def run(state, event, guards=()):
         checked_out="out" in guards,
         current_reason=R.LOCATION_FAILED if state == S.UNVERIFIED else None,
         time_unproven="unproven" in guards,
+        form_missing="no_form" in guards,
     )
 
 
@@ -73,7 +76,7 @@ def test_story_3_1_human_events_require_an_actor(event):
 
 def test_story_3_1_no_automated_sequence_reaches_missed():
     """Property: every sequence of up to 6 automated events, with any guards, never yields MISSED."""
-    guard_sets = [(), ("photo",), ("out",), ("photo", "out")]
+    guard_sets = [(), ("photo",), ("out",), ("photo", "out"), ("unproven",), ("no_form",), ("photo", "no_form")]
     frontier = {None}
     seen = set()
     for _ in range(6):

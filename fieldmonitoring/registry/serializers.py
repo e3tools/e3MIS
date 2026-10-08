@@ -25,10 +25,19 @@ class WorksiteSerializer(serializers.ModelSerializer):
         fields = (
             "id", "name", "code", "village", "commune", "latitude", "longitude",
             "tolerance_m", "is_high_risk", "status", "is_provisional", "has_coordinate",
+            "record_id", "record_client_uuid",
         )
+
+    # The sub-project record (form 1) describing this site, if any: the app opens its forms.
+    record_id = serializers.IntegerField(source="trackable_object_instance_id", read_only=True, allow_null=True)
+    record_client_uuid = serializers.SerializerMethodField()
 
     def get_has_coordinate(self, obj) -> bool:
         return obj.location is not None
+
+    def get_record_client_uuid(self, obj) -> str | None:
+        instance = obj.trackable_object_instance
+        return str(instance.client_uuid) if instance is not None and instance.client_uuid else None
 
 
 class WorksiteListItemSerializer(WorksiteSerializer):

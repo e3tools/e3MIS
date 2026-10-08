@@ -26,6 +26,8 @@ class UnverifiedReason(models.TextChoices):
     NO_PHOTO = "no_photo", "Arrival photo not received"
     # Recorded offline and the phone could not prove when (trusted clock, merge plan Q8).
     TIME_UNPROVEN = "time_unproven", "Offline time could not be proven"
+    # Sub-project sites: the agent checked out without saving the visit's form (Brice, 8 Oct).
+    FORM_MISSING = "form_missing", "No form saved during the visit"
 
 
 class FieldReasonCode(models.TextChoices):

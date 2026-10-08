@@ -52,6 +52,7 @@ def transition(
     checked_out: bool = False,
     current_reason: UnverifiedReason | None = None,
     time_unproven: bool = False,
+    form_missing: bool = False,
 ) -> Outcome:
     """Pure transition function: (state, event, guards) -> next state and unverified reason."""
     if event in HUMAN_EVENTS and actor is None:
@@ -69,6 +70,9 @@ def transition(
             if time_unproven:
                 # Recorded offline and the phone could not prove when: a person reviews it (Q8).
                 return Outcome(S.UNVERIFIED, UnverifiedReason.TIME_UNPROVEN)
+            if form_missing:
+                # The agent could not save the visit's form and said why: a person reviews it.
+                return Outcome(S.UNVERIFIED, UnverifiedReason.FORM_MISSING)
             # Verified only once the arrival photo has reached the server.
             return Outcome(S.VERIFIED, None) if has_photo else Outcome(S.IN_PROGRESS, None)
         case (S.IN_PROGRESS, Event.PHOTO_ATTACHED):
@@ -99,7 +103,9 @@ def transition(
     raise InvalidTransition(f"no transition from {state} on {event}")
 
 
-def apply(visit: Visit, event: Event, *, actor=None, reason=None, note=None, time_unproven=False) -> Visit:
+def apply(
+    visit: Visit, event: Event, *, actor=None, reason=None, note=None, time_unproven=False, form_missing=False
+) -> Visit:
     """Apply an event to a visit, persist it, and append an audit row."""
     before = visit.state or None
     outcome = transition(
@@ -111,6 +117,7 @@ def apply(visit: Visit, event: Event, *, actor=None, reason=None, note=None, tim
         checked_out=visit.checked_out_at is not None,
         current_reason=visit.unverified_reason,
         time_unproven=time_unproven,
+        form_missing=form_missing,
     )
     if outcome.state == S.MISSED and actor is None:  # belt and braces; see module docstring
         raise InvalidTransition("missed requires a human actor")

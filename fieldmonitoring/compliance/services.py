@@ -169,7 +169,7 @@ def national_quota(user: User, today: date, year=None, month=None, config=None) 
 
 def worksite_scope(user: User):
     """Worksites a user may see and visit."""
-    qs = Worksite.objects.filter(status=WorksiteStatus.ACTIVE).select_related("village", "commune")
+    qs = Worksite.objects.filter(status=WorksiteStatus.ACTIVE).select_related("village", "commune", "trackable_object_instance")
     if user.role == Role.REGIONAL_SPECIALIST:
         return qs.filter(region_id=user.region_id)
     if user.role in (Role.NATIONAL_SPECIALIST, Role.RDP, Role.ADMIN):

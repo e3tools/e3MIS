@@ -26,7 +26,7 @@ from rest_framework.views import APIView
 
 from administrativelevels.models import AdministrativeUnit
 from subprojects.models import Attachment
-from trackableobjects import lifecycle, visibility
+from trackableobjects import lifecycle, visibility, visit_forms
 from trackableobjects.models import (
     FollowUpEvent,
     FollowUpEventDependency,
@@ -66,6 +66,7 @@ def _record(instance, user, attachments) -> dict:
         "identifier": str(instance.identifier),
         "answers": instance.jsonForm if isinstance(instance.jsonForm, dict) else {},
         "stage": instance.stage,
+        "visit_key": instance.visit_key,
         "version": instance.version,
         "schema_version": instance.schema_version,
         "created_by_me": instance.created_by_id == user.id,
@@ -82,6 +83,7 @@ def _response(response, user, attachments) -> dict:
         "follow_up_event_id": response.follow_up_event_id,
         "record_id": response.trackable_object_instance_id,
         "answers": response.jsonForm if isinstance(response.jsonForm, dict) else {},
+        "visit_key": response.visit_key,
         "version": response.version,
         "schema_version": response.schema_version,
         "created_by_me": response.created_by_id == user.id,
@@ -314,7 +316,8 @@ class PushView(APIView):
             )
         except (IntegrityError, ValueError):
             raise ItemError("invalid", errors={"client_uuid": ["Not a valid UUID."]}) from None
-        lifecycle.on_record_created(instance, user)
+        visit_forms.attach(instance, user, item.get("visit_key"))
+        lifecycle.on_record_created(instance, user, worksite_id=item.get("worksite_id"))
         return _done("created", instance, item)
 
     # responses
@@ -352,6 +355,7 @@ class PushView(APIView):
             raise ItemError("invalid", errors={"client_uuid": ["Not a valid UUID."]}) from None
         # Never rejected for the stage (answers made offline may arrive late); the stage only moves
         # when the event was open in it.
+        visit_forms.attach(response, user, item.get("visit_key"))
         lifecycle.apply_response(response, user)
         return _done("created", response, item)
 

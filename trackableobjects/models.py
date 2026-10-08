@@ -215,6 +215,10 @@ class TrackableObjectInstance(SyncedAnswerMixin, models.Model):
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
     # Current lifecycle stage (a key of trackable_object.stages); blank when the type has none.
     stage = models.CharField(max_length=32, blank=True, default="")
+    # The worksite visit it was filled in (visit_forms.py).
+    visit_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    visit = models.ForeignKey("visits.Visit", null=True, blank=True, on_delete=models.SET_NULL,
+                              related_name="form_records")
 
     class Meta:
         indexes = [models.Index(fields=["updated_at"])]
@@ -245,6 +249,10 @@ class FollowUpEventResponse(SyncedAnswerMixin, models.Model):
                                                   on_delete=models.SET_NULL,
                                                   related_name="follow_up_responses", )
     jsonForm = models.JSONField(help_text="JSON response schema", default=list)
+    # The worksite visit it was filled in (visit_forms.py).
+    visit_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    visit = models.ForeignKey("visits.Visit", null=True, blank=True, on_delete=models.SET_NULL,
+                              related_name="form_responses")
 
     class Meta:
         indexes = [models.Index(fields=["updated_at"])]

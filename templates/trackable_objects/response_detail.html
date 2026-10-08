@@ -52,6 +52,20 @@
                                 </div>
                             </div>
                         </div>
+                        {% if object.visit %}
+                            {# Check-in data of the visit the form was filled in (forms 2.1, 3.1, 4.1). #}
+                            <div class="callout callout-success">
+                                <strong>{% translate 'Visit' %}:</strong>
+                                {{ object.visit.worksite.name }} ·
+                                {% translate 'Check-in' %} {{ object.visit.checked_in_at|date:"d M, Y - H:i" }}
+                                {% if object.visit.checked_out_at %}→ {{ object.visit.checked_out_at|date:"H:i" }}{% endif %} ·
+                                {{ object.visit.get_state_display }}{% if object.visit.unverified_reason %} ({{ object.visit.get_unverified_reason_display }}){% endif %}
+                                {% if object.visit.checkin_distance_m is not None %} · {% translate 'Distance' %} {{ object.visit.checkin_distance_m }} m{% endif %}
+                                {% if object.visit.checkin_accuracy_m is not None %} · {% translate 'Accuracy' %} ±{{ object.visit.checkin_accuracy_m }} m{% endif %}
+                            </div>
+                        {% elif object.visit_key %}
+                            <div class="callout callout-warning">{% translate 'Filled during a visit that has not reached the server yet.' %}</div>
+                        {% endif %}
                         {% if stage_label %}
                             <div class="callout callout-info d-flex flex-wrap align-items-center justify-content-between">
                                 <div>
