@@ -92,7 +92,9 @@ import_village_zones`) sets the radius: `ProgrammeConfig.urban_tolerance_m` / `r
 Visit forms (`trackableobjects/visit_forms.py`): records and responses carry `visit_key` (the
 check-in idempotency key) and a `visit` link set by whichever of form or check-in reaches the
 server second. A form 1 pushed with `worksite_id` completes the visited site instead of creating
-one. The app requires one form per visit on sub-project sites; `check_out` with
+one. Forms may use `validators.min_field` (a date/number not before another answer; checked in
+`field_api/validation.py` and the app). Sync units carry `zone` and `radius_m`. The app requires one
+form per visit on sub-project sites; `check_out` with
 `form_missing_note` sends the visit to review (`UnverifiedReason.FORM_MISSING`, the note becomes
 the field reason).
 

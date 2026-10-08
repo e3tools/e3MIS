@@ -9,6 +9,8 @@ browser POST:
 - File fields are not uploaded with the answers. The app sends the marker ``"Attachment"`` and
   uploads the file separately; a required file field only needs the marker.
 - The "use my location" button is a widget, not an answer, and is ignored.
+- ``validators.min_field`` (field app extension): a date or number must not be before/below
+  another answer of the same form, e.g. the planned end of works after their start (COSO 1.17).
 """
 from django import forms
 
@@ -113,4 +115,24 @@ def validate_answers(schema, answers, *, user, parent_data=None):
             clean.update(build_json_form(bound))
         else:
             errors.update({name: [str(m) for m in messages] for name, messages in bound.errors.items()})
+    errors.update(_cross_field_errors(schema, clean, errors))
     return (None, errors) if errors else (clean, {})
+
+
+def _cross_field_errors(schema, clean, errors) -> dict:
+    found = {}
+    options = field_options(schema)
+    for page in pages(schema):
+        for name, prop in page.get("page", {}).get("properties", {}).items():
+            other = (prop.get("validators") or {}).get("min_field")
+            if not other or name in errors or clean.get(name) in (None, "") or clean.get(other) in (None, ""):
+                continue
+            value, floor = clean[name], clean[other]
+            try:
+                too_low = float(value) < float(floor)
+            except (TypeError, ValueError):
+                too_low = str(value) < str(floor)  # ISO dates compare as text
+            if too_low:
+                label = options.get(other, {}).get("label") or other
+                found[name] = [f"Must not be before “{label}”."]
+    return found

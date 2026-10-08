@@ -14,9 +14,10 @@ spreadsheet wording; question numbers are in the comments.
         │                               F3 ajournée → postponed (F2 and F3 stay open)
         └──F2 arrêt définitif──▶ terminated (no forms; a supervisor can reopen)
 
-Not covered by the form engine (noted for later): "Auto" items (check-in data, zone, data carried
-over from F1/F3), a date that must follow another answer (1.17 ≥ 1.16), warnings on a lower rate
-than last time (2.9, 2.10) and on children on site (2.17).
+Check-in data (2.1, 3.1, 4.1) comes from the visit the form is linked to (visit_forms.py); the
+village's zone (1.9) is shown by the app under the village. 1.17 ≥ 1.16 uses the ``min_field``
+validator (field_api/validation.py). Not covered yet: warnings on a lower rate than last time
+(2.9, 2.10) and on children on site (2.17), waiting for who should be alerted and how.
 
 Idempotent: forms are matched by name and updated in place (their schema version goes up when the
 questions change). Run with ``--group`` to give them to the group of agents who fill them.
@@ -140,7 +141,8 @@ def identification(village_order):
         ("entreprise", text("Entreprise titulaire", **yes("site_physique")), True),  # 1.14
         ("montant", number("Montant du marché (FCFA)", minimum=1, **yes("site_physique")), True),  # 1.15
         ("date_demarrage", day("Date de l'ordre de service de démarrage", **yes("site_physique")), True),  # 1.16
-        ("date_fin_prevue", day("Date prévue de fin des travaux", **yes("site_physique")), True),  # 1.17
+        ("date_fin_prevue", day("Date prévue de fin des travaux", {"min_field": "date_demarrage"},
+                                **yes("site_physique")), True),  # 1.17 ≥ 1.16
         ("photo_initiale_1", photo("Photo de l'état initial du site (1)", **yes("site_physique")), True),  # 1.18
         ("photo_initiale_2", photo("Photo de l'état initial du site (2)", **yes("site_physique")), True),
     ]

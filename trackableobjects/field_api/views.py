@@ -215,11 +215,20 @@ class SyncView(APIView):
                 if validators.get("administrative_level_restriction") == "true":
                     continue
                 extra_orders.append(int(validators.get("max_admin_level_order") or 10_000))
+        from fieldmonitoring.core.models import ProgrammeConfig
+
+        config = ProgrammeConfig.get()
         units = AdministrativeUnit.objects.filter(id__in=unit_ids)
         if extra_orders:
             units = units | AdministrativeUnit.objects.filter(level__order__lte=max(extra_orders))
         return [
-            {"id": u.id, "name": u.name, "parent_id": u.parent_id, "level": u.level.name, "level_order": u.level.order}
+            {
+                "id": u.id, "name": u.name, "parent_id": u.parent_id, "level": u.level.name,
+                "level_order": u.level.order,
+                # Villages: urban/rural and the check-in radius it gives new worksites (COSO 1.9).
+                "zone": u.zone or None,
+                "radius_m": config.tolerance_for(u) if u.zone else None,
+            }
             for u in units.select_related("level").distinct().order_by("level__order", "name")
         ]
 

@@ -356,3 +356,31 @@ def test_import_village_zones_dry_run_writes_nothing(tmp_path, village):
     village.refresh_from_db()
     assert village.zone == ""
 
+
+
+# --- 1.17 ≥ 1.16 and the village zone (1.9) ---------------------------------------------------
+
+
+def test_planned_end_must_not_be_before_start(forms, agent, village, client_for):
+    early = identification(village, date_demarrage="2026-09-01", date_fin_prevue="2026-08-31")
+    [result] = push(client_for, agent, new_record(forms, early))
+    assert result["status"] == "invalid" and "date_fin_prevue" in result["errors"]
+    same_day = identification(village, date_demarrage="2026-09-01", date_fin_prevue="2026-09-01")
+    [ok] = push(client_for, agent, new_record(forms, same_day))
+    assert ok["status"] == "created"
+
+
+def test_end_date_rule_skipped_without_physical_site(forms, agent, village, client_for):
+    answers = identification(village, site_physique=False)
+    for name in ("entreprise", "montant", "date_demarrage", "date_fin_prevue", "photo_initiale_1", "photo_initiale_2"):
+        del answers[name]
+    [ok] = push(client_for, agent, new_record(forms, answers))
+    assert ok["status"] == "created"
+
+
+def test_sync_gives_village_zone_and_radius(forms, agent, village, client_for):
+    village.zone = URBAN
+    village.save()
+    units = {u["id"]: u for u in client_for(agent).get(SYNC).json()["administrative_units"]}
+    assert units[village.pk]["zone"] == URBAN and units[village.pk]["radius_m"] == 50
+    assert units[village.parent_id]["zone"] is None and units[village.parent_id]["radius_m"] is None
