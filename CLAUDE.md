@@ -183,6 +183,8 @@ read-only at `/fr/api/v1/` (JWT from `/fr/api/login/` or `MIS-…` API tokens, d
   `vercel env pull <scratch file> --environment production`, run `manage.py migrate` with
   `DATABASE_URL` set to its `DATABASE_URL_UNPOOLED`, delete the file. Demo users are
   `<name>@example.org`; signing in on the deployed site is for the user, not for agents.
+  Demo forms: `seed_suivi_chantier` (COSO sub-project forms) is loaded; the older `seed_demo_forms`
+  samples exist but are detached from the tester group "Agents de terrain (démo)" (2026-10-08).
 
 ## Testing
 
