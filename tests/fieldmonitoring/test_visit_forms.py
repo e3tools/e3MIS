@@ -146,3 +146,16 @@ def test_mis_form_page_shows_the_check_in(subproject, forms, agent, check_in, cl
     page = client.get(f"/en/trackable-objects/follow-up-event/response/{result['id']}/").content.decode()
     assert "Forage de Séguéla" in page and "Check-in" in page
 
+
+
+def test_new_subproject_alone_in_its_village_is_listed_nearby(forms, agent, commune, levels, client_for):
+    # Field test 8 Oct: identified in form 1, no confirmed position, no other site in the village.
+    from administrativelevels.models import AdministrativeUnit
+
+    alone = AdministrativeUnit.objects.create(name="Kpota", level=levels["village"], parent=commune)
+    answers = identification(alone, position="8.100000 -6.500000 10.00")
+    result = push(client_for, agent, record_item(forms, answers))
+    site = Worksite.objects.get(trackable_object_instance_id=result["id"])
+    body = client_for(agent).get("/api/v1/worksites/nearby/", {"lat": 8.1001, "lng": -6.5, "radius_m": 500}).json()
+    assert [w["id"] for w in body] == [str(site.pk)]
+    assert body[0]["record_id"] == result["id"] and body[0]["has_coordinate"] is False

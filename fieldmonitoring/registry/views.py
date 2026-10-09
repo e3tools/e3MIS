@@ -27,6 +27,7 @@ from .models import (
     HighRiskFlagChange,
     ProvisionalCoordinate,
     Worksite,
+    WorksiteAssignment,
 )
 from .serializers import (
     HighRiskChangeSerializer,
@@ -126,7 +127,18 @@ class NearbyWorksitesView(APIView):
             .order_by("distance")
         )
         villages = {w.village_id for w in near}
-        unmapped = list(scope.filter(location__isnull=True, village_id__in=villages))
+        # Sites without a confirmed position: in the same villages, or with a pending capture
+        # nearby (a sub-project just identified in form 1), or assigned to the agent. Otherwise a
+        # new sub-project alone in its village could never be checked in at (field test, 8 Oct).
+        pending_near = ProvisionalCoordinate.objects.filter(
+            status=DecisionStatus.PENDING, location__dwithin=(point, D(m=radius))
+        ).values("worksite_id")
+        mine = WorksiteAssignment.objects.filter(user=user, unassigned_on__isnull=True).values("worksite_id")
+        unmapped = list(
+            scope.filter(location__isnull=True)
+            .filter(Q(village_id__in=villages) | Q(pk__in=pending_near) | Q(pk__in=mine))
+            .distinct()
+        )
         items = near + unmapped
 
         today = clock.today(config)
