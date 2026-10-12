@@ -159,3 +159,14 @@ def test_new_subproject_alone_in_its_village_is_listed_nearby(forms, agent, comm
     body = client_for(agent).get("/api/v1/worksites/nearby/", {"lat": 8.1001, "lng": -6.5, "radius_m": 500}).json()
     assert [w["id"] for w in body] == [str(site.pk)]
     assert body[0]["record_id"] == result["id"] and body[0]["has_coordinate"] is False
+
+
+def test_supervisor_validating_a_position_sees_the_capture_photo(subproject, agent, other_sc, check_in, client_for):
+    # Field test 12 Oct: an SC of the commune who is not the agent's supervisor saw no photos.
+    site = Worksite.objects.get(trackable_object_instance=subproject)
+    visit, _ = visit_at(check_in, agent, site)
+    site.commune = other_sc.commune
+    site.save(update_fields=["commune"])
+    assert client_for(other_sc).get(f"/api/v1/visits/{visit.pk}/photo/").status_code == 200
+    site.provisional_coordinates.update(status="confirmed")
+    assert client_for(other_sc).get(f"/api/v1/visits/{visit.pk}/photo/").status_code == 403

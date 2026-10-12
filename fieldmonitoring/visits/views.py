@@ -76,13 +76,24 @@ class PhotoUploadView(APIView):
         return Response({"photo_id": photo.id}, status=201)
 
 
+def _confirms_capture_of(user, visit) -> bool:
+    """Whoever may confirm a position captured at this visit sees its photo, the evidence for it
+    (e.g. a communal supervisor validating a new sub-project site of another SC's agent)."""
+    from fieldmonitoring.registry.models import DecisionStatus, ProvisionalCoordinate
+    from fieldmonitoring.registry.views import coordinate_scope
+
+    return ProvisionalCoordinate.objects.filter(
+        visit=visit, status=DecisionStatus.PENDING, worksite__in=coordinate_scope(user)
+    ).exists()
+
+
 class PhotoView(APIView):
     """Photos are served through an authorised endpoint, never as public media."""
 
     @extend_schema(responses={(200, "image/jpeg"): bytes})
     def get(self, request, visit_id):
         visit = get_object_or_404(Visit.objects.select_related("user", "photo"), pk=visit_id)
-        if not can_view_visit(request.user, visit):
+        if not can_view_visit(request.user, visit) and not _confirms_capture_of(request.user, visit):
             raise PermissionDenied()
         if not visit.photo:
             raise Http404
