@@ -59,6 +59,7 @@ def _payload(warning, viewer):
     return {
         **data,
         "filtered_to_team": viewer.role == Role.SC,
+        "activity": _activity(warning, viewer),
         "summary": {
             "over_threshold": sum(1 for e in entries if e.kind == "regularity"),
             "quota_at_risk": sum(1 for e in entries if e.kind == "quota"),
@@ -66,6 +67,29 @@ def _payload(warning, viewer):
             "previous_over_threshold": prev_regularity,
         },
         "entries": EntrySerializer(entries, many=True).data,
+    }
+
+
+def _activity(warning, viewer) -> dict:
+    """What happened in the field that week, for information (DEC-6: nothing to acknowledge).
+    SC: their team; RdP/admin: everyone. Pending positions are as of now."""
+    from fieldmonitoring.core import clock
+    from fieldmonitoring.registry.models import Worksite
+    from fieldmonitoring.registry.views import pending_position_sites
+    from fieldmonitoring.visits.models import Visit, VisitState
+
+    start, _ = clock.local_day_bounds(warning.period_start)
+    _, end = clock.local_day_bounds(warning.period_end)
+    visits = Visit.objects.filter(checked_in_at__gte=start, checked_in_at__lt=end)
+    sites = Worksite.objects.filter(created_at__gte=start, created_at__lt=end)
+    if viewer.role == Role.SC:
+        visits = visits.filter(user__supervisor=viewer)
+        sites = sites.filter(created_by__supervisor=viewer)
+    return {
+        "checkins": visits.count(),
+        "checkins_verified": visits.filter(state=VisitState.VERIFIED).count(),
+        "new_sites": sites.count(),
+        "pending_positions": pending_position_sites(viewer).count(),
     }
 
 

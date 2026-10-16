@@ -125,7 +125,13 @@ def identification(village_order):
     ]
     for index, (sector, subsectors) in enumerate(SECTORS.items(), start=1):  # 1.4, filtered by 1.3
         rows.append((f"sous_secteur_s{index:02d}", choice("Sous-secteur", subsectors, **when("secteur", sector)), True))
-    unit_validators = {"max_admin_level_order": str(village_order)} if village_order else {}
+    # A village and nothing else: the worksite and its check-in radius hang off the village
+    # (field test, 15 Oct: regions and communes were being picked).
+    unit_validators = (
+        {"max_admin_level_order": str(village_order), "min_admin_level_order": str(village_order)}
+        if village_order
+        else {}
+    )
     rows += [
         # 1.5–1.8: one cascading choice, département → commune → arrondissement → village.
         ("village", ({"type": "administrative_level", "validators": unit_validators},

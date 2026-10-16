@@ -286,6 +286,18 @@ def coordinate_scope(user):
 CanConfirmCoordinates = has_role(Role.ADMIN, Role.SC)
 
 
+def pending_position_sites(viewer, supervisor=None):
+    """Worksites with a position waiting for confirmation, in what the viewer supervises.
+    RdP: everything (or one SC's area when ``supervisor`` is given)."""
+    if supervisor is not None:
+        scope = coordinate_scope(supervisor)
+    elif viewer.role == Role.RDP:
+        scope = Worksite.objects.all()
+    else:
+        scope = coordinate_scope(viewer)
+    return scope.filter(provisional_coordinates__status=DecisionStatus.PENDING).distinct()
+
+
 class PendingCoordinatesView(APIView):
     """Worksites whose geofence is not live yet. This queue is when verification becomes true."""
 
@@ -324,6 +336,17 @@ class PendingCoordinatesView(APIView):
             "worksites_without_coordinate": coordinate_scope(request.user).filter(
                 location__isnull=True, status="active"
             ).count(),
+            # Sites with no position at all and nothing captured yet: nothing to confirm until
+            # someone checks in there (field test, 15 Oct: the bare count looked like a bug).
+            "without_capture": [
+                {"id": str(w.pk), "name": w.name, "village": w.village.name}
+                for w in coordinate_scope(request.user)
+                .filter(location__isnull=True, status="active")
+                .exclude(provisional_coordinates__status=DecisionStatus.PENDING)
+                .select_related("village")
+                .order_by("name")
+                .distinct()
+            ],
             "results": result,
         })
 

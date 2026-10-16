@@ -92,6 +92,12 @@ class TeamPresenceView(APIView):
             )
             active_sites = active_sites.filter(commune_id=supervisor.commune_id)
         oldest = queue.aggregate(oldest=Min("checked_in_at"))["oldest"]
+        from fieldmonitoring.registry.views import pending_position_sites
+
+        one_sc = None
+        if supervisor_id and viewer.role != Role.SC:
+            one_sc = get_object_or_404(User, pk=supervisor_id, role=Role.SC)
+        pending_positions = pending_position_sites(viewer, one_sc).count()
         lo, _ = clock.local_day_bounds(today - timedelta(days=6), config)
         visited = (
             Visit.objects.filter(
@@ -110,6 +116,8 @@ class TeamPresenceView(APIView):
             "stats": {
                 "over_threshold": sum(1 for r in rows if r["flagged"]),
                 "awaiting_review": queue.count(),
+                # Sites whose captured position waits for confirmation (Coordonnées page).
+                "pending_positions": pending_positions,
                 "oldest_review_at": oldest,
                 "worksites_visited_7d": visited,
                 "active_worksites": active_sites.count(),

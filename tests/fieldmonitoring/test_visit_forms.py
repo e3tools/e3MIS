@@ -170,3 +170,15 @@ def test_supervisor_validating_a_position_sees_the_capture_photo(subproject, age
     assert client_for(other_sc).get(f"/api/v1/visits/{visit.pk}/photo/").status_code == 200
     site.provisional_coordinates.update(status="confirmed")
     assert client_for(other_sc).get(f"/api/v1/visits/{visit.pk}/photo/").status_code == 403
+
+
+def test_supervision_counts_pending_positions(subproject, sc, client_for):
+    # Field test 15 Oct: sites waiting for position confirmation were not counted anywhere.
+    stats = client_for(sc).get("/api/v1/team/presence/").json()["stats"]
+    assert stats["pending_positions"] == 1
+
+
+def test_coordinates_page_lists_sites_with_nothing_to_confirm(subproject, sc, unmapped_worksite, client_for):
+    body = client_for(sc).get("/api/v1/coordinates/pending/").json()
+    assert [w["name"] for w in body["without_capture"]] == [unmapped_worksite.name]
+    assert body["count"] == 1

@@ -384,3 +384,12 @@ def test_sync_gives_village_zone_and_radius(forms, agent, village, client_for):
     units = {u["id"]: u for u in client_for(agent).get(SYNC).json()["administrative_units"]}
     assert units[village.pk]["zone"] == URBAN and units[village.pk]["radius_m"] == 50
     assert units[village.parent_id]["zone"] is None and units[village.parent_id]["radius_m"] is None
+
+
+def test_identification_needs_a_village_not_a_region(forms, agent, region, commune, village, client_for):
+    # Field test 15 Oct: a region was picked, so the site fell outside every supervisor's commune.
+    for unit in (region, commune):
+        [result] = push(client_for, agent, new_record(forms, identification(unit)))
+        assert result["status"] == "invalid" and "village" in result["errors"], unit
+    [ok] = push(client_for, agent, new_record(forms, identification(village)))
+    assert ok["status"] == "created"
