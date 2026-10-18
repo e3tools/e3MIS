@@ -393,3 +393,18 @@ def test_identification_needs_a_village_not_a_region(forms, agent, region, commu
         assert result["status"] == "invalid" and "village" in result["errors"], unit
     [ok] = push(client_for, agent, new_record(forms, identification(village)))
     assert ok["status"] == "created"
+
+
+def test_correcting_the_village_moves_the_site(subproject, agent, other_commune, levels, client_for):
+    # Field test 15 Oct: sites attached to the wrong place are fixed by editing form 1.
+    from administrativelevels.models import AdministrativeUnit
+
+    right = AdministrativeUnit.objects.create(name="Kpota", level=levels["village"], parent=other_commune, zone=URBAN)
+    item = {"kind": "record", "op": "update", "id": subproject.pk, "base_version": subproject.version,
+            "answers": identification(right)}
+    [result] = push(client_for, agent, item)
+    assert result["status"] == "updated", result
+    site = Worksite.objects.get(trackable_object_instance=subproject)
+    assert (site.village, site.commune) == (right, other_commune)
+    assert site.tolerance_m == 50  # urban village, position not confirmed yet
+    assert list(TrackableObjectInstance.objects.get(pk=subproject.pk).administrative_units.all()) == [right]

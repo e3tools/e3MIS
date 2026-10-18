@@ -241,14 +241,35 @@ def _pending_coordinate(instance, worksite, user):
 
 
 def on_record_updated(instance: TrackableObjectInstance, user) -> None:
-    """Keep the worksite's name in step with the record, or create it if the village came later."""
+    """Keep the worksite in step with the record: its name, and its village when form 1 is
+    corrected (field test, 15 Oct: sites attached to a region had to be moved to their village).
+    Creates the worksite if the village came later."""
     if not instance.trackable_object.creates_worksite:
         return
+    from administrativelevels.models import AdministrativeUnit
+    from fieldmonitoring.core.geography import commune_of, region_of
+    from fieldmonitoring.core.models import ProgrammeConfig
     from fieldmonitoring.registry.models import Worksite
 
     worksite = Worksite.objects.filter(trackable_object_instance=instance).first()
     if worksite is None:
         create_worksite(instance, user)
-    elif worksite.name != (name := str(instance.identifier)[:200]):
+        return
+    changed = []
+    if worksite.name != (name := str(instance.identifier)[:200]):
         worksite.name = name
-        worksite.save(update_fields=["name"])
+        changed.append("name")
+    try:
+        village = AdministrativeUnit.objects.filter(pk=int(_first_answer(instance, "administrative_level"))).first()
+    except (TypeError, ValueError):
+        village = None
+    if village is not None and village.pk != worksite.village_id:
+        worksite.village, worksite.commune, worksite.region = village, commune_of(village), region_of(village)
+        changed += ["village", "commune", "region"]
+        if worksite.location is None:
+            # The radius follows the new village's zone until a position is confirmed.
+            worksite.tolerance_m = ProgrammeConfig.get().tolerance_for(village)
+            changed.append("tolerance_m")
+        instance.administrative_units.set([village])
+    if changed:
+        worksite.save(update_fields=changed)
