@@ -98,6 +98,20 @@ form per visit on sub-project sites; `check_out` with
 `form_missing_note` sends the visit to review (`UnverifiedReason.FORM_MISSING`, the note becomes
 the field reason).
 
+Sub-project sites and positions (field tests, Oct 2026):
+- Form 1's village field has `min_admin_level_order` = `max_admin_level_order` = the village level:
+  a region or commune fails validation (`utils/json_form_parser.py`, same rule in the app picker).
+- Editing form 1 (`lifecycle.on_record_updated`) renames the site and, if the village changed,
+  moves it to that village/commune (radius follows the zone until a position is confirmed).
+- `registry/views.coordinate_scope(user)`: admin = all sites; SC = sites in their commune or
+  created by their team. It drives the Coordinates queue, confirm/reject, and
+  `pending_position_sites()` (the "Positions à confirmer" counts on `team/presence/` and in the
+  weekly warning's `activity` block: check-ins, verified, new sites, pending positions — information
+  only, DEC-6). An SC who may confirm a pending capture also sees that visit's photo
+  (`visits/views._confirms_capture_of`).
+- Nearby list: sites without a confirmed position are listed when in a nearby village, when their
+  pending capture is within the radius, or when assigned to the agent.
+
 ## Domain model
 
 | App | Models |
