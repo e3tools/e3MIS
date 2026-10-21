@@ -4,7 +4,7 @@ black==25.1.0
 cfgv==3.4.0
 click==8.1.8
 distlib==0.3.9
-Django==4.2.20
+Django==5.2.17
 django-bootstrap4==25.1
 django-environ==0.12.0
 djangorestframework==3.16.0
@@ -21,7 +21,7 @@ openpyxl==3.1.5
 packaging==24.2
 pandas==2.2.3
 pathspec==0.12.1
-pillow==11.1.0
+pillow==12.3.0
 platformdirs==4.3.6
 pre-commit==3.5.0
 PyJWT==2.9.0
@@ -32,10 +32,14 @@ six==1.17.0
 soupsieve==2.6
 sqlparse==0.5.3
 tomli==2.2.1
-typing_extensions==4.12.2
+typing_extensions==4.15.0
 tzdata==2025.2
 uritemplate==4.2.0
 virtualenv==20.29.3
 psycopg2-binary==2.9.10
+drf-spectacular==0.30.0
+django-cors-headers==4.9.0
+django-storages[s3]==1.14.6
+whitenoise==6.12.0
+vercel==0.11.4
 gunicorn==23.0.0
-djangorestframework_simplejwt==5.5.0

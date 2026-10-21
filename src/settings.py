@@ -17,7 +17,10 @@ from pathlib import Path
 # https://django-environ.readthedocs.io/en/latest/
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    CSRF_TRUSTED_ORIGINS=(list, []),
+    CORS_ALLOWED_ORIGINS=(list, []),
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,30 +33,36 @@ env.read_env()
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-j90lb^5w#_51jeepqdu%72jym7z@#h*0_#f=j2kd3xql&!*4@@'
+# Everything environment-specific comes from the environment (or .env, see .env.example).
+# The same code runs the production server and the Vercel demo.
+#
+# Production (VM): the real values live in the .env next to docker-compose.yaml on the VM and reach
+# the container through `env_file`. Nothing secret is ever written in this file.
+# Local: `docker compose up` (docker-compose.yml) already sets dev values, see DEPLOYMENT.md.
+# Only when running `./manage.py runserver` straight from a venv without a .env, uncomment the
+# "local only" lines below, and comment them again before committing.
+
+# SECURITY WARNING: keep the secret key used in production secret! Changing it in production
+# invalidates every issued MIS API token (see API_KEY_CONFIG).
 SECRET_KEY = env('SECRET_KEY')
-# SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
+# SECRET_KEY = 'django-insecure-j90lb^5w#_51jeepqdu%72jym7z@#h*0_#f=j2kd3xql&!*4@@'  # local only
 
-# ALLOWED_HOSTS = ["localhost", "127.0.0.1", "mis.coso.gouv.bj"]
+# SECURITY WARNING: don't run with debug turned on in production! Defaults to False when unset.
+DEBUG = env('DEBUG')
+# DEBUG = True  # local only
 
-# CSRF_TRUSTED_ORIGINS = ["https://*.mis.coso.gouv.bj","https://*.127.0.0.1"]
+# Comma-separated lists in the environment, e.g. ALLOWED_HOSTS=mis.coso.gouv.bj,10.205.3.46
+ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS')
 
-ALLOWED_HOSTS = os.getenv(
-    "ALLOWED_HOSTS",
-    "localhost,127.0.0.1"
-).split(",")
+# GeoDjango needs GDAL/GEOS. On macOS with Homebrew they are usually found
+# automatically; set these when they are not.
+if env('GDAL_LIBRARY_PATH', default=None):
+    GDAL_LIBRARY_PATH = env('GDAL_LIBRARY_PATH')
+if env('GEOS_LIBRARY_PATH', default=None):
+    GEOS_LIBRARY_PATH = env('GEOS_LIBRARY_PATH')
 
-ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS]
 
-
-CSRF_TRUSTED_ORIGINS = os.getenv(
-    "CSRF_TRUSTED_ORIGINS",
-    "https://localhost,https://127.0.0.1"
-).split(",")
-
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in CSRF_TRUSTED_ORIGINS]
 # Application definition
 
 INSTALLED_APPS = [
@@ -63,24 +72,38 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'api.apps.ApiConfig',
     'subprojects',
     'administrativelevels',
     'authorization',
     'trackableobjects',
+    # Field monitoring (visits, compliance rules BR-1…BR-15, review, weekly warning).
+    'fieldmonitoring.core',
+    'fieldmonitoring.registry',
+    'fieldmonitoring.visits',
+    'fieldmonitoring.review',
+    'fieldmonitoring.compliance',
+    'fieldmonitoring.warning',
 ]
 
 
 THIRD_PARTY_APPS = [
     'bootstrap4',
+    'corsheaders',
     'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
+    'drf_spectacular',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -95,7 +118,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -116,15 +139,36 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'api.authentication.BearerApiTokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        # The MIS pages call their JSON endpoints from the browser with the session cookie.
+        'rest_framework.authentication.SessionAuthentication',
     ],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    # drf-spectacular documents the field monitoring API (/api/docs/); the MIS read-only API keeps
+    # its drf-yasg pages (/fr/api/v1/swagger/).
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
+# Long-lived refresh tokens: field staff may be offline for days between syncs (merge plan Q7).
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env.int('JWT_ACCESS_MINUTES', default=60)),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=env.int('JWT_REFRESH_DAYS', default=30)),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
 }
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'e3MIS field monitoring API',
+    'DESCRIPTION': 'Worksite visit verification API for the field app and the supervision dashboard.',
+    'VERSION': '0.2.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'PREPROCESSING_HOOKS': ['fieldmonitoring.core.schema.only_app_api'],
+    'ENUM_NAME_OVERRIDES': {'FieldReasonCodeEnum': 'fieldmonitoring.visits.models.FieldReasonCode'},
+}
+
+CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
 
 API_KEY_CONFIG = {
+    # Changing SECRET_KEY invalidates every issued API token.
     'TOKEN_PEPPER': SECRET_KEY,
     'COMPANY_PREFIX': 'MIS',
 }
@@ -133,25 +177,18 @@ API_KEY_CONFIG = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# DATABASES = {
-#     "default": env.db(default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-# }
-
+# Postgres with PostGIS everywhere (field visits need geographic queries). Local default is the
+# docker-compose database. A plain postgres:// URL (e.g. Neon) is switched to the PostGIS engine.
+#
+# Production: DATABASE_URL comes from the VM's .env (postgres://...@db:5432/smp).
+# Local: without DATABASE_URL, the default below points at the docker-compose PostGIS on port 5434.
+# SQLite is no longer an option: the field monitoring models need a spatial database, and the
+# engine is forced to PostGIS right below.
 DATABASES = {
-    "default": env.db("DATABASE_URL")
+    'default': env.db('DATABASE_URL', default='postgis://mis:mis@localhost:5434/mis'),
 }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': env('DB_ENGINE', default='django.db.backends.sqlite3'),
-#         'NAME': env('DB_NAME', default=str(BASE_DIR / 'db.sqlite3')),
-#         'USER': env('DB_USER', default=''),
-#         'PASSWORD': env('DB_PASSWORD', default=''),
-#         'HOST': env('DB_HOST', default=''),
-#         'PORT': env('DB_PORT', default=''),
-#     }
-# }
-
+DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+DATABASES['default']['CONN_MAX_AGE'] = env.int('DB_CONN_MAX_AGE', default=0)
 
 
 # Password validation
@@ -190,7 +227,14 @@ LOCALE_PATHS = [
     BASE_DIR / 'locale',  # or os.path.join(BASE_DIR, 'locale')
 ]
 
+# Storage and server zone are UTC. Business-day logic uses the programme timezone from
+# ProgrammeConfig, never this value.
 TIME_ZONE = 'UTC'
+PROGRAMME_TIMEZONE_DEFAULT = env('PROGRAMME_TIMEZONE', default='Africa/Abidjan')
+
+# Shared secret for the scheduled-jobs endpoint (/api/v1/jobs/run/). Vercel Cron sends it as a
+# Bearer token; on a server, cron can call `manage.py run_jobs` instead.
+CRON_SECRET = env('CRON_SECRET', default=None)
 
 USE_I18N = True
 
@@ -201,13 +245,36 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
+# collectstatic writes here; in production this folder is the `static-content` volume that nginx
+# serves under /static/ (run.sh serve runs collectstatic on every start).
+STATIC_ROOT = BASE_DIR / 'collected_static'
 MEDIA_URL = '/media/'
+# In production MEDIA_ROOT must sit on a persistent volume shared with nginx, otherwise uploads are
+# lost each time the container is recreated (see deploy/docker-compose.yaml).
+MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / 'media'))
+
+# Uploaded files (visit photos, form attachments): local disk by default (government server);
+# a private Vercel Blob store when its token is set (demo); any S3-compatible bucket when
+# AWS_STORAGE_BUCKET_NAME is set. Visit photos are only served through a permission check.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+if env('BLOB_READ_WRITE_TOKEN', default=None) and not env('AWS_STORAGE_BUCKET_NAME', default=None):
+    STORAGES['default'] = {'BACKEND': 'fieldmonitoring.core.storage.VercelBlobStorage'}
+if env('AWS_STORAGE_BUCKET_NAME', default=None):
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3.S3Storage'}
+    AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', default=None)
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = True
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 
-STATIC_ROOT = BASE_DIR / "collected_static"
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -220,4 +287,11 @@ AUTH_USER_MODEL = 'authorization.CustomUser'
 LOGIN_URL = '/'
 
 # Mapbox
-MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN')
+MAPBOX_ACCESS_TOKEN = env('MAPBOX_ACCESS_TOKEN', default='')
+
+# Production: HTTPS ends at the agency's proxy in front of the VM; nginx on the VM receives plain HTTP
+# and forwards X-Forwarded-Proto so Django knows the browser used HTTPS (see deploy/nginx/nginx.conf).
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

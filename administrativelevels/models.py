@@ -15,6 +15,10 @@ class AdministrativeLevel(models.Model):
         return self.name
 
 
+URBAN, RURAL = "urban", "rural"
+ZONE_CHOICES = [(URBAN, "Urbaine"), (RURAL, "Rurale")]
+
+
 class AdministrativeUnit(models.Model):
     """Represents an administrative division (e.g., Ghana, Accra Region, etc.)"""
 
@@ -22,6 +26,8 @@ class AdministrativeUnit(models.Model):
     level = models.ForeignKey(AdministrativeLevel, on_delete=models.CASCADE, related_name="units")
     parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
     hierarchy_name = models.CharField(max_length=255, null=True, blank=True)
+    # Urban or rural, for villages: sets the check-in radius of worksites in it.
+    zone = models.CharField(max_length=8, blank=True, default="", choices=ZONE_CHOICES)
 
     class Meta:
         constraints = [

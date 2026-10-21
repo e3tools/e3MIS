@@ -81,3 +81,14 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# Django collectstatic output
+collected_static/
+
+# Vercel
+.vercel
+.env*
+!.env.example
+
+# local notes with production details, never committed
+pro-env.txt
+mail-recommandations.txt

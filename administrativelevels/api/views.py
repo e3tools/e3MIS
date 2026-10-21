@@ -8,7 +8,7 @@ from .serializers import AdministrativeUnitModelSerializer
 
 
 class AdministrativeLevelChildrenAPIView(generics.ListAPIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
     pagination_class = None
     queryset = AdministrativeUnit.objects.all()
     serializer_class = AdministrativeUnitModelSerializer
@@ -26,14 +26,14 @@ class AdministrativeLevelChildrenAPIView(generics.ListAPIView):
 
 class AdministrativeUnitRootAPIView(generics.ListAPIView):
     """Returns all root-level administrative units (those without a parent)"""
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
     pagination_class = None
     queryset = AdministrativeUnit.objects.filter(parent__isnull=True)
     serializer_class = AdministrativeUnitModelSerializer
 
 
 class AdministrativeUnitDescendantsAPIView(APIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, pk):
         try:
@@ -58,7 +58,7 @@ class AdministrativeUnitDescendantsAPIView(APIView):
 
 
 class AdministrativeUnitAncestorChainAPIView(APIView):
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request, pk):
         try:

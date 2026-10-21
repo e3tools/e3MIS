@@ -79,10 +79,8 @@ class FollowUpEventUpdateView(LoginRequiredMixin, IsStaffMemberMixin, UpdateView
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs.update({
-            "user": self.request.user,
-            "trackable_object": self.kwargs.get('pk', None),
-        })
+        # The URL's pk is the follow-up event, not a trackable object: the form takes the event's own objects.
+        kwargs.update({"user": self.request.user})
         return kwargs
 
     def get_success_url(self):

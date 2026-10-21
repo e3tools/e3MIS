@@ -6,10 +6,14 @@ from .models import CustomUser, AppSettings
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ('email', 'is_staff', 'is_active', 'is_superuser', 'is_field_agent')
-    list_filter = ('is_staff', 'is_superuser', 'is_field_agent')
+    list_display = ('email', 'full_name', 'role', 'commune', 'supervisor', 'is_active', 'is_field_agent')
+    list_filter = ('role', 'is_staff', 'is_superuser', 'is_field_agent')
+    autocomplete_fields = ('supervisor',)
     fieldsets = (
-        (None, {'fields': ('email', 'password')}),
+        (None, {'fields': ('email', 'password', 'full_name', 'first_name', 'last_name', 'phone_number')}),
+        ('Field monitoring',
+         {'fields': ('role', 'supervisor', 'commune', 'region', 'device_class', 'onboarded_on',
+                     'preferred_language')}),
         ('Permissions',
          {'fields': ('is_staff', 'is_active', 'is_superuser', 'is_field_agent', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login',)}),
@@ -22,7 +26,7 @@ class CustomUserAdmin(UserAdmin):
                        'administrative_units')}
          ),
     )
-    search_fields = ('email',)
+    search_fields = ('email', 'full_name')
     ordering = ('email',)
 
 

@@ -31,7 +31,7 @@
                                 <div class="info-box bg-light">
                                     <div class="info-box-content">
                                         <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
-                                        <span class="info-box-number text-center text-muted mb-0">{{ object.created_by.get_full_name|default:object.created_by.email }}</span>
+                                        <span class="info-box-number text-center text-muted mb-0">{% firstof object.created_by.get_full_name object.created_by.email "—" %}</span>
                                     </div>
                                 </div>
                             </div>
@@ -52,6 +52,42 @@
                                 </div>
                             </div>
                         </div>
+                        {% if object.visit %}
+                            {# Check-in data of the visit the form was filled in (forms 2.1, 3.1, 4.1). #}
+                            <div class="callout callout-success">
+                                <strong>{% translate 'Visit' %}:</strong>
+                                {{ object.visit.worksite.name }} ·
+                                {% translate 'Check-in' %} {{ object.visit.checked_in_at|date:"d M, Y - H:i" }}
+                                {% if object.visit.checked_out_at %}→ {{ object.visit.checked_out_at|date:"H:i" }}{% endif %} ·
+                                {{ object.visit.get_state_display }}{% if object.visit.unverified_reason %} ({{ object.visit.get_unverified_reason_display }}){% endif %}
+                                {% if object.visit.checkin_distance_m is not None %} · {% translate 'Distance' %} {{ object.visit.checkin_distance_m }} m{% endif %}
+                                {% if object.visit.checkin_accuracy_m is not None %} · {% translate 'Accuracy' %} ±{{ object.visit.checkin_accuracy_m }} m{% endif %}
+                            </div>
+                        {% elif object.visit_key %}
+                            <div class="callout callout-warning">{% translate 'Filled during a visit that has not reached the server yet.' %}</div>
+                        {% endif %}
+                        {% if stage_label %}
+                            <div class="callout callout-info d-flex flex-wrap align-items-center justify-content-between">
+                                <div>
+                                    <span class="text-muted">{% translate 'Stage' %}:</span>
+                                    <strong>{{ stage_label }}</strong>
+                                    {% for change in stage_changes %}
+                                        <div class="small text-muted">
+                                            {{ change.changed_at|date:"d M, Y - P" }} · {{ change.from_label|default:"—" }} → {{ change.to_label }}
+                                            {% if change.by %}· {{ change.by }}{% endif %}
+                                            {% if change.note %}· {{ change.note }}{% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                {% if can_reopen %}
+                                    <form method="post" action="{% url 'trackableobjects:trackable_object_instance_reopen' object.pk %}" class="form-inline mt-2 mt-md-0">
+                                        {% csrf_token %}
+                                        <input type="text" name="note" class="form-control form-control-sm mr-2" placeholder="{% translate 'Reason' %}" required>
+                                        <button type="submit" class="btn btn-sm btn-warning">{% translate 'Reopen' %}: {{ reopen_label }}</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                         <form method="post" id="answers-form" enctype="multipart/form-data">
                             {% csrf_token %}
                             <div class="row">

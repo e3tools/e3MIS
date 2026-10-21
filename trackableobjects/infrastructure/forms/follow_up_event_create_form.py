@@ -36,8 +36,25 @@ class FollowUpEventForm(forms.ModelForm):
         if self.trackable_object is not None:
             self.fields['trackable_objects'].initial = self.trackable_object
 
-        qs = FollowUpEvent.objects.filter(trackable_objects=self.trackable_object)
-        self.fields['dependencies'].queryset = qs
+        # A follow-up can wait for another follow-up of the same trackable object. When editing, offer the
+        # follow-ups of the objects this one is linked to and keep the saved dependencies selected;
+        # otherwise saving the form would silently drop them.
+        if self.trackable_object is not None:
+            objects = [self.trackable_object]
+        elif not self.creating:
+            objects = list(self.instance.trackable_objects.all())
+        else:
+            objects = []
+        if objects:
+            qs = FollowUpEvent.objects.filter(trackable_objects__in=objects)
+        else:
+            qs = FollowUpEvent.objects.filter(trackable_objects=None)
+        if not self.creating:
+            parent_ids = list(FollowUpEventDependency.objects.filter(child=self.instance)
+                              .values_list('parent_id', flat=True))
+            qs = (qs | FollowUpEvent.objects.filter(pk__in=parent_ids)).exclude(pk=self.instance.pk)
+            self.initial.setdefault('dependencies', parent_ids)
+        self.fields['dependencies'].queryset = qs.distinct()
 
     def save(self, commit=True):
         dependencies = list()

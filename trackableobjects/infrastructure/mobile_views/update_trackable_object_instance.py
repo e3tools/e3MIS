@@ -8,6 +8,7 @@ from trackableobjects.models import TrackableObject, TrackableObjectInstance
 from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units
+from trackableobjects import lifecycle
 
 
 def serialize_for_json(data):
@@ -61,6 +62,7 @@ class TrackableObjectInstanceUpdateView(IsFieldAgentUserMixin, CreateView):
         self.object.filled_by = self.request.user
         self.object.jsonForm = cleaned_data
         self.object.save()
+        lifecycle.on_record_updated(self.object, self.request.user)
 
         # if form.files is not None:
         #     for key, value in form.files.items():

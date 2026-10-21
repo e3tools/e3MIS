@@ -1,5 +1,5 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.db.models import Q, OuterRef, Count, Subquery, IntegerField, F
@@ -48,7 +48,7 @@ class AdministrativeUnitListAPIView(generics.ListAPIView):
 
 
 class AdministrativeUnitListForSelectAPIView(AdministrativeUnitListAPIView):
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
     pagination_class = None
     swagger_schema = None
 
@@ -74,6 +74,7 @@ class LastSubprojectCustomFieldRetrieveAPIView(generics.RetrieveAPIView):
 
 
 class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated,)
     pagination_class = None
     queryset = SubprojectCustomField.objects.all()
     serializer_class = SubprojectCustomFieldSerializer
@@ -85,7 +86,7 @@ class SubprojectCustomFieldRetrieveAPIView(generics.ListAPIView):
 
         custom_field_ids = self.get_subproject_custom_field_ids()
 
-        administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
+        administrative_unit = generics.get_object_or_404(AdministrativeUnit, pk=administrative_unit_id or None)
         all_lower_children = self.get_lower_children(administrative_unit)
         for child in all_lower_children:
             node_list = list(Subproject.objects.filter(administrative_level=child).values(

@@ -5,7 +5,10 @@ from trackableobjects.infrastructure.views.trackable_object_create_view import T
 from trackableobjects.infrastructure.views.trackable_object_detail_view import TrackableObjectDetailView
 from trackableobjects.infrastructure.views.trackable_object_edit_view import TrackableObjectEditView
 from trackableobjects.infrastructure.views.trackable_object_delete_view import TrackableObjectDeleteView
-from trackableobjects.infrastructure.views.response_detail_view import TrackableObjectInstanceDetailView
+from trackableobjects.infrastructure.views.response_detail_view import (
+    TrackableObjectInstanceDetailView,
+    TrackableObjectInstanceReopenView,
+)
 from trackableobjects.infrastructure.views.follow_up_event_create_view import FollowUpEventCreateView
 from trackableobjects.infrastructure.views.follow_up_event_detail_view import FollowUpEventDetailView
 from trackableobjects.infrastructure.views.follow_up_event_edit_view import FollowUpEventUpdateView
@@ -49,6 +52,8 @@ urlpatterns = [
     path('<int:pk>/edit/', TrackableObjectEditView.as_view(), name='trackable_object_edit'),
     path('<int:pk>/delete/', TrackableObjectDeleteView.as_view(), name='trackable_object_delete'),
     path('response/<int:pk>/', TrackableObjectInstanceDetailView.as_view(), name='trackable_object_instance_detail'),
+    path('response/<int:pk>/reopen/', TrackableObjectInstanceReopenView.as_view(),
+         name='trackable_object_instance_reopen'),
     path('<int:pk>/instances/export/<str:fmt>/', TrackableObjectInstancesExportView.as_view(),
          name='trackable_object_instances_export'),
     path('follow-up-event/<int:pk>/responses/export/<str:fmt>/', FollowUpEventResponsesExportView.as_view(),

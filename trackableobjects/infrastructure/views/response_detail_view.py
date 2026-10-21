@@ -1,8 +1,12 @@
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.views import View
 from django.views.generic import DetailView
 from django.utils.translation import gettext as _
 
 from subprojects.models import Attachment
+from trackableobjects import lifecycle
 from trackableobjects.models import TrackableObjectInstance
 from administrativelevels.models import AdministrativeLevel
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -27,6 +31,7 @@ class TrackableObjectInstanceDetailView(EditableSubmissionMixin, LoginRequiredMi
         context['attachments'] = Attachment.objects.filter(trackable_object_instance=self.object)
         context['administrative_levels'] = AdministrativeLevel.objects.all().order_by('order')
         context.setdefault('editing', False)
+        context.update(stage_context(self.object))
         return context
 
     def get_schema_json(self):
@@ -69,3 +74,43 @@ class TrackableObjectInstanceDetailView(EditableSubmissionMixin, LoginRequiredMi
 
         recurse(administrative_unit)
         return descendants
+
+
+def stage_context(instance):
+    """Lifecycle stage of a record, its history and where "Reopen" would send it (lifecycle.py)."""
+    template = instance.trackable_object
+    if not lifecycle.stage_keys(template):
+        return {}
+    changes = [
+        {
+            "changed_at": c.changed_at,
+            "from_label": lifecycle.stage_label(template, c.from_stage) if c.from_stage else "",
+            "to_label": lifecycle.stage_label(template, c.to_stage),
+            "by": (c.changed_by.get_full_name() or c.changed_by.email) if c.changed_by else "",
+            "note": c.note,
+        }
+        for c in instance.stage_changes.select_related("changed_by")[:10]
+    ]
+    target = lifecycle.reopen_target(instance)
+    return {
+        "stage_label": lifecycle.stage_label(template, instance.stage),
+        "stage_changes": changes,
+        "can_reopen": bool(target) and target != instance.stage,
+        "reopen_label": lifecycle.stage_label(template, target) if target else "",
+    }
+
+
+class TrackableObjectInstanceReopenView(LoginRequiredMixin, IsStaffMemberMixin, View):
+    """Send a record back to its previous stage, e.g. a sub-project terminated by mistake."""
+
+    def post(self, request, pk):
+        instance = get_object_or_404(TrackableObjectInstance, pk=pk)
+        note = (request.POST.get("note") or "").strip()
+        if not note:
+            messages.error(request, _("Give a reason to reopen."))
+        else:
+            lifecycle.reopen(instance, request.user, note=note)
+            messages.success(request, _("Stage: %(stage)s") % {
+                "stage": lifecycle.stage_label(instance.trackable_object, instance.stage)
+            })
+        return redirect("trackableobjects:trackable_object_instance_detail", pk=pk)

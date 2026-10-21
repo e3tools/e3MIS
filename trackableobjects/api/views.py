@@ -1,13 +1,16 @@
 from rest_framework import generics, permissions, viewsets
 from rest_framework.authentication import SessionAuthentication
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.db.models import Subquery
 from django.template.defaultfilters import date
 
-from api.permissions import ReadOnly
+from api.permissions import IsNotFieldAgent, ReadOnly
+from rest_framework.permissions import IsAuthenticated
 from authorization.models import CustomUser
 from administrativelevels.models import AdministrativeUnit
 from trackableobjects.api.serializers import (
@@ -23,6 +26,7 @@ from trackableobjects.models import (
 
 
 class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     pagination_class = None
     queryset = TrackableObjectInstance.objects.all()
     serializer_class = TrackableObjectInstanceSerializer
@@ -34,18 +38,23 @@ class TrackableObjectInstanceRetrieveAPIView(generics.ListAPIView):
         administrative_unit_id = self.request.query_params.get('administrative-unit', None)
         trackable_object = self.request.query_params.get('trackable-object', None)
 
+        if not trackable_object:
+            raise ValidationError({'trackable-object': 'This parameter is required.'})
+
+        # The user is the signed-in user (session), never a client-sent header.
+        user = self.request.user
+        user_unit_ids = set()
+        for unit in user.administrative_units.all():
+            self._collect_ancestor_ids(unit, user_unit_ids)
+            self._collect_descendant_ids(unit, user_unit_ids)
+
         # Collect all accessible admin unit IDs (ancestors + descendants)
-        if administrative_unit_id == '':
-            user = CustomUser.objects.filter(id=self.request.META.get('HTTP_USER', None)).first()
-            if user:
-                all_unit_ids = set()
-                for unit in user.administrative_units.all():
-                    self._collect_ancestor_ids(unit, all_unit_ids)
-                    self._collect_descendant_ids(unit, all_unit_ids)
-            else:
-                all_unit_ids = set()
+        if not administrative_unit_id:
+            all_unit_ids = user_unit_ids
         else:
-            administrative_unit = AdministrativeUnit.objects.get(pk=administrative_unit_id)
+            administrative_unit = get_object_or_404(AdministrativeUnit, pk=administrative_unit_id)
+            if user.is_field_agent and administrative_unit.pk not in user_unit_ids:
+                raise PermissionDenied('This administrative unit is not assigned to you.')
             all_unit_ids = set()
             self._collect_ancestor_ids(administrative_unit, all_unit_ids)
             self._collect_descendant_ids(administrative_unit, all_unit_ids)
@@ -114,30 +123,30 @@ class FollowUpEventReorderAPIView(APIView):
 
 
 class TrackableObjectModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
+    permission_classes = [ReadOnly, IsAuthenticated, IsNotFieldAgent]
     queryset = TrackableObject.objects.all()
     serializer_class = TrackableObjectSerializer
 
 
 class FollowUpEventModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
+    permission_classes = [ReadOnly, IsAuthenticated, IsNotFieldAgent]
     queryset = FollowUpEvent.objects.all()
     serializer_class = FollowUpEventSerializer
 
 
 class FollowUpEventDependencyModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
+    permission_classes = [ReadOnly, IsAuthenticated, IsNotFieldAgent]
     queryset = FollowUpEventDependency.objects.all()
     serializer_class = FollowUpEventDependencySerializer
 
 
 class TrackableObjectInstanceModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
+    permission_classes = [ReadOnly, IsAuthenticated, IsNotFieldAgent]
     queryset = TrackableObjectInstance.objects.all()
     serializer_class = TrackableObjectInstanceSerializer
 
 
 class FollowUpEventResponseModelViewSet(viewsets.ModelViewSet):
-    permission_classes = [ReadOnly]
+    permission_classes = [ReadOnly, IsAuthenticated, IsNotFieldAgent]
     queryset = FollowUpEventResponse.objects.all()
     serializer_class = FollowUpEventResponseSerializer

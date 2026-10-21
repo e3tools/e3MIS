@@ -1,0 +1,47 @@
+# Local development stack (not used in production, see deploy/ for the VM files).
+#   docker compose up -d        -> PostGIS on localhost:5434 + Django on http://localhost:8000
+# The code is mounted into the container, so runserver reloads on every save: no down/up needed.
+# Rebuild (docker compose up -d --build) only after changing requirements*.txt or the Dockerfile.
+services:
+  db:
+    image: postgis/postgis:17-3.5
+    # The official PostGIS image is amd64-only; Apple Silicon runs it under emulation.
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: mis
+      POSTGRES_USER: mis
+      POSTGRES_PASSWORD: mis
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mis -d mis"]
+      interval: 5s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      args:
+        DEV: "true"
+    # run.sh "django" = python manage.py ...
+    command: ["django", "runserver", "0.0.0.0:8000"]
+    environment:
+      # Dev-only values. A local .env, if present, can add MAPBOX_ACCESS_TOKEN etc.;
+      # the values below win over it.
+      SECRET_KEY: dev-only-change-me
+      DEBUG: "True"
+      DATABASE_URL: postgis://mis:mis@db:5432/mis
+      # No PROGRAMME_TIMEZONE here: it is the model default, so setting it makes makemigrations
+      # see a fake change. Production sets it in the VM .env.
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/usr/appserver
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

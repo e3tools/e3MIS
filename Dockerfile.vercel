@@ -1,0 +1,20 @@
+# Container image for the internal demo on Vercel's container runtime (merge plan Q1).
+# Production runs on the government server with its own image (prod_config).
+# GeoDjango needs GDAL/GEOS/PROJ; Python 3.12 because numpy 2.0 has no 3.13 wheels.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8000
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gdal-bin libgdal-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+RUN SECRET_KEY=build python manage.py collectstatic --noinput
+
+# Stateless: no local state survives between instances. Files go to object storage (Vercel Blob).
+CMD ["sh", "-c", "gunicorn src.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 30"]

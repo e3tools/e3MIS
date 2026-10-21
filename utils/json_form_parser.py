@@ -253,6 +253,10 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
                 queryset = queryset.filter(id__in=administrative_level_ids)
             elif max_admin_level_order is not None:
                 queryset = queryset.filter(level__order__lte=int(max_admin_level_order))
+            # Field app extension: the answer must be at least this deep (e.g. a village, not
+            # its region). Answers at a shallower level fail validation like any invalid choice.
+            if validators.get('min_admin_level_order') is not None:
+                queryset = queryset.filter(level__order__gte=int(validators['min_admin_level_order']))
             widget_attrs['class'] = widget_attrs.get('class', '') + ' form-control'
             widget_attrs['data-field-type'] = 'administrative_level'
             widget_attrs['data-admin-level-restriction'] = administrative_level_restriction
@@ -465,9 +469,14 @@ def evaluate_condition(field_value, operator, expected_value):
     if field_value is None or field_value == '':
         return False
 
-    # Convert to string for comparison if needed
+    # Convert to string for comparison if needed. Yes/No answers are compared case-insensitively: the
+    # form builder saves "true"/"false", older forms have "True"/"False", answers are Python booleans.
     field_value_str = str(field_value)
     expected_value_str = str(expected_value)
+    if isinstance(field_value, bool) or field_value_str in ('true', 'false'):
+        field_value_str = field_value_str.lower()
+        if expected_value_str.lower() in ('true', 'false'):
+            expected_value_str = expected_value_str.lower()
 
     if operator == 'equals':
         return field_value_str == expected_value_str

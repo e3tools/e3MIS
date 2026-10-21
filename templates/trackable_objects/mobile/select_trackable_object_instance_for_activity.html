@@ -285,7 +285,6 @@
 
         $.ajax({
             url: url,
-            headers: { user: "{{ user.id }}" },
             success: function(data) {
                 allInstances = data;
                 renderRecentChips();

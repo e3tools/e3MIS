@@ -5,6 +5,7 @@ from django.views.generic import TemplateView
 from django.db.models import Q, OuterRef, Exists, Subquery
 
 from src.permissions import IsFieldAgentUserMixin
+from trackableobjects import visibility
 from trackableobjects.models import (
     TrackableObject, TrackableObjectInstance,
     FollowUpEvent, FollowUpEventResponse,
@@ -20,10 +21,7 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
         user_group_ids = list(user.groups.values_list('id', flat=True))
 
         # All admin-unit IDs the user can access (assigned + descendants + ancestors)
-        admin_unit_ids = set()
-        for unit in user.administrative_units.all():
-            self._collect_ancestor_ids(unit, admin_unit_ids)
-            self._collect_descendant_ids(unit, admin_unit_ids)
+        admin_unit_ids = visibility.accessible_unit_ids(user)
 
         # ── FollowUpEvents accessible to this user (at least one shared group) ──
         matched_fe_groups = FollowUpEvent.groups.through.objects.filter(
@@ -243,16 +241,3 @@ class AllActivitiesView(IsFieldAgentUserMixin, TemplateView):
         kwargs['admin_units'] = sorted(admin_units)
 
         return super().get_context_data(**kwargs)
-
-    @staticmethod
-    def _collect_ancestor_ids(unit, id_set):
-        node = unit
-        while node is not None:
-            id_set.add(node.id)
-            node = node.parent
-
-    @staticmethod
-    def _collect_descendant_ids(unit, id_set):
-        id_set.add(unit.id)
-        for child in unit.children.all():
-            AllActivitiesView._collect_descendant_ids(child, id_set)

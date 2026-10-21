@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": ".",
+      "runtime": "container",
+      "entrypoint": "Dockerfile.vercel"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/v1/jobs/run/",
+      "schedule": "10 20 * * *"
+    },
+    {
+      "path": "/api/v1/jobs/run/",
+      "schedule": "10 6 * * 1"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    }
+  ]
+}

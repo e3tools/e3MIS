@@ -21,7 +21,7 @@
         <div class="info-box-content">
           <span class="info-box-text text-center text-muted">{% translate 'Report by' %}</span>
           <span class="info-box-number text-center text-muted mb-0">
-            {{ object.created_by.get_full_name|default:object.created_by.email }}
+            {% firstof object.created_by.get_full_name object.created_by.email "—" %}
           </span>
         </div>
       </div>
@@ -143,7 +143,7 @@
                       </a>
                     </td>
                     <td class="text-nowrap">{{ row.instance.display_id }}</td>
-                    <td>{{ row.instance.created_by.get_full_name|default:row.instance.created_by.email }}</td>
+                    <td>{% firstof row.instance.created_by.get_full_name row.instance.created_by.email "—" %}</td>
                     <td>
                       {% for group in row.instance.groups.all %}
                         {{ group.name }}{% if not forloop.last %}, {% endif %}

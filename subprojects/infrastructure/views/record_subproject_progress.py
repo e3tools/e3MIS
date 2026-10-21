@@ -1,4 +1,5 @@
 from subprojects.models import Subproject, ProgressUpdate
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import CreateView
 
 from src.permissions import IsStaffMemberMixin
@@ -7,7 +8,7 @@ from django.template.response import TemplateResponse
 from django.contrib import messages
 
 
-class SubprojectProgressCreateView(IsStaffMemberMixin, CreateView):
+class SubprojectProgressCreateView(LoginRequiredMixin, IsStaffMemberMixin, CreateView):
     model = ProgressUpdate
     form_class = SubprojectProgressForm
     template_name = "subprojects/partial_progress_form.html"

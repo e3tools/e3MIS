@@ -9,6 +9,7 @@ from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
 from src.permissions import IsFieldAgentUserMixin
 from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units
 from django.contrib import messages
+from trackableobjects import lifecycle
 
 
 def serialize_for_json(data):
@@ -66,6 +67,7 @@ class TrackableObjectInstanceCreateView(IsFieldAgentUserMixin, CreateView):
             jsonForm=cleaned_data
         )
         instance.save()
+        lifecycle.on_record_created(instance, self.request.user)
 
         if form.files is not None:
             for key, value in form.files.items():

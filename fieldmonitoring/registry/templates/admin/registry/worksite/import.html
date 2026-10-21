@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <p>Columns: <code>name, code, village, commune, region, latitude, longitude, tolerance_m, status</code>.
+     Blank coordinates are allowed. The high-risk flag is set through the approval workflow, not by import.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Import">
+  </form>
+{% endblock %}

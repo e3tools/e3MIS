@@ -52,3 +52,12 @@ ENV/
 collected_static/
 
 db.sqlite3
+
+# local-only files that must never end up in the production image
+media/
+deploy/
+*.sqlite3
+mail-recommandations.txt
+pro-env.txt
+.env.*
+!.env.example
