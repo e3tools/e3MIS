@@ -59,15 +59,25 @@ SQLite n'est plus possible.
 ```bash
 docker build -t cosobenin/smp-app:v2.0.0 .
 docker push cosobenin/smp-app:v2.0.0
+# image de la base (Postgres 17 bookworm + PostGIS), seulement si deploy/db/Dockerfile a changé
+docker build -t cosobenin/smp-db:17-postgis3 deploy/db
+docker push cosobenin/smp-db:17-postgis3
 ```
 
 Garder l'ancien tag `v1.4.3` sur Docker Hub : c'est le retour arrière.
+
+> Ne pas utiliser `postgis/postgis:17-*` pour la base : ces images sont sur Debian bullseye (glibc 2.31),
+> alors que les données de prod ont été créées par `postgres:17.0` sur bookworm (glibc 2.36). Postgres
+> affiche alors `collation version mismatch` et les index sur du texte peuvent devenir incohérents.
 
 ---
 
 ## 2. Sur la VM, avant le `up`
 
-Toutes les commandes sont lancées dans le dossier du `docker-compose.yaml` actuel.
+Toutes les commandes sont lancées dans le dossier du `docker-compose.yaml` actuel
+(`/home/adminroot/docker-app`). Sur la VM, `docker` demande `sudo` : préfixer chaque commande
+`docker compose ...` par `sudo`. Les fichiers de `deploy/` se collent dans la session SSH
+(`cat > fichier <<'EOF' ... EOF`), le PAM ne permettant pas `scp` avec un compte Interactive.
 
 1. **Sauvegarder** (l'ancienne stack tourne encore) :
    ```bash
@@ -87,11 +97,16 @@ Toutes les commandes sont lancées dans le dossier du `docker-compose.yaml` actu
    - `deploy/docker-compose.yaml` → `docker-compose.yaml` (vérifier le tag de l'image, 2 occurrences)
    - `deploy/nginx/nginx.conf` → `data/nginx/nginx.conf`
 4. **Récupérer l'image** : `docker compose pull`
-5. **Passer la base sur PostGIS** (même Postgres 17, le volume `pg_data` est réutilisé) :
+5. **Passer la base sur PostGIS** (image `cosobenin/smp-db:17-postgis3` : même Postgres 17 et même
+   Debian que `postgres:17.0`, le volume `pg_data` est réutilisé) :
    ```bash
    docker compose up -d db
    docker compose exec db psql -U postgres -d smp -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+   docker compose exec db psql -U postgres -d smp -c "ALTER EXTENSION postgis UPDATE;"
+   docker compose exec db psql -U postgres -d smp -c "REINDEX DATABASE smp;"
    ```
+   Aucun `WARNING: ... collation version mismatch` ne doit s'afficher. Le `REINDEX` reconstruit les
+   index avec la collation de l'image (rapide sur cette base, sans risque).
 6. **Démarrer le reste** : `docker compose up -d`
    (`run.sh serve` lance `migrate` et `collectstatic` tout seul.)
 
@@ -116,15 +131,15 @@ Toutes les commandes sont lancées dans le dossier du `docker-compose.yaml` actu
 
 ## 4. Retour arrière
 
-La base garde l'image PostGIS (une base qui a eu l'extension ne se relit pas proprement avec
-`postgres:17.0`) ; on la recrée depuis le dump d'avant la mise à jour.
+La base garde l'image `cosobenin/smp-db:17-postgis3` (une base qui a eu l'extension ne se relit pas
+proprement avec `postgres:17.0`) ; on la recrée depuis le dump d'avant la mise à jour.
 
 ```bash
 docker compose down
 cp docker-compose.yaml.v1.4.3 docker-compose.yaml
 cp ~/nginx.conf.v1.4.3 data/nginx/nginx.conf
 cp ~/.env.v1.4.3 .env
-# dans docker-compose.yaml, service db : image: postgis/postgis:17-3.5
+# dans docker-compose.yaml, service db : image: cosobenin/smp-db:17-postgis3
 docker compose up -d db
 docker compose exec -T db dropdb -U postgres smp
 docker compose exec -T db createdb -U postgres smp

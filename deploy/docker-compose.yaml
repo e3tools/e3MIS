@@ -35,8 +35,10 @@ services:
       - django-app
 
   db:
-    # Same Postgres 17 as before plus PostGIS: the existing pg_data volume is reused as is.
-    image: postgis/postgis:17-3.5
+    # Postgres 17 on Debian bookworm plus PostGIS, built from deploy/db/Dockerfile: same glibc as the
+    # previous postgres:17.0 image, so the existing pg_data volume and its text indexes stay valid.
+    # Do not use postgis/postgis:17-* (Debian bullseye, different glibc collation).
+    image: cosobenin/smp-db:17-postgis3
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
