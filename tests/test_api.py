@@ -57,3 +57,21 @@ def test_malformed_api_token_is_rejected(instance):
     c = APIClient()
     c.credentials(HTTP_AUTHORIZATION="Bearer MIS-deadbeef.wrong")
     assert c.get("/fr/api/v1/trackable-object/").status_code == 401
+
+
+def test_mis_swagger_schema_builds(staff_client):
+    # drf-yasg used to fail with a ref_name collision once the field app API was added.
+    r = staff_client.get("/fr/api/v1/swagger/?format=openapi")
+    assert r.status_code == 200, r.content[:500]
+    schema = r.json()
+    # Paths are relative to basePath (/fr): "/api/v1/..." here is /fr/api/v1/...
+    assert schema["basePath"] == "/fr"
+    paths = schema["paths"]
+    assert "/api/v1/trackable-object/" in paths
+    # The field app API (/api/v1/... without language prefix) is documented by /api/docs/ only.
+    assert not any("/visits/" in p or "/forms/sync/" in p for p in paths)
+
+
+def test_field_api_schema_builds(staff_client):
+    r = staff_client.get("/api/schema/")
+    assert r.status_code == 200
