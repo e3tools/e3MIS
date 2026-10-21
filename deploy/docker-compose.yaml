@@ -24,7 +24,9 @@ services:
   scheduler:
     image: cosobenin/smp-app:v2.0.0   # same tag as django-app
     restart: always
-    command: ["django", "run_jobs", "--loop"]
+    # depends_on only waits for django-app to start, not for its migrations: wait until
+    # `migrate --check` reports nothing left to apply, then run the jobs.
+    command: ["eval", "until python manage.py migrate --check >/dev/null 2>&1; do sleep 5; done; exec python manage.py run_jobs --loop"]
     env_file: .env
     environment:
       MEDIA_ROOT: /usr/appserver/media
