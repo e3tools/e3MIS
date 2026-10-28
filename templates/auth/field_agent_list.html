@@ -88,7 +88,7 @@
         <div class="modal-content">
             <form action="." id="fieldAgentForm" method="post">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% translate 'Edit Field Agent' %}</h5>
+                    <h5 class="modal-title" id="fieldAgentModalTitle">{% translate 'Edit Field Agent' %}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -418,6 +418,7 @@
 
             $(".field-agent-modal-show").on("click", function () {
                 const isEdit = $(this).data("id") !== "";
+                $('#fieldAgentModalTitle').text(isEdit ? editTitle : createTitle);
                 $("#id_field_agent").val($(this).data("id"));
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
@@ -483,12 +484,17 @@
 
             // Role: show the fields the role uses, offer only the SCs of the chosen commune,
             // and pre-select the role's MIS group (the admin can still change the groups).
+            {% translate "Edit Field Agent" as edit_title %}{% translate "Create Field Agent" as create_title %}
+            const editTitle = '{{ edit_title|escapejs }}';
+            const createTitle = '{{ create_title|escapejs }}';
             const roleGroups = JSON.parse(document.getElementById('role-groups').textContent);
             const supervisorOptions = $('#id_supervisor option').clone();
             const supervisorCommunes = JSON.parse(document.getElementById('supervisor-communes').textContent);
 
             function showRoleFields() {
-                const role = $('#id_role').val();
+                // Before a role is chosen, show the fields of the usual case (FT/FC: commune and
+                // supervisor), so the form says up front what an agent needs.
+                const role = $('#id_role').val() || 'ft';
                 $('.role-field').each(function () {
                     $(this).toggle(String($(this).data('roles')).split(' ').indexOf(role) !== -1);
                 });
@@ -525,6 +531,7 @@
             // A refused form reopens with what was posted (the fields keep their values).
             {% if form.errors %}
                 const isEdit = $('#id_field_agent').val() !== '';
+                $('#fieldAgentModalTitle').text(isEdit ? editTitle : createTitle);
                 $('#reset-password-toggle').toggle(isEdit);
                 if (isEdit && !$('#id_password1').val()) {
                     $('#password-fields').hide().find('input').removeAttr('required');

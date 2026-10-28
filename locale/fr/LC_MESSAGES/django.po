@@ -254,3 +254,11 @@ msgstr "Les FT, FC et SC doivent avoir une commune."
 #: authorization/models.py
 msgid "A regional specialist needs a region."
 msgstr "Un spécialiste régional doit avoir une région."
+
+#: templates/auth/field_agent_list.html
+msgid "Edit Field Agent"
+msgstr "Modifier l'agent de terrain"
+
+#: templates/auth/field_agent_list.html
+msgid "Create Field Agent"
+msgstr "Créer un agent de terrain"
