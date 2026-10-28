@@ -47,3 +47,20 @@ def villages_under(area: AdministrativeUnit):
     if config.village_level_id:
         return units.filter(level_id=config.village_level_id)
     return units.filter(children__isnull=True)
+
+
+def communes():
+    """Units that play the "commune" role (the units an SC, FT or FC is attached to)."""
+    config = _config()
+    if config.commune_level_id:
+        return AdministrativeUnit.objects.filter(level_id=config.commune_level_id)
+    # Tree position: the parents of villages (leaves).
+    return AdministrativeUnit.objects.filter(children__isnull=False, children__children__isnull=True).distinct()
+
+
+def regions():
+    """Units that play the "region" role (the area of a regional specialist)."""
+    config = _config()
+    if config.region_level_id:
+        return AdministrativeUnit.objects.filter(level_id=config.region_level_id)
+    return AdministrativeUnit.objects.filter(pk__in=communes().values("parent_id"))

@@ -203,3 +203,54 @@ msgstr "Sauvegarder"
 #: templates/subprojects/partial_update_success.html:65
 msgid "updated successfully"
 msgstr "mis à jour avec succès"
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+#: templates/auth/field_agent_list.html
+msgid "Role"
+msgstr "Rôle"
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+#: templates/auth/field_agent_list.html
+msgid "Supervisor"
+msgstr "Superviseur"
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+#: templates/auth/field_agent_list.html
+msgid "Commune"
+msgstr "Commune"
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "Region"
+msgstr "Région"
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "The communal supervisor (SC) of a technical or community facilitator."
+msgstr "Le superviseur communal (SC) d'un facilitateur technique ou communautaire."
+
+#: templates/auth/field_agent_list.html
+msgid "No role"
+msgstr "Aucun rôle"
+
+#: authorization/models.py
+msgid "An FT or FC must have an SC as supervisor."
+msgstr "Un FT ou un FC doit avoir un SC comme superviseur."
+
+#: authorization/models.py
+msgid "The supervisor of an FT or FC must be an SC."
+msgstr "Le superviseur d'un FT ou d'un FC doit être un SC."
+
+#: authorization/models.py
+msgid "The supervisor must be an SC in the same commune."
+msgstr "Le superviseur doit être un SC de la même commune."
+
+#: authorization/models.py
+msgid "Only FTs and FCs have a supervisor."
+msgstr "Seuls les FT et les FC ont un superviseur."
+
+#: authorization/models.py
+msgid "FT, FC and SC users need a commune."
+msgstr "Les FT, FC et SC doivent avoir une commune."
+
+#: authorization/models.py
+msgid "A regional specialist needs a region."
+msgstr "Un spécialiste régional doit avoir une région."
