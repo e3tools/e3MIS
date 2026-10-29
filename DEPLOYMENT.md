@@ -57,8 +57,8 @@ SQLite n'est plus possible.
 ### 1.4 Construire et publier l'image
 
 ```bash
-docker build -t cosobenin/smp-app:v2.0.1 .
-docker push cosobenin/smp-app:v2.0.1
+docker build -t cosobenin/smp-app:v2.0.2 .
+docker push cosobenin/smp-app:v2.0.2
 # image de la base (Postgres 17 bookworm + PostGIS), seulement si deploy/db/Dockerfile a changé
 docker build -t cosobenin/smp-db:17-postgis3 deploy/db
 docker push cosobenin/smp-db:17-postgis3

@@ -4,7 +4,7 @@
 # Postgres reachable from the VM only.
 services:
   django-app:
-    image: cosobenin/smp-app:v2.0.1   # bump to the tag you pushed
+    image: cosobenin/smp-app:v2.0.2   # bump to the tag you pushed
     restart: always
     ports:
       - '9000:9000'
@@ -22,7 +22,7 @@ services:
   # Runs the scheduled jobs (20:00 automatic visit close, Monday weekly warning). Same image,
   # checks every 60 s and only runs what is due. Replaces a cron entry on the host.
   scheduler:
-    image: cosobenin/smp-app:v2.0.1   # same tag as django-app
+    image: cosobenin/smp-app:v2.0.2   # same tag as django-app
     restart: always
     # depends_on only waits for django-app to start, not for its migrations: wait until
     # `migrate --check` reports nothing left to apply, then run the jobs.
