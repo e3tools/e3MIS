@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 
 class Role(models.TextChoices):
@@ -139,20 +140,20 @@ class CustomUser(AbstractUser):
         super().clean()
         if self.role in FACILITATOR_ROLES:
             if not self.supervisor_id:
-                raise ValidationError({"supervisor": "An FT or FC must have an SC as supervisor."})
+                raise ValidationError({"supervisor": _("An FT or FC must have an SC as supervisor.")})
             if self.supervisor.role != Role.SC:
-                raise ValidationError({"supervisor": "The supervisor of an FT or FC must be an SC."})
+                raise ValidationError({"supervisor": _("The supervisor of an FT or FC must be an SC.")})
             if not self.commune_id or self.supervisor.commune_id != self.commune_id:
                 raise ValidationError(
-                    {"supervisor": "The supervisor must be an SC in the same commune."}
+                    {"supervisor": _("The supervisor must be an SC in the same commune.")}
                 )
         elif self.supervisor_id:
             # SCs and above have no supervisor; their visits route to the RdP (BR-10).
-            raise ValidationError({"supervisor": "Only FTs and FCs have a supervisor."})
+            raise ValidationError({"supervisor": _("Only FTs and FCs have a supervisor.")})
         if self.role in FIELD_STAFF_ROLES and not self.commune_id:
-            raise ValidationError({"commune": "FT, FC and SC users need a commune."})
+            raise ValidationError({"commune": _("FT, FC and SC users need a commune.")})
         if self.role == Role.REGIONAL_SPECIALIST and not self.region_id:
-            raise ValidationError({"region": "A regional specialist needs a region."})
+            raise ValidationError({"region": _("A regional specialist needs a region.")})
         # With FT/FC -> SC and SC -> nobody, a chain has depth one and cannot cycle.
         # Checked explicitly anyway so a future role change cannot introduce one.
         seen, node = {self.pk}, self.supervisor

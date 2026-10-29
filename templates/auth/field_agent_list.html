@@ -15,6 +15,7 @@
                     <div class="col-12">
                         <a class="btn btn-primary pull-right field-agent-modal-show" data-first-name=""
                            data-last-name="" data-email="" data-phone-number="" data-administrative-units="" data-groups="" data-id=""
+                           data-role="" data-commune="" data-supervisor="" data-region=""
                         >{% translate 'Create' %} {% translate 'Field agent' %}</a>
                     </div>
                 </div>
@@ -24,6 +25,9 @@
                         <tr>
                             <th>{% translate 'Name' %}</th>
                             <th>{% translate 'Email' %}</th>
+                            <th>{% translate 'Role' %}</th>
+                            <th>{% translate 'Commune' %}</th>
+                            <th>{% translate 'Supervisor' %}</th>
                             <th>{% translate 'Phone number' %}</th>
                             <th>{% translate 'Groups' %}</th>
                             <th>{% translate 'Administrative level' %}</th>
@@ -35,6 +39,9 @@
                             <tr id="subproject-{{ subproject.pk }}">
                                 <td>{{ field_angent.get_full_name }}</td>
                                 <td>{{ field_angent.email }}</td>
+                                <td>{% if field_angent.role %}{{ field_angent.get_role_display }}{% else %}<span class="text-danger">{% translate 'No role' %}</span>{% endif %}</td>
+                                <td>{% if field_angent.commune %}{{ field_angent.commune.name }}{% elif field_angent.region %}{{ field_angent.region.name }}{% endif %}</td>
+                                <td>{{ field_angent.supervisor|default:"" }}</td>
                                 <td>{{ field_angent.phone_number }}</td>
                                 <td>{% for group in field_angent.groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                                 <td>{% for au in field_angent.administrative_units.all %}{{ au.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
@@ -47,6 +54,10 @@
                                             data-phone-number="{{ field_angent.phone_number }}"
                                             data-administrative-units="{% for au in field_angent.administrative_units.all %}{{ au.id }}::{{ au.hierarchy_name }}{% if not forloop.last %}|{% endif %}{% endfor %}"
                                             data-groups="{% for group in field_angent.groups.all %}{{ group.id }}{% if not forloop.last %},{% endif %}{% endfor %}"
+                                            data-role="{{ field_angent.role }}"
+                                            data-commune="{{ field_angent.commune_id|default:'' }}"
+                                            data-supervisor="{{ field_angent.supervisor_id|default:'' }}"
+                                            data-region="{{ field_angent.region_id|default:'' }}"
                                             data-id="{{ field_angent.id }}"
                                             class="btn btn-default btn-flat field-agent-modal-show">
                                       <i class="fas fa-pencil-alt text-primary"></i>
@@ -77,14 +88,17 @@
         <div class="modal-content">
             <form action="." id="fieldAgentForm" method="post">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% translate 'Edit Field Agent' %}</h5>
+                    <h5 class="modal-title" id="fieldAgentModalTitle">{% translate 'Edit Field Agent' %}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body" id="fieldAgentModalBody">
                         {% csrf_token %}
-                        <input type="hidden" name="field_agent" id="id_field_agent" value="">
+                        <input type="hidden" name="field_agent" id="id_field_agent" value="{{ form.data.field_agent|default:'' }}">
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>
+                        {% endif %}
                         <div class="row">
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.first_name %}
@@ -99,6 +113,22 @@
                             </div>
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.email %}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.role %}
+                            </div>
+                            <div class="col-md-6 col-sm-12 role-field" data-roles="ft fc sc">
+                                {% bootstrap_field form.commune %}
+                            </div>
+                            <div class="col-md-6 col-sm-12 role-field" data-roles="regional_specialist">
+                                {% bootstrap_field form.region %}
+                            </div>
+                        </div>
+                        <div class="row role-field" data-roles="ft fc">
+                            <div class="col-md-6 col-sm-12">
+                                {% bootstrap_field form.supervisor %}
                             </div>
                         </div>
                         <div id="reset-password-toggle" style="display: none;">
@@ -188,6 +218,8 @@
 {% endblock %}
 
 {% block extrajs %}
+    {{ role_groups|json_script:"role-groups" }}
+    {{ supervisor_communes|json_script:"supervisor-communes" }}
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
@@ -386,6 +418,7 @@
 
             $(".field-agent-modal-show").on("click", function () {
                 const isEdit = $(this).data("id") !== "";
+                $('#fieldAgentModalTitle').text(isEdit ? editTitle : createTitle);
                 $("#id_field_agent").val($(this).data("id"));
                 $("#id_first_name").val($(this).data("first-name"));
                 $("#id_last_name").val($(this).data("last-name"));
@@ -403,6 +436,12 @@
                     $("#password-fields").find("input").attr("required", "required");
                     $("#reset-password-toggle").hide();
                 }
+
+                $("#id_role").val($(this).data("role")).trigger('change', [true]);
+                $("#id_commune").val(String($(this).data("commune")));
+                $("#id_supervisor").val(String($(this).data("supervisor")));
+                filterSupervisors();
+                $("#id_region").val(String($(this).data("region")));
 
                 // Reset selects, clear stack, load root units fresh
                 resetCascadingSelects();
@@ -443,10 +482,72 @@
                 $('#fieldAgentModal').modal('show');
             });
 
+            // Role: show the fields the role uses, offer only the SCs of the chosen commune,
+            // and pre-select the role's MIS group (the admin can still change the groups).
+            {% translate "Edit Field Agent" as edit_title %}{% translate "Create Field Agent" as create_title %}
+            const editTitle = '{{ edit_title|escapejs }}';
+            const createTitle = '{{ create_title|escapejs }}';
+            const roleGroups = JSON.parse(document.getElementById('role-groups').textContent);
+            const supervisorOptions = $('#id_supervisor option').clone();
+            const supervisorCommunes = JSON.parse(document.getElementById('supervisor-communes').textContent);
+
+            function showRoleFields() {
+                // Before a role is chosen, show the fields of the usual case (FT/FC: commune and
+                // supervisor), so the form says up front what an agent needs.
+                const role = $('#id_role').val() || 'ft';
+                $('.role-field').each(function () {
+                    $(this).toggle(String($(this).data('roles')).split(' ').indexOf(role) !== -1);
+                });
+            }
+
+            function filterSupervisors() {
+                const current = $('#id_supervisor').val();
+                const commune = $('#id_commune').val();
+                const options = supervisorOptions.filter(function () {
+                    return this.value === '' || !commune || String(supervisorCommunes[this.value]) === commune;
+                });
+                $('#id_supervisor').empty().append(options.clone()).val(current);
+                if ($('#id_supervisor').val() === null) $('#id_supervisor').val('');
+            }
+
+            $('#id_role').on('change', function (event, fromModal) {
+                showRoleFields();
+                const group = roleGroups[$(this).val()];
+                if (group && !fromModal) {
+                    const selected = ($('#id_groups').val() || []).map(String);
+                    if (selected.indexOf(String(group)) === -1) {
+                        selected.push(String(group));
+                        $('#id_groups').val(selected).change();
+                    }
+                }
+            });
+            $('#id_commune').on('change', filterSupervisors);
+
             // Auto-add current cascading selection before form submit
             $('#fieldAgentForm').on('submit', function() {
                 $('#au-stack-add').trigger('click');
             });
+
+            // A refused form reopens with what was posted (the fields keep their values).
+            {% if form.errors %}
+                const isEdit = $('#id_field_agent').val() !== '';
+                $('#fieldAgentModalTitle').text(isEdit ? editTitle : createTitle);
+                $('#reset-password-toggle').toggle(isEdit);
+                if (isEdit && !$('#id_password1').val()) {
+                    $('#password-fields').hide().find('input').removeAttr('required');
+                }
+                {% for au in posted_units %}
+                    $('#au-attach-checkbox').prop('checked', true);
+                    $('#au-fields-wrapper').show();
+                    addToStack('{{ au.id }}', '{{ au.hierarchy_name|escapejs }}');
+                {% endfor %}
+                if ($('#au-attach-checkbox').is(':checked')) loadRootUnits();
+                showRoleFields();
+                filterSupervisors();
+                $('#fieldAgentModal').modal('show');
+            {% else %}
+                showRoleFields();
+            {% endif %}
 
             // Delete confirmation modal
             $('#confirmDeleteModal').on('show.bs.modal', function (event) {

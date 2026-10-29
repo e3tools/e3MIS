@@ -3,18 +3,19 @@ from django.views.generic.edit import FormMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
 from django.contrib import messages
+from django.contrib.auth.models import Group
 from django.utils.translation import gettext as _
 from django.urls import reverse_lazy
 
 from src.permissions import IsStaffMemberMixin
 from administrativelevels.models import AdministrativeUnit, AdministrativeLevel
-from authorization.models import CustomUser
-from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm
+from authorization.models import CustomUser, Role
+from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm, ROLE_GROUPS
 
 
 class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, ListView):
     template_name = 'auth/field_agent_list.html'
-    queryset = CustomUser.objects.filter(is_field_agent=True)
+    queryset = CustomUser.objects.filter(is_field_agent=True).select_related('supervisor', 'commune', 'region')
     form_class = CreateFieldAgentForm
     success_url = reverse_lazy('authorization:field_agent_list')
 
@@ -34,6 +35,12 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
 
     def get_context_data(self, **kwargs):
         kwargs['administrative_levels'] = AdministrativeLevel.objects.all().order_by('order')
+        groups = dict(Group.objects.filter(name__in=ROLE_GROUPS.values()).values_list('name', 'pk'))
+        kwargs['role_groups'] = {role: groups[name] for role, name in ROLE_GROUPS.items() if name in groups}
+        # Lets the page offer only the SCs of the chosen commune.
+        kwargs['supervisor_communes'] = dict(
+            CustomUser.objects.filter(role=Role.SC).values_list('pk', 'commune_id')
+        )
         return super().get_context_data(**kwargs)
 
     def form_valid(self, form):
@@ -46,7 +53,10 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
         self.object_list = self.get_queryset()
         allow_empty = self.get_allow_empty()
 
-        print(form.errors)
+        # The page reopens the form with what was posted, including the units picked.
+        self.posted_units = AdministrativeUnit.objects.filter(
+            pk__in=[pk for pk in self.request.POST.getlist('administrative_units') if pk.isdigit()]
+        )
 
         if not allow_empty:
             # When pagination is enabled and object_list is a queryset,
@@ -65,7 +75,7 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
                         "class_name": self.__class__.__name__,
                     }
                 )
-        return self.render_to_response(self.get_context_data(form=form))
+        return self.render_to_response(self.get_context_data(form=form, posted_units=self.posted_units))
 
     def get_form_kwargs(self):
         """Return the keyword arguments for instantiating the form."""
