@@ -48,8 +48,14 @@ How it maps onto the MIS:
 - **Users:** `CustomUser.role` (ft, fc, sc, regional/national specialist, rdp, admin), `supervisor`,
   `commune`, `region`. Roles drive visit rules; groups still decide which forms a user sees. Saving
   a user with a visiting role sets `is_field_agent`. `authorization.models.User` is an alias.
+  On the MIS field-agents page a user gets a role and **one administrative unit** (cascade that
+  stops at the role's level); `authorization/hierarchy.py` derives commune/region and the
+  supervisor (the commune's SC; picked only when there are several; none while the commune has
+  no SC, and a new SC takes them over). A group's default role (`GroupRole`) fills an empty role.
+  `manage.py backfill_user_scope [--apply]` aligns older users.
 - **Geography:** the AdministrativeUnit tree. `ProgrammeConfig.region_level/commune_level/
-  village_level` say which levels play those roles; unset, the tree position is used
+  village_level` (Django admin or `manage.py set_programme_levels`; the agents page warns while
+  unset) say which levels play those roles; unset, the tree position is used
   (`fieldmonitoring/core/geography.py`). Worksites derive `commune`/`region` from `village`.
 - **Sign-in:** `POST /api/v1/auth/token/` with `email` (or `username`, which old app builds send;
   exact match). User ids are **strings** in this API (clients compare them with URL params).
@@ -101,6 +107,9 @@ the field reason).
 Sub-project sites and positions (field tests, Oct 2026):
 - Form 1's village field has `min_admin_level_order` = `max_admin_level_order` = the village level:
   a region or commune fails validation (`utils/json_form_parser.py`, same rule in the app picker).
+  It is also `administrative_level_restriction` ("my units", migration 0024): agents get their
+  units' villages (`visibility.own_units`, falling back to their commune); MIS staff without units
+  are unrestricted (`staff_unit_ids` returns None).
 - Editing form 1 (`lifecycle.on_record_updated`) renames the site and, if the village changed,
   moves it to that village/commune (radius follows the zone until a position is confirmed).
 - `registry/views.coordinate_scope(user)`: admin = all sites; SC = sites in their commune or
