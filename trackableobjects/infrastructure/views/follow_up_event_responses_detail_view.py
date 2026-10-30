@@ -9,7 +9,7 @@ from trackableobjects.models import FollowUpEventResponse
 from administrativelevels.models import AdministrativeLevel
 from django.contrib.auth.mixins import LoginRequiredMixin
 from src.permissions import IsStaffMemberMixin
-from utils.json_form_parser import parse_custom_jsonschema
+from utils.json_form_parser import parse_custom_jsonschema, staff_unit_ids
 from utils.dynamic_form_io import serialize_for_json
 from trackableobjects.infrastructure.views.editable_submission_mixin import EditableSubmissionMixin
 
@@ -72,7 +72,7 @@ class FollowUpEventResponseDetailView(EditableSubmissionMixin, LoginRequiredMixi
         return data
 
     def get_admin_level_ids(self):
-        return [id for unit in self.request.user.administrative_units.all() for id in self.get_descendants(unit)]
+        return staff_unit_ids(self.request.user)
 
     def get_form_kwargs(self):
         """Return the keyword arguments for instantiating the form."""
@@ -86,14 +86,3 @@ class FollowUpEventResponseDetailView(EditableSubmissionMixin, LoginRequiredMixi
                 "files": self.request.FILES,
             })
         return kwargs
-
-    def get_descendants(self, administrative_unit):
-        descendants = []
-
-        def recurse(node):
-            descendants.append(node.id)
-            for child in node.children.all():
-                recurse(child)
-
-        recurse(administrative_unit)
-        return descendants

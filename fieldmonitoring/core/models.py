@@ -51,15 +51,15 @@ class ProgrammeConfig(models.Model):
     # is used: a worksite's unit is the village, its parent the commune, the next one the region.
     region_level = models.ForeignKey(
         "administrativelevels.AdministrativeLevel", null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="+",
+        related_name="+", verbose_name="Region level (e.g. Département)",
     )
     commune_level = models.ForeignKey(
         "administrativelevels.AdministrativeLevel", null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="+",
+        related_name="+", verbose_name="Commune level",
     )
     village_level = models.ForeignKey(
         "administrativelevels.AdministrativeLevel", null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="+",
+        related_name="+", verbose_name="Village level",
     )
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
@@ -68,6 +68,9 @@ class ProgrammeConfig(models.Model):
 
     class Meta:
         verbose_name = "programme configuration"
+
+    def __str__(self):
+        return "Programme configuration"
 
     def save(self, *args, **kwargs):
         self.pk = 1

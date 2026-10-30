@@ -139,14 +139,15 @@ class CustomUser(AbstractUser):
         """Story 1.1: hierarchy rules."""
         super().clean()
         if self.role in FACILITATOR_ROLES:
-            if not self.supervisor_id:
-                raise ValidationError({"supervisor": _("An FT or FC must have an SC as supervisor.")})
-            if self.supervisor.role != Role.SC:
-                raise ValidationError({"supervisor": _("The supervisor of an FT or FC must be an SC.")})
-            if not self.commune_id or self.supervisor.commune_id != self.commune_id:
-                raise ValidationError(
-                    {"supervisor": _("The supervisor must be an SC in the same commune.")}
-                )
+            # No supervisor while their commune has no SC yet: their reviews go to the RdP (BR-10)
+            # until one is created (authorization/hierarchy.py attaches them then).
+            if self.supervisor_id:
+                if self.supervisor.role != Role.SC:
+                    raise ValidationError({"supervisor": _("The supervisor of an FT or FC must be an SC.")})
+                if not self.commune_id or self.supervisor.commune_id != self.commune_id:
+                    raise ValidationError(
+                        {"supervisor": _("The supervisor must be an SC in the same commune.")}
+                    )
         elif self.supervisor_id:
             # SCs and above have no supervisor; their visits route to the RdP (BR-10).
             raise ValidationError({"supervisor": _("Only FTs and FCs have a supervisor.")})
@@ -174,3 +175,15 @@ class CustomUser(AbstractUser):
 
 # The field monitoring code refers to the user model as ``User``.
 User = CustomUser
+
+
+class GroupRole(models.Model):
+    """The field monitoring role a group gives by default (Brice, 29 Oct 2026). Adding a user to the
+    group pre-fills their role; the role stays editable, because groups decide forms and roles
+    decide visit rules."""
+
+    group = models.OneToOneField("auth.Group", on_delete=models.CASCADE, related_name="field_role")
+    role = models.CharField(max_length=32, choices=Role.choices)
+
+    def __str__(self):
+        return f"{self.group.name}: {self.get_role_display()}"

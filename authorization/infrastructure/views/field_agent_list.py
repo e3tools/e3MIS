@@ -3,14 +3,15 @@ from django.views.generic.edit import FormMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
 from django.contrib import messages
-from django.contrib.auth.models import Group
 from django.utils.translation import gettext as _
 from django.urls import reverse_lazy
 
 from src.permissions import IsStaffMemberMixin
 from administrativelevels.models import AdministrativeUnit, AdministrativeLevel
-from authorization.models import CustomUser, Role
-from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm, ROLE_GROUPS
+from authorization.models import CustomUser, GroupRole, Role
+from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm
+from fieldmonitoring.core.geography import levels_configured
+from fieldmonitoring.core.models import ProgrammeConfig
 
 
 class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, ListView):
@@ -34,12 +35,31 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
         return self.post(*args, **kwargs)
 
     def get_context_data(self, **kwargs):
-        kwargs['administrative_levels'] = AdministrativeLevel.objects.all().order_by('order')
-        groups = dict(Group.objects.filter(name__in=ROLE_GROUPS.values()).values_list('name', 'pk'))
-        kwargs['role_groups'] = {role: groups[name] for role, name in ROLE_GROUPS.items() if name in groups}
-        # Lets the page offer only the SCs of the chosen commune.
+        levels = AdministrativeLevel.objects.all().order_by('order')
+        kwargs['administrative_levels'] = levels
+        kwargs['level_orders'] = [level.order for level in levels]
+        # The cascade stops at the level the role is attached to (commune, or region for a
+        # regional specialist); unset levels leave it open.
+        config = ProgrammeConfig.get()
+        kwargs['levels_configured'] = levels_configured()
+        kwargs['role_levels'] = {
+            role: level.order
+            for role, level in [(Role.FT, config.commune_level), (Role.FC, config.commune_level),
+                                (Role.SC, config.commune_level), (Role.REGIONAL_SPECIALIST, config.region_level)]
+            if level is not None
+        }
+        kwargs['commune_level_name'] = config.commune_level.name if config.commune_level else _('Commune')
+        kwargs['region_level_name'] = config.region_level.name if config.region_level else _('Region')
+        # A group's default role fills the role; a role pre-selects its groups.
+        group_roles = dict(GroupRole.objects.values_list('group_id', 'role'))
+        kwargs['group_roles'] = group_roles
+        role_groups = {}
+        for group_id, role in group_roles.items():
+            role_groups.setdefault(role, []).append(group_id)
+        kwargs['role_groups'] = role_groups
+        # Lets the page show who the supervisor will be once the commune is picked.
         kwargs['supervisor_communes'] = dict(
-            CustomUser.objects.filter(role=Role.SC).values_list('pk', 'commune_id')
+            CustomUser.objects.filter(role=Role.SC, is_active=True).values_list('pk', 'commune_id')
         )
         return super().get_context_data(**kwargs)
 

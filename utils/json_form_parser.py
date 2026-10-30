@@ -67,6 +67,18 @@ class CascadeAdminUnitSelect(forms.Select):
         return [(None, options, 0)]
 
 
+def staff_unit_ids(user):
+    """Units a desktop (MIS staff) user's "my units" fields offer: their units and descendants.
+
+    None when they have no unit: staff manage every submission, so the restriction is off
+    (otherwise they could not edit, say, the village of a sub-project form).
+    """
+    roots = list(user.administrative_units.values_list('id', flat=True))
+    if not roots:
+        return None
+    return list(AdministrativeUnit.get_descendant_ids(roots))
+
+
 def schema_requires_assigned_units(schema_json, page_index=0):
     """True if any field on the page restricts choices to the user's assigned units.
 
@@ -91,7 +103,8 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
     Args:
         schema_json: The form schema
         page_index: Current page index
-        administrative_level_ids: List of admin level IDs for filtering
+        administrative_level_ids: List of admin level IDs for filtering. None turns the
+                                  "my units" restriction off (MIS staff without units edit any answer).
         parent_form_data: Dictionary containing parent form responses for cross-form conditionals
                          Format: {'field_name': value, 'another_field': value, ...}
     """
@@ -232,6 +245,8 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         # TrackableObject
         elif field_schema.get('type') == 'trackable_object':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
+            if administrative_level_ids is None:
+                administrative_level_restriction = 'false'
             queryset = TrackableObjectInstance.objects.select_related('trackable_object').filter(
                 trackable_object__id=validators.get('trackable_object_id', None)
             )
@@ -247,6 +262,8 @@ def parse_custom_jsonschema(schema_json, page_index=0, administrative_level_ids=
         # AdministrativeLevel
         elif field_schema.get('type') == 'administrative_level':
             administrative_level_restriction = validators.get('administrative_level_restriction', 'false')
+            if administrative_level_ids is None:
+                administrative_level_restriction = 'false'
             max_admin_level_order = validators.get('max_admin_level_order', None)
             queryset = AdministrativeUnit.objects.select_related('level').all()
             if administrative_level_restriction == 'true':

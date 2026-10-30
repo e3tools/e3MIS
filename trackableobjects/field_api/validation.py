@@ -14,7 +14,7 @@ browser POST:
 """
 from django import forms
 
-from administrativelevels.models import AdministrativeUnit
+from trackableobjects import visibility
 from utils.dynamic_form_io import build_json_form
 from utils.json_form_parser import (
     evaluate_condition,
@@ -82,7 +82,7 @@ def validate_answers(schema, answers, *, user, parent_data=None):
     options = field_options(schema)
     unit_ids = []
     if any(schema_requires_assigned_units(schema, i) for i in range(len(pages(schema)))):
-        unit_ids = AdministrativeUnit.get_descendant_ids(user.administrative_units.values_list("id", flat=True))
+        unit_ids = visibility.own_unit_ids_with_descendants(user)
 
     clean, errors = {}, {}
     for index in range(len(pages(schema))):
