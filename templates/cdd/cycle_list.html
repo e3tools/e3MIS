@@ -1,0 +1,78 @@
+{% extends 'layout/base.html' %}
+{% load i18n cdd_tags %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <form method="get" class="form-inline">
+                <select name="commune" class="form-control mr-2 mb-2 select2" style="min-width: 200px;">
+                    <option value="">{% translate 'All communes' %}</option>
+                    {% for commune in communes %}<option value="{{ commune.pk }}" {% if selected.commune == commune.pk|stringformat:'s' %}selected{% endif %}>{{ commune.name }}</option>{% endfor %}
+                </select>
+                <select name="status" class="form-control mr-2 mb-2">
+                    <option value="">{% translate 'All statuses' %}</option>
+                    {% for value, label in statuses %}<option value="{{ value }}" {% if selected.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                </select>
+                <select name="template" class="form-control mr-2 mb-2">
+                    <option value="">{% translate 'All cycles' %}</option>
+                    {% for template in templates %}<option value="{{ template.pk }}" {% if selected.template == template.pk|stringformat:'s' %}selected{% endif %}>{{ template.name }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-default mb-2" type="submit"><i class="fas fa-filter"></i> {% translate 'Filter' %}</button>
+                <a class="btn btn-primary mb-2 ml-auto" href="{% url 'cdd:cycle_start' %}{% if selected.commune %}?commune={{ selected.commune }}{% endif %}"><i class="fas fa-play"></i> {% translate 'Start cycles' %}</a>
+            </form>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>{% translate 'Community' %}</th>
+                    <th>{% translate 'Cycle' %}</th>
+                    <th>{% translate 'Status' %}</th>
+                    <th>{% translate 'Started on' %}</th>
+                    <th>{% translate 'Progress' %}</th>
+                    <th>{% translate 'Current phase' %}</th>
+                    <th>{% translate 'Warnings' %}</th>
+                    <th>{% translate 'Facilitators' %}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in rows %}
+                    {% with cycle=row.cycle state=row.state %}
+                        <tr>
+                            <td><a href="{% url 'cdd:cycle_detail' cycle.pk %}">{{ cycle.community.name }}</a>
+                                <div class="small text-muted">{{ cycle.community.parent.name|default:'' }}</div></td>
+                            <td>{{ cycle.template.name }} · n° {{ cycle.number }}</td>
+                            <td>{% cycle_badge cycle %}</td>
+                            <td class="text-nowrap">{{ cycle.started_on|date:"SHORT_DATE_FORMAT" }}</td>
+                            <td style="min-width: 120px;">
+                                <div class="progress progress-xs mb-1"><div class="progress-bar bg-primary" style="width: {% if state.progress %}{% widthratio state.completed state.total 100 %}{% else %}0{% endif %}%"></div></div>
+                                <span class="small">{{ state.progress|percent }} ({{ state.completed }}/{{ state.total }})</span>
+                            </td>
+                            <td>{{ row.phase.name|default:'–' }}</td>
+                            <td class="small">
+                                {% if state.overdue_count %}<span class="badge badge-danger">{% blocktranslate count counter=state.overdue_count %}{{ counter }} overdue task{% plural %}{{ counter }} overdue tasks{% endblocktranslate %}</span>{% endif %}
+                                {% if state.inactive %}<span class="badge badge-warning">{% blocktranslate with days=state.idle_days %}No activity for {{ days }} days{% endblocktranslate %}</span>{% endif %}
+                                {% if state.closed_without_form_count %}<span class="badge badge-light">{% blocktranslate count counter=state.closed_without_form_count %}{{ counter }} closed without form{% plural %}{{ counter }} closed without form{% endblocktranslate %}</span>{% endif %}
+                            </td>
+                            <td class="small">{% for user in cycle.facilitators.all %}{{ user }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="text-danger">{% translate 'None' %}</span>{% endfor %}</td>
+                        </tr>
+                    {% endwith %}
+                {% empty %}
+                    <tr><td colspan="8" class="text-muted">{% translate 'No cycle started yet.' %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% if page_obj.paginator.num_pages > 1 %}
+                <nav><ul class="pagination pagination-sm">
+                    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{{ query }}&page={{ page_obj.previous_page_number }}">&laquo;</a></li>{% endif %}
+                    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+                    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{{ query }}&page={{ page_obj.next_page_number }}">&raquo;</a></li>{% endif %}
+                </ul></nav>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>$(function () { $('.select2').select2(); });</script>
+{% endblock %}

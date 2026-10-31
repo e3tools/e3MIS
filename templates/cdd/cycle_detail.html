@@ -1,0 +1,120 @@
+{% extends 'layout/base.html' %}
+{% load i18n bootstrap4 cdd_tags custom_tags %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-xl-8">
+            <div class="card">
+                <div class="card-body">
+                    <p class="mb-1">{% cycle_badge cycle %} {{ cycle.template.name }} · {% translate 'cycle' %} n° {{ cycle.number }} · {{ cycle.community.hierarchy_name|default:cycle.community.name }}</p>
+                    <p class="small text-muted mb-2">
+                        {% translate 'Started on' %} {{ cycle.started_on|date:"SHORT_DATE_FORMAT" }}
+                        {% if cycle.planned_end %} · {% translate 'Planned end' %} {{ cycle.planned_end|date:"SHORT_DATE_FORMAT" }}{% endif %}
+                        · {% translate 'Last activity' %} {{ state.last_activity|date:"SHORT_DATE_FORMAT" }}
+                        {% if cycle.template_version != cycle.template.version %}· {% blocktranslate with started=cycle.template_version current=cycle.template.version %}started on version {{ started }}, cycle now at version {{ current }}{% endblocktranslate %}{% endif %}
+                    </p>
+                    <div class="progress mb-1"><div class="progress-bar bg-primary" style="width: {% if state.total %}{% widthratio state.completed state.total 100 %}{% else %}0{% endif %}%"></div></div>
+                    <p class="small mb-0">{{ state.progress|percent }} ({{ state.completed }}/{{ state.total }})
+                        {% if state.overdue_count %}<span class="badge badge-danger">{% blocktranslate count counter=state.overdue_count %}{{ counter }} overdue task{% plural %}{{ counter }} overdue tasks{% endblocktranslate %}</span>{% endif %}
+                        {% if state.inactive %}<span class="badge badge-warning">{% blocktranslate with days=state.idle_days %}No activity for {{ days }} days{% endblocktranslate %}</span>{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            {% for block in phases %}
+                <div class="card card-outline {% if block.phase.id == state.current_phase_id %}card-primary{% else %}card-secondary collapsed-card{% endif %}">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ block.phase.name }}
+                            <small class="text-muted ml-2">{{ block.phase.progress|percent }} ({{ block.phase.completed }}/{{ block.phase.total }})</small>
+                            {% if block.phase.id == state.current_phase_id %}<span class="badge badge-primary ml-1">{% translate 'Current phase' %}</span>{% endif %}
+                        </h3>
+                        <div class="card-tools"><button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas {% if block.phase.id == state.current_phase_id %}fa-minus{% else %}fa-plus{% endif %}"></i></button></div>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                            {% for item in block.tasks %}
+                                {% with task=item.state decision=item.decision %}
+                                    <tr>
+                                        <td>{{ task.name }}{% if not task.required %} <span class="badge badge-light">{% translate 'Optional' %}</span>{% endif %}
+                                            {% if task.waiting_on %}<div class="small text-warning"><i class="fas fa-exclamation-triangle"></i> {% translate 'Started before:' %} {% for key in task.waiting_on %}{{ task_names|get_item:key }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+                                            {% if decision.note %}<div class="small text-muted">« {{ decision.note }} » — {{ decision.decided_by }}, {{ decision.decided_at|date:"SHORT_DATE_FORMAT" }}</div>{% endif %}
+                                        </td>
+                                        <td class="text-nowrap">{% task_badge task.status %}</td>
+                                        <td class="text-nowrap small">{% if task.due_on %}{{ task.due_on|date:"SHORT_DATE_FORMAT" }}{% endif %}
+                                            {% if task.overdue_days %}<span class="text-danger">({% blocktranslate count counter=task.overdue_days %}{{ counter }} day late{% plural %}{{ counter }} days late{% endblocktranslate %})</span>{% endif %}</td>
+                                    </tr>
+                                {% endwith %}
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Forms submitted' %}</h3></div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                        {% for kind, answer in answers %}
+                            <tr>
+                                <td class="text-nowrap small">{{ answer.created_at|date:"SHORT_DATE_FORMAT" }}</td>
+                                <td>{% if kind == 'record' %}<a href="{% url 'trackableobjects:trackable_object_instance_detail' answer.pk %}">{{ answer.trackable_object.name }}</a>{% else %}<a href="{% url 'trackableobjects:follow_up_event_response_detail' answer.pk %}">{{ answer.follow_up_event.name }}</a>{% endif %}</td>
+                                <td class="small">{{ task_names|get_item:answer.cdd_task_key|default:answer.cdd_task_key }}</td>
+                                <td class="small">{{ answer.created_by }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td class="text-muted small">{% translate 'No form filled from this cycle yet.' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-4">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Facilitators' %}</h3></div>
+                <form method="post" action="{% url 'cdd:cycle_facilitators' cycle.pk %}">
+                    {% csrf_token %}
+                    <div class="card-body">{% bootstrap_field facilitators_form.facilitators show_label=False %}</div>
+                    <div class="card-footer"><button class="btn btn-primary btn-sm" type="submit">{% translate 'Save' %}</button></div>
+                </form>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Cycle status' %}</h3></div>
+                <form method="post" action="{% url 'cdd:cycle_status' cycle.pk %}">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <div class="form-group">
+                            <select name="status" class="form-control">
+                                {% for value, label in status_actions %}<option value="{{ value }}">{% if value == 'active' %}{% translate 'Reopen' %}{% elif value == 'suspended' %}{% translate 'Suspend' %}{% else %}{% translate 'Close' %}{% endif %}</option>{% endfor %}
+                            </select>
+                        </div>
+                        {% bootstrap_field status_form.note %}
+                    </div>
+                    <div class="card-footer"><button class="btn btn-default btn-sm" type="submit">{% translate 'Apply' %}</button></div>
+                </form>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'History' %}</h3></div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush small">
+                        {% for event in events %}
+                            <li class="list-group-item">
+                                <strong>{{ event.get_kind_display }}</strong>{% if event.task_key %} · {{ task_names|get_item:event.task_key|default:event.task_key }}{% endif %}
+                                <div class="text-muted">{{ event.at|date:"SHORT_DATETIME_FORMAT" }}{% if event.by %} · {{ event.by }}{% endif %}</div>
+                                {% if event.note %}<div>« {{ event.note }} »</div>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extrajs %}
+    <script>$(function () { $('.select2').select2({width: '100%'}); });</script>
+{% endblock %}

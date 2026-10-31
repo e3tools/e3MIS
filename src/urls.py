@@ -41,7 +41,8 @@ urlpatterns += i18n_patterns(
     path('', include('authorization.urls')),
     path('administrative-levels/', include('administrativelevels.urls')),
     path('subprojects/', include('subprojects.urls')),
-    path('trackable-objects/', include('trackableobjects.urls'))
+    path('trackable-objects/', include('trackableobjects.urls')),
+    path('cdd/', include('cdd.urls')),
 
 )
 

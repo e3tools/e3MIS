@@ -129,7 +129,7 @@ tasks. Off unless `ProgrammeConfig.cdd_enabled` (Django admin, "CDD cycle"); mig
 tables and nullable columns, so production can carry it switched off.
 - Template: `CycleTemplate` → `Phase` → `Activity` → `Task` (stable `key`, `depends_on`, due
   `planned_offset_days` after the start) → `TaskForm` (a record type or a follow-up event,
-  `min_count`). Edited in the Django admin until the MIS designer exists (plan step 2).
+  `min_count`). Edited in the MIS designer (menu "Cycle CDD" → "Conception du cycle", `/cdd/designer/`).
 - `Cycle` (community = unit at `cdd_community_level`, else the village level; one active cycle per
   community, numbered per community), `TaskProgress` (a person's decision only: done, closed without
   form, not applicable), `CycleEvent` (history). Change them through `cdd/services.py`.
@@ -137,6 +137,15 @@ tables and nullable columns, so production can carry it switched off.
 - `cdd/progress.py` computes statuses, progress, current phase and warnings from plain data (rules
   CDD-1…CDD-8, tests in `tests/fieldmonitoring/test_cdd.py`); the app will mirror it. Warnings only,
   never a block (non-negotiable 5).
+- MIS pages (`cdd/urls.py`, views in `cdd/infrastructure/views/`, templates in `templates/cdd/`;
+  staff only, 404 while the module is off, sidebar menu only when on): designer tree with drag to
+  reorder, task editor with its forms, warnings when facilitators of active cycles cannot fill a
+  task's form (`cdd/designer.py`, CDD-12…CDD-15: every tree change raises the template version,
+  task keys fixed once a cycle follows the template, no "starts after" loops); "Cycles par
+  communauté": start cycles for several communities of a commune at once (assigns the FT/FC
+  attached to each community or a unit above it, CDD-11), cycle page with progress, tasks, forms
+  submitted, facilitators, suspend/close/reopen with a reason and history. Tests:
+  `tests/fieldmonitoring/test_cdd_designer.py`.
 - `manage.py seed_cdd_cycle [--group …] [--enable]`: example five-phase cycle and its forms (meeting
   minutes, diagnosis, priorities, committee, evaluation; sub-project phase on F1–F3). Idempotent.
 

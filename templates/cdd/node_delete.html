@@ -1,0 +1,32 @@
+{% extends 'layout/base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12 col-lg-8">
+            <div class="card card-danger card-outline">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="card-body">
+                        <p>{% blocktranslate with name=node.name %}Delete "{{ name }}" from the cycle "{{ template }}"?{% endblocktranslate %}</p>
+                        {% if task_names %}
+                            <p class="mb-1">{% translate 'Tasks removed:' %}</p>
+                            <ul>{% for name in task_names %}<li>{{ name }}</li>{% endfor %}</ul>
+                        {% endif %}
+                        {% if answer_count or decision_count %}
+                            <div class="alert alert-warning">
+                                {% blocktranslate count counter=answer_count %}{{ counter }} form answer points at these tasks.{% plural %}{{ counter }} form answers point at these tasks.{% endblocktranslate %}
+                                {% blocktranslate count counter=decision_count %}{{ counter }} decision was recorded on them.{% plural %}{{ counter }} decisions were recorded on them.{% endblocktranslate %}
+                                {% translate 'The answers are kept, but they will no longer count in the cycles.' %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer">
+                        <button type="submit" class="btn btn-danger">{% translate 'Delete' %}</button>
+                        <a class="btn btn-light" href="{% url 'cdd:template_detail' template.pk %}">{% translate 'Cancel' %}</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

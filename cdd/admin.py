@@ -1,4 +1,4 @@
-"""Django admin for the CDD cycle until the MIS designer exists (build plan step 2)."""
+"""Django admin for the CDD cycle. Day-to-day editing is in the MIS designer (cdd/urls.py)."""
 from django.contrib import admin
 
 from . import progress
@@ -85,7 +85,7 @@ class CycleEventInline(admin.TabularInline):
 
 @admin.register(Cycle)
 class CycleAdmin(admin.ModelAdmin):
-    """Read-mostly: start, close and reopen go through cdd/services.py (the designer, step 2)."""
+    """Read-mostly: start, close and reopen go through cdd/services.py (the MIS cycle pages)."""
 
     list_display = ("community", "number", "template", "status", "started_on", "progress_display")
     list_filter = ("status", "template")

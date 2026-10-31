@@ -68,6 +68,10 @@ class Activity(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def template(self):
+        return self.phase.template
+
 
 class TaskKind(models.TextChoices):
     FORM = "form", _("Form")

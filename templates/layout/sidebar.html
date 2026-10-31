@@ -1,4 +1,4 @@
-{% load static i18n  %}
+{% load static i18n cdd_tags %}
 
 
 <!-- Main Sidebar Container -->
@@ -88,6 +88,34 @@
                         <p>{% translate "Relationships" %}</p>
                     </a>
                 </li>
+                {% cdd_enabled as cdd_on %}
+                {% if cdd_on %}
+                    <li class="nav-item {% if request.resolver_match.namespace == 'cdd' %}menu-open{% endif %}">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-sync-alt"></i>
+                            <p>
+                                {% translate "CDD cycle" %}
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{% url 'cdd:cycle_list' %}"
+                                   class="nav-link {% if url_name == 'cycle_list' or url_name == 'cycle_detail' or url_name == 'cycle_start' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-home"></i>
+                                    <p>{% translate "Cycles per community" %}</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'cdd:template_list' %}"
+                                   class="nav-link {% if request.resolver_match.namespace == 'cdd' and url_name != 'cycle_list' and url_name != 'cycle_detail' and url_name != 'cycle_start' %}active{% endif %}">
+                                    <i class="nav-icon fas fa-sitemap"></i>
+                                    <p>{% translate "Cycle designer" %}</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                {% endif %}
                 {% if user.is_staff %}
                     <li class="nav-item {% if url_name == 'field_agent_list' or url_name == 'group_list' %}menu-open{% endif %}">
                         <a href="#" class="nav-link">

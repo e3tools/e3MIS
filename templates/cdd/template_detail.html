@@ -1,0 +1,144 @@
+{% extends 'layout/base.html' %}
+{% load static i18n custom_tags %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-body">
+            <div class="float-right">
+                <a class="btn btn-default" href="{% url 'cdd:template_edit' object.pk %}"><i class="fas fa-pencil-alt text-primary"></i> {% translate 'Edit' %}</a>
+                <a class="btn btn-primary" href="{% url 'cdd:phase_add' object.pk %}"><i class="fas fa-plus"></i> {% translate 'Add phase' %}</a>
+            </div>
+            <p class="mb-1">{{ object.description|linebreaksbr }}</p>
+            <p class="text-muted small mb-0">
+                {% translate 'Version' %} <span id="template-version">{{ object.version }}</span> ·
+                {% if object.is_active %}{% translate 'Active' %}{% else %}{% translate 'Inactive' %}{% endif %} ·
+                {% translate 'Drag the handles to reorder.' %}
+                <a href="{% url 'cdd:template_list' %}">{% translate 'All cycles' %}</a>
+            </p>
+            {% if keys_locked %}
+                <div class="alert alert-info mt-2 mb-0 small">
+                    {% translate 'Communities already follow this cycle: task keys are fixed, and changes apply to their cycles too.' %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="phases">
+        {% for phase in phases %}
+            <div class="card card-outline card-primary phase-card" data-id="{{ phase.pk }}">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-grip-vertical text-muted mr-2 phase-handle" style="cursor: grab;"></i>
+                        {% translate 'Phase' %} <span class="phase-number">{{ forloop.counter }}</span> · {{ phase.name }}
+                        {% if phase.planned_days %}<small class="text-muted ml-2">{% blocktranslate with days=phase.planned_days %}{{ days }} days planned{% endblocktranslate %}</small>{% endif %}
+                    </h3>
+                    <div class="card-tools">
+                        <a class="btn btn-tool" href="{% url 'cdd:activity_add' phase.pk %}" title="{% translate 'Add activity' %}"><i class="fas fa-plus"></i> {% translate 'Activity' %}</a>
+                        <a class="btn btn-tool" href="{% url 'cdd:phase_edit' phase.pk %}" title="{% translate 'Edit' %}"><i class="fas fa-pencil-alt"></i></a>
+                        <a class="btn btn-tool" href="{% url 'cdd:node_delete' 'phase' phase.pk %}" title="{% translate 'Delete' %}"><i class="fas fa-trash text-danger"></i></a>
+                    </div>
+                </div>
+                <div class="card-body activities" data-phase="{{ phase.pk }}">
+                    {% if phase.description %}<p class="text-muted small">{{ phase.description }}</p>{% endif %}
+                    {% for activity in phase.activities.all %}
+                        <div class="activity-block mb-3" data-id="{{ activity.pk }}">
+                            <div class="d-flex align-items-center border-bottom pb-1 mb-1">
+                                <i class="fas fa-grip-vertical text-muted mr-2 activity-handle" style="cursor: grab;"></i>
+                                <strong class="mr-auto">{{ activity.name }}</strong>
+                                <a class="btn btn-sm btn-default" href="{% url 'cdd:task_add' activity.pk %}"><i class="fas fa-plus"></i> {% translate 'Task' %}</a>
+                                <a class="btn btn-sm btn-default ml-1" href="{% url 'cdd:activity_edit' activity.pk %}" title="{% translate 'Edit' %}"><i class="fas fa-pencil-alt text-primary"></i></a>
+                                <a class="btn btn-sm btn-default ml-1" href="{% url 'cdd:node_delete' 'activity' activity.pk %}" title="{% translate 'Delete' %}"><i class="fas fa-trash text-danger"></i></a>
+                            </div>
+                            <table class="table table-sm mb-0" style="table-layout: fixed;">
+                                <thead class="small text-muted">
+                                <tr>
+                                    <th style="width: 24px;"></th>
+                                    <th style="width: 26%;">{% translate 'Task' %}</th>
+                                    <th style="width: 10%;">{% translate 'Kind' %}</th>
+                                    <th style="width: 8%;">{% translate 'Due' %}</th>
+                                    <th style="width: 20%;">{% translate 'Starts after' %}</th>
+                                    <th>{% translate 'Forms (evidence)' %}</th>
+                                    <th style="width: 90px;"></th>
+                                </tr>
+                                </thead>
+                                <tbody class="tasks">
+                                {% for task in activity.tasks.all %}
+                                    <tr data-id="{{ task.pk }}">
+                                        <td><i class="fas fa-grip-vertical text-muted task-handle" style="cursor: grab;"></i></td>
+                                        <td>{{ task.name }}
+                                            {% if not task.required %}<span class="badge badge-light">{% translate 'Optional' %}</span>{% endif %}
+                                            <div class="small text-muted"><code>{{ task.key }}</code></div></td>
+                                        <td>{{ task.get_kind_display }}</td>
+                                        <td class="text-nowrap">{% if task.planned_offset_days is not None %}{% blocktranslate with days=task.planned_offset_days %}day {{ days }}{% endblocktranslate %}{% else %}–{% endif %}</td>
+                                        <td class="small">{% for other in task.depends_on.all %}{{ other.name }}{% if not forloop.last %}, {% endif %}{% empty %}–{% endfor %}</td>
+                                        <td class="small">
+                                            {% for task_form in task.forms.all %}
+                                                <div>
+                                                    {% if task_form.trackable_object %}<i class="fas fa-cube text-muted"></i>{% else %}<i class="fas fa-tags text-muted"></i>{% endif %}
+                                                    {{ task_form }}{% if task_form.min_count > 1 %} × {{ task_form.min_count }}{% endif %}
+                                                    {% if not task_form.required %}<span class="text-muted">({% translate 'optional' %})</span>{% endif %}
+                                                    {% with warnings|get_item:task_form.pk as found %}
+                                                        {% if found %}
+                                                            <i class="fas fa-exclamation-triangle text-warning" title="{% for w in found %}{{ w }}{% if not forloop.last %} {% endif %}{% endfor %}"></i>
+                                                            {% for w in found %}<div class="text-warning">{{ w }}</div>{% endfor %}
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                </div>
+                                            {% empty %}
+                                                <span class="text-muted">{% translate 'Marked by hand' %}</span>
+                                            {% endfor %}
+                                        </td>
+                                        <td class="text-right text-nowrap">
+                                            <a class="btn btn-sm btn-default" href="{% url 'cdd:task_edit' task.pk %}" title="{% translate 'Edit' %}"><i class="fas fa-pencil-alt text-primary"></i></a>
+                                            <a class="btn btn-sm btn-default" href="{% url 'cdd:node_delete' 'task' task.pk %}" title="{% translate 'Delete' %}"><i class="fas fa-trash text-danger"></i></a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr class="no-sort"><td colspan="7" class="text-muted small">{% translate 'No task yet.' %}</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted small mb-0">{% translate 'No activity yet.' %}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}
+            <div class="card"><div class="card-body text-muted">{% translate 'No phase yet. Start with “Add phase”.' %}</div></div>
+        {% endfor %}
+    </div>
+{% endblock %}
+
+{% block extrajs %}
+    <script src="{% static 'AdminLTE/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+    <script type="text/javascript">
+        $(function () {
+            function save(kind, $items) {
+                const ids = $items.map(function () { return $(this).data('id'); }).get();
+                $.ajax({
+                    url: "{% url 'cdd:tree_reorder' object.pk %}",
+                    type: "POST",
+                    contentType: "application/json",
+                    headers: {"X-CSRFToken": "{{ csrf_token }}"},
+                    data: JSON.stringify({kind: kind, ordered_ids: ids})
+                }).done(function (data) { $('#template-version').text(data.version); });
+            }
+            $('#phases').sortable({
+                handle: '.phase-handle', items: '> .phase-card', axis: 'y',
+                update: function () {
+                    $('#phases > .phase-card .phase-number').each(function (i) { $(this).text(i + 1); });
+                    save('phase', $('#phases > .phase-card'));
+                }
+            });
+            $('.activities').sortable({
+                handle: '.activity-handle', items: '> .activity-block', axis: 'y',
+                update: function () { save('activity', $(this).children('.activity-block')); }
+            });
+            $('.tasks').sortable({
+                handle: '.task-handle', items: '> tr[data-id]', axis: 'y',
+                update: function () { save('task', $(this).children('tr[data-id]')); }
+            });
+        });
+    </script>
+{% endblock %}

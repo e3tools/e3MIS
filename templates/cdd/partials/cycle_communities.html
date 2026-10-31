@@ -1,0 +1,19 @@
+{% load i18n %}
+{% for unit, active in rows %}
+    <div class="custom-control custom-checkbox">
+        {% if active %}
+            <input type="checkbox" class="custom-control-input" id="community-{{ unit.pk }}" disabled>
+            <label class="custom-control-label text-muted" for="community-{{ unit.pk }}">{{ unit.name }}
+                <small>({% blocktranslate with number=active.number %}cycle {{ number }} active{% endblocktranslate %})</small></label>
+        {% else %}
+            <input type="checkbox" class="custom-control-input community-box" name="communities" value="{{ unit.pk }}"
+                   id="community-{{ unit.pk }}" {% if unit.pk|stringformat:'s' in chosen %}checked{% endif %}>
+            <label class="custom-control-label" for="community-{{ unit.pk }}">{{ unit.name }}</label>
+        {% endif %}
+    </div>
+{% empty %}
+    <p class="text-muted small mb-0">{% translate 'Pick a commune to list its communities.' %}</p>
+{% endfor %}
+{% if rows %}
+    <button type="button" class="btn btn-link btn-sm px-0" onclick="document.querySelectorAll('.community-box').forEach(function (b) { b.checked = true; })">{% translate 'Select all' %}</button>
+{% endif %}

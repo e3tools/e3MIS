@@ -1,0 +1,45 @@
+{% extends 'layout/base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <a class="btn btn-primary pull-right" href="{% url 'cdd:template_create' %}">{% translate 'New cycle' %}</a>
+            <p class="text-muted mb-0">{% translate 'A cycle is the sequence of phases, activities and tasks each community goes through. MIS forms are the evidence of tasks.' %}</p>
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>{% translate 'Name' %}</th>
+                    <th>{% translate 'Phases' %}</th>
+                    <th>{% translate 'Version' %}</th>
+                    <th>{% translate 'Active cycles' %}</th>
+                    <th>{% translate 'Status' %}</th>
+                    <th>{% translate 'Actions' %}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for template in object_list %}
+                    <tr>
+                        <td><a href="{% url 'cdd:template_detail' template.pk %}">{{ template.name }}</a>
+                            <div class="small text-muted">{{ template.description|truncatechars:120 }}</div></td>
+                        <td>{{ template.phase_count }}</td>
+                        <td>{{ template.version }}</td>
+                        <td>{{ template.active_cycles }} / {{ template.cycle_count }}</td>
+                        <td>{% if template.is_active %}<span class="badge badge-success">{% translate 'Active' %}</span>{% else %}<span class="badge badge-secondary">{% translate 'Inactive' %}</span>{% endif %}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a class="btn btn-default btn-flat" href="{% url 'cdd:template_detail' template.pk %}" title="{% translate 'Design' %}"><i class="fas fa-sitemap text-primary"></i></a>
+                                <a class="btn btn-default btn-flat" href="{% url 'cdd:template_edit' template.pk %}" title="{% translate 'Edit' %}"><i class="fas fa-pencil-alt text-primary"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="6" class="text-muted">{% translate 'No cycle yet.' %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

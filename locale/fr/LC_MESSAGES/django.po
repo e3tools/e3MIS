@@ -17,13 +17,12 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-#: authorization/infrastructure/forms/email_authentication_form.py:16
-#: authorization/infrastructure/forms/email_authentication_form.py:35
+
+#: authorization/infrastructure/forms/email_authentication_form.py:16 authorization/infrastructure/forms/email_authentication_form.py:35
 msgid "Email"
 msgstr "E-mail"
 
-#: authorization/infrastructure/forms/email_authentication_form.py:20
-#: authorization/infrastructure/forms/email_authentication_form.py:34
+#: authorization/infrastructure/forms/email_authentication_form.py:20 authorization/infrastructure/forms/email_authentication_form.py:34
 msgid "Password"
 msgstr "Mot de passe"
 
@@ -68,12 +67,8 @@ msgid "Internal Server Error"
 msgstr "Erreur interne du serveur"
 
 #: templates/common/500.html:13
-msgid ""
-"We track these errors automatically, but if the problem persists feel free "
-"to contact us. In the meantime, try refreshing."
-msgstr ""
-"Nous suivons ces erreurs automatiquement, mais si le problème persiste, "
-"n'hésitez pas à nous contacter. En attendant, essayez d'actualiser votre page."
+msgid "We track these errors automatically, but if the problem persists feel free to contact us. In the meantime, try refreshing."
+msgstr "Nous suivons ces erreurs automatiquement, mais si le problème persiste, n'hésitez pas à nous contacter. En attendant, essayez d'actualiser votre page."
 
 #: templates/common/messages.html:45
 msgid "Success"
@@ -195,8 +190,7 @@ msgstr "Modifier le sous-projet"
 msgid "Close"
 msgstr "Fermer"
 
-#: templates/subprojects/partial_progress_form.html:6
-#: templates/subprojects/partial_update_form.html:7
+#: templates/subprojects/partial_progress_form.html:6 templates/subprojects/partial_update_form.html:7
 msgid "Save"
 msgstr "Sauvegarder"
 
@@ -204,18 +198,15 @@ msgstr "Sauvegarder"
 msgid "updated successfully"
 msgstr "mis à jour avec succès"
 
-#: authorization/infrastructure/forms/create_field_agent_form.py
-#: templates/auth/field_agent_list.html
+#: authorization/infrastructure/forms/create_field_agent_form.py templates/auth/field_agent_list.html
 msgid "Role"
 msgstr "Rôle"
 
-#: authorization/infrastructure/forms/create_field_agent_form.py
-#: templates/auth/field_agent_list.html
+#: authorization/infrastructure/forms/create_field_agent_form.py templates/auth/field_agent_list.html
 msgid "Supervisor"
 msgstr "Superviseur"
 
-#: authorization/infrastructure/forms/create_field_agent_form.py
-#: templates/auth/field_agent_list.html
+#: authorization/infrastructure/forms/create_field_agent_form.py templates/auth/field_agent_list.html
 msgid "Commune"
 msgstr "Commune"
 
@@ -437,3 +428,345 @@ msgstr "Statut de tâche inconnu."
 
 msgid "This task is done when its forms are submitted."
 msgstr "Cette tâche est faite quand ses formulaires sont envoyés."
+
+msgid "The form is not active: agents do not see it."
+msgstr "Le formulaire n'est pas actif : les agents ne le voient pas."
+
+msgid "The form has no group: no agent can fill it."
+msgstr "Le formulaire n'a aucun groupe : aucun agent ne peut le remplir."
+
+msgid "Facilitators of active cycles who cannot fill it (not in every group of the form): %s"
+msgstr "Facilitateurs de cycles actifs qui ne peuvent pas le remplir (pas dans tous les groupes du formulaire) : %s"
+
+msgid "Cycle"
+msgstr "Cycle"
+
+msgid "Communities"
+msgstr "Communautés"
+
+msgid "Started on"
+msgstr "Démarré le"
+
+msgid "Planned end"
+msgstr "Fin prévue"
+
+msgid "Assign the FT and FC attached to each community"
+msgstr "Affecter les FT et FC rattachés à chaque communauté"
+
+msgid "Facilitators whose administrative unit is the community or a unit above it."
+msgstr "Facilitateurs dont l'unité administrative est la communauté ou une unité au-dessus."
+
+msgid "Other facilitators"
+msgstr "Autres facilitateurs"
+
+msgid "Added to every cycle started."
+msgstr "Ajoutés à chaque cycle démarré."
+
+msgid "The planned end is before the start."
+msgstr "La fin prévue est avant le démarrage."
+
+msgid "Reason"
+msgstr "Motif"
+
+msgid "Facilitators"
+msgstr "Facilitateurs"
+
+msgid "Who may mark it"
+msgstr "Qui peut la marquer"
+
+msgid "Empty: any facilitator of the cycle."
+msgstr "Vide : tout facilitateur du cycle."
+
+msgid "Starts after"
+msgstr "Commence après"
+
+msgid "Stable code of the task. Empty: made from the name. Fixed once a cycle follows the template."
+msgstr "Code stable de la tâche. Vide : créé à partir du nom. Figé dès qu'une communauté suit ce cycle."
+
+msgid "Optional tasks do not count for progress."
+msgstr "Les tâches facultatives ne comptent pas dans l'avancement."
+
+msgid "Doing the task earlier gives a warning, never a block."
+msgstr "La faire plus tôt donne un avertissement, jamais un blocage."
+
+msgid "This would make the task wait for itself."
+msgstr "La tâche s'attendrait elle-même."
+
+msgid "Record types"
+msgstr "Types d'objets"
+
+msgid "Follow-up events"
+msgstr "Événements de suivi"
+
+msgid "Pick a form."
+msgstr "Choisissez un formulaire."
+
+msgid "Facilitators saved."
+msgstr "Facilitateurs enregistrés."
+
+msgid "Pick facilitators from the list."
+msgstr "Choisissez les facilitateurs dans la liste."
+
+msgid "Cycles per community"
+msgstr "Cycles par communauté"
+
+msgid "Start cycles"
+msgstr "Démarrer des cycles"
+
+msgid "%(n)d cycle started."
+msgid_plural "%(n)d cycles started."
+msgstr[0] "%(n)d cycle démarré."
+msgstr[1] "%(n)d cycles démarrés."
+
+msgid "No facilitator assigned yet: %s"
+msgstr "Aucun facilitateur affecté pour le moment : %s"
+
+msgid "Cycle status: %s"
+msgstr "Statut du cycle : %s"
+
+msgid "Delete %(name)s"
+msgstr "Supprimer %(name)s"
+
+msgid "Deleted."
+msgstr "Supprimé."
+
+msgid "phase"
+msgstr "une phase"
+
+msgid "activity"
+msgstr "une activité"
+
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Add"
+msgstr "Ajouter"
+
+msgid "Saved."
+msgstr "Enregistré."
+
+msgid "Edit task"
+msgstr "Modifier la tâche"
+
+msgid "Add task"
+msgstr "Ajouter une tâche"
+
+msgid "New cycle"
+msgstr "Nouveau cycle"
+
+msgid "Cycle created. Add its phases."
+msgstr "Cycle créé. Ajoutez ses phases."
+
+msgid "Edit cycle"
+msgstr "Modifier le cycle"
+
+msgid "CDD cycle designer"
+msgstr "Conception du cycle CDD"
+
+msgid "To do"
+msgstr "À faire"
+
+msgid "In progress"
+msgstr "En cours"
+
+msgid "Cancel"
+msgstr "Annuler"
+
+msgid "Delete"
+msgstr "Supprimer"
+
+msgid "Groups"
+msgstr ""
+
+msgid "Last activity"
+msgstr "Dernière activité"
+
+msgid "started on version %(started)s, cycle now at version %(current)s"
+msgstr "démarré sur la version %(started)s, cycle aujourd'hui en version %(current)s"
+
+msgid "%(counter)s overdue task"
+msgid_plural "%(counter)s overdue tasks"
+msgstr[0] "%(counter)s tâche en retard"
+msgstr[1] "%(counter)s tâches en retard"
+
+msgid "No activity for %(days)s days"
+msgstr "Aucune activité depuis %(days)s jours"
+
+msgid "Current phase"
+msgstr "Phase en cours"
+
+msgid "Optional"
+msgstr "Facultative"
+
+msgid "Started before:"
+msgstr "Commencée avant :"
+
+msgid "%(counter)s day late"
+msgid_plural "%(counter)s days late"
+msgstr[0] "%(counter)s jour de retard"
+msgstr[1] "%(counter)s jours de retard"
+
+msgid "Forms submitted"
+msgstr "Formulaires remplis"
+
+msgid "No form filled from this cycle yet."
+msgstr "Aucun formulaire rempli pour ce cycle pour le moment."
+
+msgid "Cycle status"
+msgstr "Statut du cycle"
+
+msgid "Reopen"
+msgstr "Rouvrir"
+
+msgid "Suspend"
+msgstr "Suspendre"
+
+msgid "Apply"
+msgstr "Appliquer"
+
+msgid "History"
+msgstr "Historique"
+
+msgid "All communes"
+msgstr "Toutes les communes"
+
+msgid "All statuses"
+msgstr "Tous les statuts"
+
+msgid "All cycles"
+msgstr "Tous les cycles"
+
+msgid "Filter"
+msgstr "Filtrer"
+
+msgid "Community"
+msgstr "Communauté"
+
+msgid "Progress"
+msgstr "Avancement"
+
+msgid "Warnings"
+msgstr "Avertissements"
+
+msgid "%(counter)s closed without form"
+msgid_plural "%(counter)s closed without form"
+msgstr[0] "%(counter)s clôturée sans formulaire"
+msgstr[1] "%(counter)s clôturées sans formulaire"
+
+msgid "None"
+msgstr "Aucun"
+
+msgid "No cycle started yet."
+msgstr "Aucun cycle démarré pour le moment."
+
+msgid "Delete \"%(name)s\" from the cycle \"%(template)s\"?"
+msgstr "Supprimer « %(name)s » du cycle « %(template)s » ?"
+
+msgid "Tasks removed:"
+msgstr "Tâches supprimées :"
+
+msgid "%(counter)s form answer points at these tasks."
+msgid_plural "%(counter)s form answers point at these tasks."
+msgstr[0] "%(counter)s réponse de formulaire renvoie à ces tâches."
+msgstr[1] "%(counter)s réponses de formulaire renvoient à ces tâches."
+
+msgid "%(counter)s decision was recorded on them."
+msgid_plural "%(counter)s decisions were recorded on them."
+msgstr[0] "%(counter)s décision a été enregistrée sur elles."
+msgstr[1] "%(counter)s décisions ont été enregistrées sur elles."
+
+msgid "The answers are kept, but they will no longer count in the cycles."
+msgstr "Les réponses sont conservées, mais ne compteront plus dans les cycles."
+
+msgid "cycle %(number)s active"
+msgstr "cycle %(number)s en cours"
+
+msgid "Pick a commune to list its communities."
+msgstr "Choisissez une commune pour lister ses communautés."
+
+msgid "Select all"
+msgstr "Tout sélectionner"
+
+msgid "Task"
+msgstr "Tâche"
+
+msgid "Forms (evidence)"
+msgstr "Formulaires (preuves)"
+
+msgid "The task is done when each required form has the number of answers needed, filled from this task. Without forms, a facilitator marks it done."
+msgstr "La tâche est faite quand chaque formulaire requis a le nombre de réponses demandé, remplies depuis cette tâche. Sans formulaire, un facilitateur la marque comme faite."
+
+msgid "Save to get another empty row."
+msgstr "Enregistrez pour obtenir une nouvelle ligne vide."
+
+msgid "Add phase"
+msgstr "Ajouter une phase"
+
+msgid "Version"
+msgstr "Version"
+
+msgid "Inactive"
+msgstr "Inactif"
+
+msgid "Drag the handles to reorder."
+msgstr "Faites glisser les poignées pour réordonner."
+
+msgid "Communities already follow this cycle: task keys are fixed, and changes apply to their cycles too."
+msgstr "Des communautés suivent déjà ce cycle : les codes des tâches sont figés et les modifications s'appliquent aussi à leurs cycles."
+
+msgid "Phase"
+msgstr "Phase"
+
+msgid "%(days)s days planned"
+msgstr "%(days)s jours prévus"
+
+msgid "Add activity"
+msgstr "Ajouter une activité"
+
+msgid "Activity"
+msgstr "Activité"
+
+msgid "Kind"
+msgstr "Type"
+
+msgid "Due"
+msgstr "Échéance"
+
+msgid "day %(days)s"
+msgstr "jour %(days)s"
+
+msgid "optional"
+msgstr "facultatif"
+
+msgid "Marked by hand"
+msgstr "Marquée à la main"
+
+msgid "No task yet."
+msgstr "Aucune tâche pour le moment."
+
+msgid "No activity yet."
+msgstr "Aucune activité pour le moment."
+
+msgid "No phase yet. Start with “Add phase”."
+msgstr "Aucune phase pour le moment. Commencez par « Ajouter une phase »."
+
+msgid "A cycle is the sequence of phases, activities and tasks each community goes through. MIS forms are the evidence of tasks."
+msgstr "Un cycle est la suite de phases, activités et tâches que suit chaque communauté. Les formulaires du MIS sont les preuves des tâches."
+
+msgid "Phases"
+msgstr "Phases"
+
+msgid "Active cycles"
+msgstr "Cycles actifs"
+
+msgid "Design"
+msgstr "Concevoir"
+
+msgid "No cycle yet."
+msgstr "Aucun cycle pour le moment."
+
+msgid "CDD cycle"
+msgstr "Cycle CDD"
+
+msgid "Cycle designer"
+msgstr "Conception du cycle"

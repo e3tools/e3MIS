@@ -1,0 +1,46 @@
+{% extends 'layout/base.html' %}
+{% load i18n bootstrap4 %}
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-12 col-xl-7">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Task' %}</h3></div>
+                    <div class="card-body">
+                        {% bootstrap_form form %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-5">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{% translate 'Forms (evidence)' %}</h3></div>
+                    <div class="card-body">
+                        <p class="small text-muted">{% translate 'The task is done when each required form has the number of answers needed, filled from this task. Without forms, a facilitator marks it done.' %}</p>
+                        {{ formset.management_form }}
+                        {% if formset.non_form_errors %}<div class="alert alert-danger">{{ formset.non_form_errors }}</div>{% endif %}
+                        {% for subform in formset %}
+                            <div class="border rounded p-2 mb-2">
+                                {% for hidden in subform.hidden_fields %}{{ hidden }}{% endfor %}
+                                {% bootstrap_field subform.form %}
+                                <div class="form-row">
+                                    <div class="col">{% bootstrap_field subform.min_count %}</div>
+                                    <div class="col">{% bootstrap_field subform.required %}</div>
+                                    {% if subform.instance.pk %}<div class="col">{% bootstrap_field subform.DELETE %}</div>{% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <p class="small text-muted mb-0">{% translate 'Save to get another empty row.' %}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">{% translate 'Save' %}</button>
+        <a class="btn btn-light" href="{% url 'cdd:template_detail' template.pk %}">{% translate 'Cancel' %}</a>
+    </form>
+{% endblock %}
+
+{% block extrajs %}
+    <script>$(function () { $('.select2').select2({width: '100%'}); $('select[name$="-form"]').select2({width: '100%'}); });</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'layout/base.html' %}
+{% load i18n bootstrap4 %}
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="col-12 col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        {% bootstrap_field form.template %}
+                        <div class="form-group">
+                            <label for="id_commune">{{ form.commune.label }}</label>
+                            <select name="commune" id="id_commune" class="form-control {% if form.commune.errors %}is-invalid{% endif %}"
+                                    hx-get="{% url 'cdd:cycle_communities' %}" hx-target="#communities" hx-trigger="change">
+                                <option value="">---------</option>
+                                {% for commune in form.fields.commune.queryset %}
+                                    <option value="{{ commune.pk }}" {% if form.commune.value|stringformat:'s' == commune.pk|stringformat:'s' %}selected{% endif %}>{{ commune.name }}</option>
+                                {% endfor %}
+                            </select>
+                            {% for error in form.commune.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                        <div class="form-row">
+                            <div class="col">{% bootstrap_field form.started_on %}</div>
+                            <div class="col">{% bootstrap_field form.planned_end %}</div>
+                        </div>
+                        {% bootstrap_field form.with_attached %}
+                        {% bootstrap_field form.facilitators %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">{{ form.communities.label }}</h3></div>
+                    <div class="card-body">
+                        {% for error in form.communities.errors %}<div class="alert alert-danger py-1">{{ error }}</div>{% endfor %}
+                        <div id="communities">{% include 'cdd/partials/cycle_communities.html' %}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-play"></i> {% translate 'Start cycles' %}</button>
+        <a class="btn btn-light" href="{% url 'cdd:cycle_list' %}">{% translate 'Cancel' %}</a>
+    </form>
+{% endblock %}
+
+{% block extrajs %}
+    <script>$(function () { $('.select2').select2({width: '100%'}); });</script>
+{% endblock %}
