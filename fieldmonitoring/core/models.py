@@ -61,6 +61,15 @@ class ProgrammeConfig(models.Model):
         "administrativelevels.AdministrativeLevel", null=True, blank=True, on_delete=models.SET_NULL,
         related_name="+", verbose_name="Village level",
     )
+    # CDD cycle module (cdd/). Off: nothing of it shows in the app, the dashboard or the MIS menu.
+    cdd_enabled = models.BooleanField("CDD cycle module", default=False)
+    # The level of the communities that go through the cycle; empty: the village level.
+    cdd_community_level = models.ForeignKey(
+        "administrativelevels.AdministrativeLevel", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="+", verbose_name="CDD community level",
+    )
+    # An active cycle with no activity for this many days is flagged (a warning, CDD-8).
+    cdd_inactive_days = models.PositiveIntegerField("CDD inactivity warning (days)", default=21)
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )

@@ -70,6 +70,8 @@ INSTALLED_APPS = [
     'fieldmonitoring.review',
     'fieldmonitoring.compliance',
     'fieldmonitoring.warning',
+    # CDD cycle (phases → activities → tasks, forms as evidence); off unless ProgrammeConfig.cdd_enabled.
+    'cdd',
 ]
 
 

@@ -307,3 +307,133 @@ msgstr "Pas encore de SC dans cette commune : ses pointages à revoir vont au Rd
 #: templates/auth/field_agent_list.html
 msgid "Choose the commune to see the supervisor."
 msgstr "Choisissez la commune pour voir le superviseur."
+
+# CDD cycle (cdd/)
+msgid "name"
+msgstr "nom"
+
+msgid "description"
+msgstr "description"
+
+msgid "active"
+msgstr "actif"
+
+msgid "cycle template"
+msgstr "modèle de cycle"
+
+msgid "planned duration (days)"
+msgstr "durée prévue (jours)"
+
+msgid "activities"
+msgstr "activités"
+
+msgid "Form"
+msgstr "Formulaire"
+
+msgid "Meeting"
+msgstr "Réunion"
+
+msgid "Checklist"
+msgstr "Liste de contrôle"
+
+msgid "Manual"
+msgstr "Manuelle"
+
+msgid "key"
+msgstr "clé"
+
+msgid "instructions"
+msgstr "instructions"
+
+msgid "kind"
+msgstr "type"
+
+msgid "required"
+msgstr "obligatoire"
+
+msgid "due (days after the cycle starts)"
+msgstr "échéance (jours après le début du cycle)"
+
+msgid "Another task of this cycle already uses this key."
+msgstr "Une autre tâche de ce cycle utilise déjà cette clé."
+
+msgid "answers needed"
+msgstr "réponses attendues"
+
+msgid "Active"
+msgstr "Actif"
+
+msgid "Suspended"
+msgstr "Suspendu"
+
+msgid "Closed"
+msgstr "Clôturé"
+
+msgid "community"
+msgstr "communauté"
+
+msgid "cycle number"
+msgstr "numéro du cycle"
+
+msgid "started on"
+msgstr "débuté le"
+
+msgid "planned end"
+msgstr "fin prévue"
+
+msgid "cycle"
+msgstr "cycle"
+
+msgid "Done"
+msgstr "Faite"
+
+msgid "Closed without form"
+msgstr "Clôturée sans formulaire"
+
+msgid "Not applicable"
+msgstr "Sans objet"
+
+msgid "Cycle started"
+msgstr "Cycle démarré"
+
+msgid "Cycle suspended"
+msgstr "Cycle suspendu"
+
+msgid "Cycle closed"
+msgstr "Cycle clôturé"
+
+msgid "Cycle reopened"
+msgstr "Cycle rouvert"
+
+msgid "Task marked done"
+msgstr "Tâche marquée comme faite"
+
+msgid "Task closed without form"
+msgstr "Tâche clôturée sans formulaire"
+
+msgid "Task not applicable"
+msgstr "Tâche sans objet"
+
+msgid "Task decision withdrawn"
+msgstr "Décision sur la tâche annulée"
+
+msgid "A cycle is started for a community (village level)."
+msgstr "Un cycle se démarre pour une communauté (niveau village)."
+
+msgid "This community already has an active cycle."
+msgstr "Cette communauté a déjà un cycle en cours."
+
+msgid "Unknown cycle status."
+msgstr "Statut de cycle inconnu."
+
+msgid "Give a reason."
+msgstr "Indiquez un motif."
+
+msgid "This task is not part of the cycle."
+msgstr "Cette tâche ne fait pas partie du cycle."
+
+msgid "Unknown task status."
+msgstr "Statut de tâche inconnu."
+
+msgid "This task is done when its forms are submitted."
+msgstr "Cette tâche est faite quand ses formulaires sont envoyés."

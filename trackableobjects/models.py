@@ -219,6 +219,10 @@ class TrackableObjectInstance(SyncedAnswerMixin, models.Model):
     visit_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
     visit = models.ForeignKey("visits.Visit", null=True, blank=True, on_delete=models.SET_NULL,
                               related_name="form_records")
+    # The CDD cycle and task it is the evidence of (cdd/progress.py); the task by its stable key.
+    cdd_cycle = models.ForeignKey("cdd.Cycle", null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name="records")
+    cdd_task_key = models.CharField(max_length=64, blank=True, default="")
 
     class Meta:
         indexes = [models.Index(fields=["updated_at"])]
@@ -253,6 +257,10 @@ class FollowUpEventResponse(SyncedAnswerMixin, models.Model):
     visit_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
     visit = models.ForeignKey("visits.Visit", null=True, blank=True, on_delete=models.SET_NULL,
                               related_name="form_responses")
+    # The CDD cycle and task it is the evidence of (cdd/progress.py); the task by its stable key.
+    cdd_cycle = models.ForeignKey("cdd.Cycle", null=True, blank=True, on_delete=models.SET_NULL,
+                                  related_name="responses")
+    cdd_task_key = models.CharField(max_length=64, blank=True, default="")
 
     class Meta:
         indexes = [models.Index(fields=["updated_at"])]

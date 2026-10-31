@@ -121,6 +121,25 @@ Sub-project sites and positions (field tests, Oct 2026):
 - Nearby list: sites without a confirmed position are listed when in a nearby village, when their
   pending capture is within the radius, or when assigned to the agent.
 
+## CDD cycle (`cdd/`, branch `feature/cdd`)
+
+Optional module (concept and build plan: `../CDD_MODULE_CONCEPT.md`, `../CDD_BUILD_PLAN.md`): a
+community goes through a cycle of phases → activities → tasks, and MIS forms are the evidence of
+tasks. Off unless `ProgrammeConfig.cdd_enabled` (Django admin, "CDD cycle"); migrations only add
+tables and nullable columns, so production can carry it switched off.
+- Template: `CycleTemplate` → `Phase` → `Activity` → `Task` (stable `key`, `depends_on`, due
+  `planned_offset_days` after the start) → `TaskForm` (a record type or a follow-up event,
+  `min_count`). Edited in the Django admin until the MIS designer exists (plan step 2).
+- `Cycle` (community = unit at `cdd_community_level`, else the village level; one active cycle per
+  community, numbered per community), `TaskProgress` (a person's decision only: done, closed without
+  form, not applicable), `CycleEvent` (history). Change them through `cdd/services.py`.
+- Answers carry `cdd_cycle` and `cdd_task_key` (the key, so they survive template edits).
+- `cdd/progress.py` computes statuses, progress, current phase and warnings from plain data (rules
+  CDD-1…CDD-8, tests in `tests/fieldmonitoring/test_cdd.py`); the app will mirror it. Warnings only,
+  never a block (non-negotiable 5).
+- `manage.py seed_cdd_cycle [--group …] [--enable]`: example five-phase cycle and its forms (meeting
+  minutes, diagnosis, priorities, committee, evaluation; sub-project phase on F1–F3). Idempotent.
+
 ## Domain model
 
 | App | Models |

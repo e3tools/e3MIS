@@ -17,10 +17,13 @@ class JobRunAdmin(ReadOnlyAdmin):
 
 @admin.register(ProgrammeConfig)
 class ProgrammeConfigAdmin(admin.ModelAdmin):
-    """Only the administrative levels are edited here; the other settings are on the dashboard's
-    configuration page, which keeps their history (ConfigChange)."""
+    """Only the administrative levels and the CDD module are edited here; the other settings are on
+    the dashboard's configuration page, which keeps their history (ConfigChange)."""
 
-    fields = ("region_level", "commune_level", "village_level")
+    fieldsets = (
+        (None, {"fields": ("region_level", "commune_level", "village_level")}),
+        ("CDD cycle", {"fields": ("cdd_enabled", "cdd_community_level", "cdd_inactive_days")}),
+    )
     list_display = ("__str__", "region_level", "commune_level", "village_level")
 
     def has_add_permission(self, request):
