@@ -262,3 +262,48 @@ msgstr "Modifier l'agent de terrain"
 #: templates/auth/field_agent_list.html
 msgid "Create Field Agent"
 msgstr "Créer un agent de terrain"
+
+#: authorization/infrastructure/forms/group_form.py templates/auth/group_list.html
+msgid "Default role"
+msgstr "Rôle par défaut"
+
+#: authorization/infrastructure/forms/group_form.py
+msgid "Users added to this group get this role by default. It can still be changed per user."
+msgstr "Les utilisateurs ajoutés à ce groupe reçoivent ce rôle par défaut. Il reste modifiable pour chacun."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "This field is required."
+msgstr "Ce champ est obligatoire."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "Choose one administrative unit: the commune (the département for a regional specialist)."
+msgstr "Choisissez une seule unité administrative : la commune (le département pour un spécialiste régional)."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "A regional specialist is attached to a département."
+msgstr "Un spécialiste régional est rattaché à un département."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "Choose a commune, or a unit inside one."
+msgstr "Choisissez une commune, ou une unité qui s'y trouve."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py templates/auth/field_agent_list.html
+msgid "This commune has several SCs: choose the supervisor."
+msgstr "Cette commune a plusieurs SC : choisissez le superviseur."
+
+#: templates/auth/field_agent_list.html
+msgid "The administrative levels playing the region, commune and village roles are not set, so they are guessed from the tree. Set them in the administration (Programme configuration) so communes and supervisors are right."
+msgstr "Les niveaux administratifs qui jouent le rôle de région, de commune et de village ne sont pas définis : ils sont devinés à partir de l'arbre. Définissez-les dans l'administration (Programme configuration) pour que les communes et les superviseurs soient justes."
+
+#: templates/auth/field_agent_list.html
+#, python-format
+msgid "Choose the %(level)s (one unit)."
+msgstr "Choisissez : %(level)s (une seule unité)."
+
+#: templates/auth/field_agent_list.html
+msgid "No SC in this commune yet: their check-ins to review go to the RdP until one is created."
+msgstr "Pas encore de SC dans cette commune : ses pointages à revoir vont au RdP jusqu'à la création d'un SC."
+
+#: templates/auth/field_agent_list.html
+msgid "Choose the commune to see the supervisor."
+msgstr "Choisissez la commune pour voir le superviseur."

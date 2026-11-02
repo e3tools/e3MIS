@@ -2,10 +2,10 @@ from django.views.generic import DetailView
 from django.utils.translation import gettext as _
 from django.contrib import messages
 from trackableobjects.models import FollowUpEvent
-from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
+from administrativelevels.models import AdministrativeLevel
 from django.contrib.auth.mixins import LoginRequiredMixin
 from src.permissions import IsStaffMemberMixin
-from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units
+from utils.json_form_parser import parse_custom_jsonschema, schema_requires_assigned_units, staff_unit_ids
 from utils.submission_table import build_submission_table
 
 
@@ -68,9 +68,7 @@ class FollowUpEventDetailView(LoginRequiredMixin, IsStaffMemberMixin, DetailView
 
         admin_level_ids = []
         if schema_requires_assigned_units(schema_json):
-            admin_level_ids = AdministrativeUnit.get_descendant_ids(
-                self.request.user.administrative_units.values_list('id', flat=True)
-            )
+            admin_level_ids = staff_unit_ids(self.request.user)
 
         form_class = parse_custom_jsonschema(
             schema_json, page_index=0,

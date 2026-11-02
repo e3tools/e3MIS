@@ -13,7 +13,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="col-12">
-                        <a class="btn btn-primary pull-right group-modal-show" data-name="" data-id=""
+                        <a class="btn btn-primary pull-right group-modal-show" data-name="" data-role="" data-id=""
                         >{% translate 'Create' %} {% translate 'Group' %}</a>
                     </div>
                 </div>
@@ -23,6 +23,7 @@
                         <tr>
                             <th>{% translate 'Name' %}</th>
                             <th>{% translate 'Members' %}</th>
+                            <th>{% translate 'Default role' %}</th>
                             <th>{% translate 'Actions' %}</th>
                         </tr>
                         </thead>
@@ -31,11 +32,13 @@
                             <tr>
                                 <td>{{ group.name }}</td>
                                 <td>{{ group.member_count }}</td>
+                                <td>{% if group.field_role %}{{ group.field_role.get_role_display }}{% endif %}</td>
                                 <td>
                                   <div class="btn-group">
                                     <button type="button"
                                             data-name="{{ group.name }}"
                                             data-id="{{ group.id }}"
+                                            data-role="{% if group.field_role %}{{ group.field_role.role }}{% endif %}"
                                             class="btn btn-default btn-flat group-modal-show">
                                       <i class="fas fa-pencil-alt text-primary"></i>
                                     </button>
@@ -74,6 +77,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="group_id" id="id_group_id" value="">
                     {% bootstrap_field form.name %}
+                    {% bootstrap_field form.role %}
                 </div>
                 <div class="modal-footer">
                     <input type="submit" class="btn btn-primary pull-right" value="{% translate 'Submit' %}">
@@ -138,6 +142,7 @@
             $(".group-modal-show").on("click", function () {
                 $("#id_group_id").val($(this).data("id"));
                 $("#id_name").val($(this).data("name"));
+                $("#id_role").val($(this).data("role") || "");
                 $('#groupModal').modal('show');
             });
 

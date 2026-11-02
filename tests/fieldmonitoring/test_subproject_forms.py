@@ -396,9 +396,11 @@ def test_identification_needs_a_village_not_a_region(forms, agent, region, commu
 
 
 def test_correcting_the_village_moves_the_site(subproject, agent, other_commune, levels, client_for):
-    # Field test 15 Oct: sites attached to the wrong place are fixed by editing form 1.
+    # Field test 15 Oct: sites attached to the wrong place are fixed by editing form 1. Since
+    # 29 Oct an agent only picks villages of their units, so this one covers both communes.
     from administrativelevels.models import AdministrativeUnit
 
+    agent.administrative_units.add(agent.commune, other_commune)
     right = AdministrativeUnit.objects.create(name="Kpota", level=levels["village"], parent=other_commune, zone=URBAN)
     item = {"kind": "record", "op": "update", "id": subproject.pk, "base_version": subproject.version,
             "answers": identification(right)}
@@ -408,3 +410,27 @@ def test_correcting_the_village_moves_the_site(subproject, agent, other_commune,
     assert (site.village, site.commune) == (right, other_commune)
     assert site.tolerance_m == 50  # urban village, position not confirmed yet
     assert list(TrackableObjectInstance.objects.get(pk=subproject.pk).administrative_units.all()) == [right]
+
+
+def test_identification_offers_only_villages_of_the_agents_area(forms, agent, other_commune, levels, client_for):
+    # Field test 29 Oct: form 1 listed every unit of the country. An agent with only a commune
+    # (no unit yet) gets that commune's villages.
+    from administrativelevels.models import AdministrativeUnit
+
+    elsewhere = AdministrativeUnit.objects.create(name="Kpota", level=levels["village"], parent=other_commune)
+    [result] = push(client_for, agent, new_record(forms, identification(elsewhere)))
+    assert result["status"] == "invalid" and "village" in result["errors"]
+
+    sync = client_for(agent).get("/api/v1/forms/sync/").json()
+    assert elsewhere.pk not in sync["my_unit_ids"]
+    assert agent.commune_id in sync["my_unit_ids"]
+
+
+def test_staff_without_units_can_still_set_any_village(forms, village, other_commune, levels):
+    # The restriction is "my units"; MIS staff manage every record, so it is off for them.
+    from administrativelevels.models import AdministrativeUnit
+    from utils.json_form_parser import parse_custom_jsonschema
+
+    elsewhere = AdministrativeUnit.objects.create(name="Kpota", level=levels["village"], parent=other_commune)
+    form = parse_custom_jsonschema(forms["record"].jsonForm, administrative_level_ids=None)()
+    assert set(form.fields["village"].queryset) >= {village, elsewhere}

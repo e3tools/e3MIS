@@ -194,7 +194,7 @@ class SyncView(APIView):
             ],
             "administrative_units": self._units(unit_ids, schemas),
             # For pickers restricted to "my units": the user's units and their descendants.
-            "my_unit_ids": sorted(AdministrativeUnit.get_descendant_ids(user.administrative_units.values_list("id", flat=True))),
+            "my_unit_ids": sorted(visibility.own_unit_ids_with_descendants(user)),
             "trackable_object_options": self._trackable_object_options(user, schemas),
             "records": [_record(i, user, record_files) for i in changed_instances],
             "record_ids": instance_ids,
@@ -252,9 +252,7 @@ class SyncView(APIView):
             qs = TrackableObjectInstance.objects.filter(trackable_object_id=to_id).select_related("trackable_object")
             if to_id in restricted:
                 if own_units is None:
-                    own_units = AdministrativeUnit.get_descendant_ids(
-                        user.administrative_units.values_list("id", flat=True)
-                    )
+                    own_units = visibility.own_unit_ids_with_descendants(user)
                 qs = qs.filter(administrative_units__id__in=own_units).distinct()
             options[str(to_id)] = [{"id": i.id, "label": str(i.identifier)} for i in qs]
         return options

@@ -4,6 +4,11 @@
 {% block content %}
     <div class="row">
         <div class="col-12">
+            {% if not levels_configured %}
+                <div class="alert alert-warning">
+                    {% translate 'The administrative levels playing the region, commune and village roles are not set, so they are guessed from the tree. Set them in the administration (Programme configuration) so communes and supervisors are right.' %}
+                </div>
+            {% endif %}
             <div class="input-group mb-3 search-bar">
                 <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -119,16 +124,12 @@
                             <div class="col-md-6 col-sm-12">
                                 {% bootstrap_field form.role %}
                             </div>
-                            <div class="col-md-6 col-sm-12 role-field" data-roles="ft fc sc">
-                                {% bootstrap_field form.commune %}
-                            </div>
-                            <div class="col-md-6 col-sm-12 role-field" data-roles="regional_specialist">
-                                {% bootstrap_field form.region %}
-                            </div>
-                        </div>
-                        <div class="row role-field" data-roles="ft fc">
-                            <div class="col-md-6 col-sm-12">
-                                {% bootstrap_field form.supervisor %}
+                            <div class="col-md-6 col-sm-12 role-field" data-roles="ft fc">
+                                <label>{% translate 'Supervisor' %}</label>
+                                <p id="supervisor-info" class="mb-2"></p>
+                                <div id="supervisor-choice" style="display: none;">
+                                    {% bootstrap_field form.supervisor show_label=False %}
+                                </div>
                             </div>
                         </div>
                         <div id="reset-password-toggle" style="display: none;">
@@ -152,7 +153,7 @@
                                 {% bootstrap_field form.groups %}
                             </div>
                             <div class="col-md-6 col-sm-12">
-                                <div class="form-check mb-2">
+                                <div class="form-check mb-2" id="au-attach-toggle">
                                     <input class="form-check-input" type="checkbox" id="au-attach-checkbox">
                                     <label class="form-check-label" for="au-attach-checkbox">
                                         {% translate 'Attach to administrative unit' %}
@@ -160,6 +161,10 @@
                                 </div>
                                 <div id="au-fields-wrapper" style="display: none;">
                                 <label>{% translate 'Administrative units' %}</label>
+                                <p id="au-role-hint" class="text-muted small mb-2"></p>
+                                {% if form.administrative_units.errors %}
+                                    <div class="text-danger small mb-2">{{ form.administrative_units.errors|join:" " }}</div>
+                                {% endif %}
                                 <div id="cascading-selects-container">
                                     {% for level in administrative_levels %}
                                     <div class="au-select-wrapper mb-2" data-level-order="{{ level.order }}" style="display: none;">
@@ -219,7 +224,10 @@
 
 {% block extrajs %}
     {{ role_groups|json_script:"role-groups" }}
+    {{ group_roles|json_script:"group-roles" }}
     {{ supervisor_communes|json_script:"supervisor-communes" }}
+    {{ level_orders|json_script:"level-orders" }}
+    {{ role_levels|json_script:"role-levels" }}
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
@@ -272,16 +280,18 @@
                 $('#au-hidden-inputs').empty();
             }
 
-            function addToStack(unitId, displayName) {
+            // levelOrder is known for a unit picked in the cascade, not for one loaded with the agent.
+            function addToStack(unitId, displayName, levelOrder) {
                 unitId = String(unitId);
                 if (stackedUnits[unitId]) return;
-                stackedUnits[unitId] = displayName;
+                stackedUnits[unitId] = {name: displayName, order: levelOrder || null};
                 const item = $('<div class="d-flex align-items-center mb-1 border rounded px-2 py-1 au-stack-item" data-unit-id="' + unitId + '">' +
                     '<span class="flex-grow-1 mr-2">' + $('<span>').text(displayName).html() + '</span>' +
                     '<button type="button" class="btn btn-sm btn-link text-danger p-0 au-stack-remove"><i class="fas fa-times"></i></button>' +
                     '</div>');
                 $('#au-stack-container').append(item).show();
                 $('#au-hidden-inputs').append('<input type="hidden" name="administrative_units" value="' + unitId + '">');
+                updateSupervisor();
             }
 
             function removeFromStack(unitId) {
@@ -292,6 +302,7 @@
                 if (Object.keys(stackedUnits).length === 0) {
                     $('#au-stack-container').hide();
                 }
+                updateSupervisor();
             }
 
             $(document).on('click', '.au-stack-remove', function() {
@@ -301,16 +312,20 @@
 
             $('#au-stack-add').on('click', function() {
                 let lastValue = '';
+                let lastOrder = null;
                 const displayParts = [];
                 $('.au-select-wrapper:visible .au-cascade-select').each(function() {
                     const val = $(this).val();
                     if (val) {
                         lastValue = val;
+                        lastOrder = $(this).data('level-order');
                         displayParts.push($(this).find('option:selected').text());
                     }
                 });
                 if (!lastValue) return;
-                addToStack(lastValue, displayParts.join(' > '));
+                // Roles attached to one unit: the new choice replaces the previous one.
+                if (singleUnit()) clearStack();
+                addToStack(lastValue, displayParts.join(' > '), lastOrder);
             });
 
             function resetCascadingSelects() {
@@ -345,17 +360,28 @@
                 });
             }
 
+            // Level orders need not start at 1 nor be consecutive: follow the configured levels.
+            const levelOrders = JSON.parse(document.getElementById('level-orders').textContent);
+            const roleLevels = JSON.parse(document.getElementById('role-levels').textContent);
+            function nextOrder(order) {
+                const index = levelOrders.indexOf(Number(order));
+                return index === -1 ? undefined : levelOrders[index + 1];
+            }
+            function maxOrder() {
+                return roleLevels[$('#id_role').val()] || null;
+            }
+
             function loadRootUnits(callback) {
                 $.ajax({
                     url: rootUrl,
                     success: function(data) {
-                        const firstSelect = $('.au-cascade-select[data-level-order="1"]');
+                        const firstSelect = $('.au-cascade-select[data-level-order="' + levelOrders[0] + '"]');
                         const levelName = firstSelect.data('level-name');
                         firstSelect.html('<option value="">-- ' + levelName + ' --</option>');
                         $.each(data, function() {
                             firstSelect.append($("<option />").val(this.id).text(this.name));
                         });
-                        showSelectForOrder(1);
+                        showSelectForOrder(levelOrders[0]);
                         if (callback) callback();
                     }
                 });
@@ -384,9 +410,12 @@
                 const currentOrder = $(this).data('level-order');
                 const selectedValue = $(this).val();
                 hideSelectsAfterOrder(currentOrder);
-                if (selectedValue) {
-                    loadChildren(selectedValue, currentOrder + 1);
+                const next = nextOrder(currentOrder);
+                // The cascade stops at the role's level (the commune for an SC, FT or FC).
+                if (selectedValue && next !== undefined && (maxOrder() === null || next <= maxOrder())) {
+                    loadChildren(selectedValue, next);
                 }
+                updateSupervisor();
             });
 
             // Checkbox toggle for reset password
@@ -437,11 +466,8 @@
                     $("#reset-password-toggle").hide();
                 }
 
-                $("#id_role").val($(this).data("role")).trigger('change', [true]);
-                $("#id_commune").val(String($(this).data("commune")));
-                $("#id_supervisor").val(String($(this).data("supervisor")));
-                filterSupervisors();
-                $("#id_region").val(String($(this).data("region")));
+                instanceCommune = String($(this).data("commune") || '');
+                $("#id_supervisor").val(String($(this).data("supervisor") || ''));
 
                 // Reset selects, clear stack, load root units fresh
                 resetCascadingSelects();
@@ -467,6 +493,7 @@
                 } else {
                     $('#au-fields-wrapper').hide();
                 }
+                $("#id_role").val($(this).data("role")).trigger('change', [true]);
 
                 // Initialize groups multiselect
                 const groupsData = $(this).data("groups");
@@ -474,22 +501,41 @@
                     const groupIds = groupsData.toString().split(',').filter(function(id) {
                         return id !== '';
                     });
-                    $("#id_groups").val(groupIds).change();
+                    $("#id_groups").val(groupIds).trigger('change', [true]);
                 } else {
-                    $("#id_groups").val([]).change();
+                    $("#id_groups").val([]).trigger('change', [true]);
                 }
 
                 $('#fieldAgentModal').modal('show');
             });
 
-            // Role: show the fields the role uses, offer only the SCs of the chosen commune,
-            // and pre-select the role's MIS group (the admin can still change the groups).
+            // Role: show the fields the role uses, attach the agent to one unit (commune, or
+            // département for a regional specialist), show who the supervisor will be, and keep
+            // role and groups in step through the groups' default roles.
             {% translate "Edit Field Agent" as edit_title %}{% translate "Create Field Agent" as create_title %}
             const editTitle = '{{ edit_title|escapejs }}';
             const createTitle = '{{ create_title|escapejs }}';
+            {% blocktranslate asvar commune_hint with level=commune_level_name %}Choose the {{ level }} (one unit).{% endblocktranslate %}
+            {% blocktranslate asvar region_hint with level=region_level_name %}Choose the {{ level }} (one unit).{% endblocktranslate %}
+            {% translate "No SC in this commune yet: their check-ins to review go to the RdP until one is created." as no_sc_text %}
+            {% translate "Choose the commune to see the supervisor." as pick_commune_text %}
+            {% translate "This commune has several SCs: choose the supervisor." as several_sc_text %}
+            const roleHints = {
+                ft: '{{ commune_hint|escapejs }}', fc: '{{ commune_hint|escapejs }}', sc: '{{ commune_hint|escapejs }}',
+                regional_specialist: '{{ region_hint|escapejs }}'
+            };
+            const noScText = '{{ no_sc_text|escapejs }}';
+            const pickCommuneText = '{{ pick_commune_text|escapejs }}';
+            const severalScText = '{{ several_sc_text|escapejs }}';
             const roleGroups = JSON.parse(document.getElementById('role-groups').textContent);
-            const supervisorOptions = $('#id_supervisor option').clone();
+            const groupRoles = JSON.parse(document.getElementById('group-roles').textContent);
             const supervisorCommunes = JSON.parse(document.getElementById('supervisor-communes').textContent);
+            const supervisorOptions = $('#id_supervisor option').clone();
+            let instanceCommune = '';
+
+            function singleUnit() {
+                return Object.prototype.hasOwnProperty.call(roleHints, $('#id_role').val() || 'ft');
+            }
 
             function showRoleFields() {
                 // Before a role is chosen, show the fields of the usual case (FT/FC: commune and
@@ -498,30 +544,80 @@
                 $('.role-field').each(function () {
                     $(this).toggle(String($(this).data('roles')).split(' ').indexOf(role) !== -1);
                 });
+                if (singleUnit()) {
+                    $('#au-attach-toggle').hide();
+                    $('#au-attach-checkbox').prop('checked', true);
+                    $('#au-fields-wrapper').show();
+                    $('#au-role-hint').text(roleHints[role]).show();
+                    // Load the first level once (the modal may still be hidden, so not by visibility).
+                    if ($('.au-cascade-select[data-level-order="' + levelOrders[0] + '"] option').length <= 1) loadRootUnits();
+                } else {
+                    $('#au-attach-toggle').show();
+                    $('#au-role-hint').hide();
+                }
+                // A cascade deeper than the new role's level starts again.
+                if (maxOrder() !== null) {
+                    hideSelectsAfterOrder(maxOrder());
+                }
+                updateSupervisor();
             }
 
-            function filterSupervisors() {
-                const current = $('#id_supervisor').val();
-                const commune = $('#id_commune').val();
-                const options = supervisorOptions.filter(function () {
-                    return this.value === '' || !commune || String(supervisorCommunes[this.value]) === commune;
+            // The commune the agent will be attached to: the cascade's choice, else the unit kept
+            // from before (the server works it out anyway; this only shows the supervisor early).
+            function chosenCommune() {
+                let picked = '';
+                $('.au-select-wrapper:visible .au-cascade-select').each(function () {
+                    if ($(this).val()) picked = String($(this).val());
                 });
-                $('#id_supervisor').empty().append(options.clone()).val(current);
-                if ($('#id_supervisor').val() === null) $('#id_supervisor').val('');
+                if (picked) return picked;
+                const ids = Object.keys(stackedUnits);
+                if (ids.length !== 1) return '';
+                return stackedUnits[ids[0]].order ? ids[0] : instanceCommune;
+            }
+
+            function updateSupervisor() {
+                const commune = chosenCommune();
+                const candidates = Object.keys(supervisorCommunes).filter(function (pk) {
+                    return commune && String(supervisorCommunes[pk]) === commune;
+                });
+                const current = $('#id_supervisor').val();
+                $('#supervisor-choice').toggle(candidates.length > 1);
+                if (!commune) {
+                    $('#supervisor-info').text(pickCommuneText);
+                } else if (candidates.length === 0) {
+                    $('#supervisor-info').text(noScText);
+                } else if (candidates.length === 1) {
+                    $('#supervisor-info').text(supervisorOptions.filter('[value="' + candidates[0] + '"]').text());
+                } else {
+                    $('#supervisor-info').text(severalScText);
+                    const options = supervisorOptions.filter(function () {
+                        return this.value === '' || candidates.indexOf(this.value) !== -1;
+                    });
+                    $('#id_supervisor').empty().append(options.clone()).val(current);
+                    if ($('#id_supervisor').val() === null) $('#id_supervisor').val('');
+                }
             }
 
             $('#id_role').on('change', function (event, fromModal) {
                 showRoleFields();
-                const group = roleGroups[$(this).val()];
-                if (group && !fromModal) {
+                const groups = roleGroups[$(this).val()] || [];
+                if (groups.length && !fromModal) {
                     const selected = ($('#id_groups').val() || []).map(String);
-                    if (selected.indexOf(String(group)) === -1) {
-                        selected.push(String(group));
-                        $('#id_groups').val(selected).change();
-                    }
+                    groups.forEach(function (group) {
+                        if (selected.indexOf(String(group)) === -1) selected.push(String(group));
+                    });
+                    $('#id_groups').val(selected).trigger('change', [true]);
                 }
             });
-            $('#id_commune').on('change', filterSupervisors);
+            // Adding someone to a group with a default role fills an empty role.
+            $('#id_groups').on('change', function (event, fromCode) {
+                if (fromCode || $('#id_role').val()) return;
+                const roles = ($(this).val() || []).map(function (id) { return groupRoles[id]; })
+                    .filter(function (role, i, all) { return role && all.indexOf(role) === i; });
+                if (roles.length === 1 && $('#id_role option[value="' + roles[0] + '"]').length) {
+                    $('#id_role').val(roles[0]).trigger('change', [true]);
+                }
+            });
 
             // Auto-add current cascading selection before form submit
             $('#fieldAgentForm').on('submit', function() {
@@ -543,7 +639,6 @@
                 {% endfor %}
                 if ($('#au-attach-checkbox').is(':checked')) loadRootUnits();
                 showRoleFields();
-                filterSupervisors();
                 $('#fieldAgentModal').modal('show');
             {% else %}
                 showRoleFields();

@@ -31,9 +31,24 @@ def _group_ids(user):
     return list(user.groups.values_list("id", flat=True))
 
 
+def own_units(user):
+    """The units a user is attached to. A field monitoring user without any falls back to their
+    commune (or region): the field-agents page attaches users by unit, but older accounts may only
+    have the commune, and "my units" fields (form 1's village) would otherwise offer nothing."""
+    units = user.administrative_units.all()
+    if units.exists():
+        return units
+    ids = [pk for pk in (user.commune_id, user.region_id) if pk]
+    return AdministrativeUnit.objects.filter(pk__in=ids)
+
+
+def own_unit_ids_with_descendants(user) -> set[int]:
+    return AdministrativeUnit.get_descendant_ids(own_units(user).values_list("id", flat=True))
+
+
 def accessible_unit_ids(user) -> set[int]:
     """The user's administrative units plus all their ancestors and descendants."""
-    own = list(user.administrative_units.values_list("id", "parent_id"))
+    own = list(own_units(user).values_list("id", "parent_id"))
     ids = AdministrativeUnit.get_descendant_ids([pk for pk, _ in own])
     parents = {parent for _, parent in own if parent}
     while parents:

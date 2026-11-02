@@ -13,7 +13,7 @@ from authorization.infrastructure.forms.group_form import GroupForm
 
 class GroupListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, ListView):
     template_name = 'auth/group_list.html'
-    queryset = Group.objects.annotate(member_count=Count('user')).order_by('name')
+    queryset = Group.objects.annotate(member_count=Count('user')).select_related('field_role').order_by('name')
     form_class = GroupForm
     success_url = reverse_lazy('authorization:group_list')
 

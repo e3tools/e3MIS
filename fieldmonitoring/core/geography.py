@@ -64,3 +64,27 @@ def regions():
     if config.region_level_id:
         return AdministrativeUnit.objects.filter(level_id=config.region_level_id)
     return AdministrativeUnit.objects.filter(pk__in=communes().values("parent_id"))
+
+
+def _climb_to(unit, candidates):
+    node = unit
+    while node is not None:
+        if candidates.filter(pk=node.pk).exists():
+            return node
+        node = node.parent
+    return None
+
+
+def commune_containing(unit: AdministrativeUnit) -> AdministrativeUnit | None:
+    """The commune ``unit`` is (or lies in); None for a unit above the commune level."""
+    return _climb_to(unit, communes())
+
+
+def region_containing(unit: AdministrativeUnit) -> AdministrativeUnit | None:
+    """The region ``unit`` is (or lies in); None for a unit above the region level."""
+    return _climb_to(unit, regions())
+
+
+def levels_configured() -> bool:
+    config = _config()
+    return bool(config.region_level_id and config.commune_level_id and config.village_level_id)
