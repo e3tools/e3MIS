@@ -1,8 +1,11 @@
-"""The MIS field-agents page: a user is created with a role and one administrative unit.
+"""The MIS field-agents page: a user is created with a role and administrative units.
 
 25 Oct 2026 (Brice): role, commune and supervisor were only in the Django admin.
 29 Oct 2026 (Brice): the commune list showed every unit, and reporting lines should follow from
-role + unit. The unit is picked in the cascade; commune or region and the SC are worked out.
+role + unit. The units are picked in the cascade; commune or region and the SC are worked out.
+3 Nov 2026 (Brice, Leonardo): units of any level and as many as needed (an FT/FC has about ten
+villages, sometimes in two communes; an SC may add a second commune for an interim). The main
+commune is the one most units lie in.
 """
 import pytest
 from django.contrib.auth.models import Group
@@ -150,11 +153,55 @@ def test_facilitator_cannot_be_attached_to_a_departement(staff_client, tree):
     assert not CustomUser.objects.filter(email="awa@example.test").exists()
 
 
-def test_field_staff_have_exactly_one_unit(staff_client, tree):
-    for units in ([], [tree["Cotonou"].pk, tree["Abomey-Calavi"].pk]):
+def test_field_staff_need_a_unit_in_a_commune(staff_client, tree):
+    for units in ([], [tree["region"].pk]):
         response = staff_client.post(URL, payload(role="sc", administrative_units=units))
         assert response.status_code == 200
         assert "administrative_units" in response.context["form"].errors
+
+
+def test_facilitator_gets_several_villages_and_the_main_commune(staff_client, tree, sc):
+    other = make_sc(tree["Abomey-Calavi"], email="sc2@example.test", name="Seydou")
+    second = AdministrativeUnit.objects.create(
+        name="Calavi nord", level=tree["Abomey-Calavi village"].level, parent=tree["Abomey-Calavi village"].parent
+    )
+    villages = [tree["Cotonou village"].pk, tree["Abomey-Calavi village"].pk, second.pk]
+    response = staff_client.post(URL, payload(role="fc", administrative_units=villages))
+    assert response.status_code == 302
+    user = created()
+    assert set(user.administrative_units.values_list("pk", flat=True)) == set(villages)
+    assert (user.commune, user.supervisor) == (tree["Abomey-Calavi"], other)
+
+
+def test_units_of_any_level_can_be_mixed(staff_client, tree, sc):
+    arrondissement = tree["Cotonou village"].parent
+    response = staff_client.post(URL, payload(
+        role="ft", administrative_units=[arrondissement.pk, tree["Abomey-Calavi village"].pk, tree["region"].pk]
+    ))
+    assert response.status_code == 302
+    assert created().administrative_units.count() == 3
+    assert created().commune == tree["Cotonou"]  # tie: the first unit given
+
+
+def test_sc_interim_keeps_the_first_commune_as_theirs(staff_client, tree):
+    response = staff_client.post(URL, payload(
+        role="sc", administrative_units=[tree["Abomey-Calavi"].pk, tree["Cotonou"].pk]
+    ))
+    assert response.status_code == 302
+    assert created().commune == tree["Abomey-Calavi"]
+    assert created().administrative_units.count() == 2
+
+
+def test_editing_keeps_the_current_commune_on_a_tie(staff_client, tree):
+    staff_client.post(URL, payload(role="sc", administrative_units=[tree["Cotonou"].pk]))
+    user = created()
+    response = staff_client.post(URL, payload(
+        field_agent=user.pk, role="sc", password1="", password2="",
+        administrative_units=[tree["Abomey-Calavi"].pk, tree["Cotonou"].pk],
+    ))
+    assert response.status_code == 302
+    user.refresh_from_db()
+    assert user.commune == tree["Cotonou"]
 
 
 def test_regional_specialist_gets_the_region(staff_client, tree):
@@ -205,8 +252,8 @@ def test_page_gives_the_cascade_its_levels_and_the_role_groups(staff_client, tre
     assert response.context["role_groups"][Role.FT] == [tf_group.pk]
     assert response.context["group_roles"][tf_group.pk] == Role.FT
     assert response.context["level_orders"] == [10, 11, 12, 13]
-    assert response.context["role_levels"][Role.SC] == 11
-    assert response.context["role_levels"][Role.REGIONAL_SPECIALIST] == 10
+    assert response.context["commune_level_order"] == 11
+    assert "role-levels" not in response.content.decode()  # the cascade no longer stops at a level
     assert response.context["levels_configured"] is True
     assert "Koffi (Cotonou)" in response.content.decode()
 
@@ -242,6 +289,8 @@ def test_backfill_fills_units_communes_and_supervisors(tree, sc):
                                             commune=tree["Cotonou"])
     by_unit = CustomUser.objects.create_user(email="unit@example.test", password="x", role=Role.SC)
     by_unit.administrative_units.add(tree["Abomey-Calavi village"])
+    several = CustomUser.objects.create_user(email="several@example.test", password="x", role=Role.FC)
+    several.administrative_units.add(tree["Cotonou village"], tree["Cotonou"].children.first())
 
     call_command("backfill_user_scope", stdout=open("/dev/null", "w"))
     legacy.refresh_from_db()
@@ -253,6 +302,8 @@ def test_backfill_fills_units_communes_and_supervisors(tree, sc):
     assert list(legacy.administrative_units.all()) == [tree["Cotonou"]]
     assert legacy.supervisor == sc
     assert by_unit.commune == tree["Abomey-Calavi"]
+    several.refresh_from_db()
+    assert (several.commune, several.supervisor) == (tree["Cotonou"], sc)
 
 
 def test_set_programme_levels_command(db):

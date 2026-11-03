@@ -1,12 +1,18 @@
-"""Reporting lines worked out from role and administrative unit (Brice, 29 Oct 2026).
+"""Reporting lines worked out from role and administrative units (Brice, 29 Oct and 3 Nov 2026).
 
-A user is created with a role and one administrative unit; the rest follows:
-- FT, FC and SC: the unit is their commune (or a unit inside it), so ``commune`` is derived.
-- Regional specialist: the unit is their region (département in Benin), so ``region`` is derived.
+A user is attached to administrative units of any level, as many as needed (an FT or FC has about
+ten villages, sometimes across arrondissements or two communes; an SC their commune, plus a second
+one during an interim). The rest follows:
+- FT, FC and SC: ``commune`` is their main commune, the one most of their units lie in (ties: the
+  current commune, else the first unit given).
+- Regional specialist: ``region`` is their main region (département in Benin), the same way.
 - An FT/FC reports to the SC of their commune. A commune without an SC leaves them without a
   supervisor (their reviews go to the RdP, BR-10) until an SC is created there, who then takes
   them over. A commune with several SCs is the only case where someone picks the supervisor.
 """
+from collections import Counter
+
+from administrativelevels.models import AdministrativeUnit
 from authorization.models import FACILITATOR_ROLES, CustomUser, Role
 from fieldmonitoring.core.geography import commune_containing, region_containing
 
@@ -18,13 +24,27 @@ def commune_supervisors(commune, exclude=None):
     return scs
 
 
-def scope_for(role, unit):
-    """``(commune, region)`` for a user with ``role`` attached to ``unit``. A side is None when the
-    unit does not reach that level (e.g. a département for an FT)."""
+def main_unit(units, climb, current=None):
+    """The unit ``climb`` (commune_containing or region_containing) finds for most of ``units``;
+    ties go to ``current``, else to the first of ``units``. None when no unit reaches that level."""
+    found = [unit for unit in (climb(u) for u in units) if unit is not None]
+    if not found:
+        return None
+    counts = Counter(unit.pk for unit in found)
+    best = max(counts.values())
+    tied = [unit for unit in found if counts[unit.pk] == best]
+    return next((unit for unit in tied if current is not None and unit.pk == current.pk), tied[0])
+
+
+def scope_for(role, units, current_commune=None, current_region=None):
+    """``(commune, region)`` for a user with ``role`` attached to ``units`` (a unit or a list). A
+    side is None when no unit reaches that level (e.g. only a département for an FT)."""
+    if isinstance(units, AdministrativeUnit):
+        units = [units]
     if role in (Role.FT, Role.FC, Role.SC):
-        return commune_containing(unit), None
+        return main_unit(units, commune_containing, current_commune), None
     if role == Role.REGIONAL_SPECIALIST:
-        return None, region_containing(unit)
+        return None, main_unit(units, region_containing, current_region)
     return None, None
 
 

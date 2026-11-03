@@ -307,3 +307,36 @@ msgstr "Pas encore de SC dans cette commune : ses pointages à revoir vont au Rd
 #: templates/auth/field_agent_list.html
 msgid "Choose the commune to see the supervisor."
 msgstr "Choisissez la commune pour voir le superviseur."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "Add at least one unit in a département (the département or a unit inside it)."
+msgstr "Ajoutez au moins une unité dans un département (le département ou une unité qu’il contient)."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid ""
+"Add at least one unit in a commune (the commune, an arrondissement or a village), so their commune "
+"and supervisor can be found."
+msgstr ""
+"Ajoutez au moins une unité dans une commune (la commune, un arrondissement ou un village), pour "
+"trouver sa commune et son superviseur."
+
+#: templates/auth/field_agent_list.html
+msgid ""
+"Add their villages, or arrondissements. Several are allowed, also in different communes; the "
+"commune with most of them gives the supervisor."
+msgstr ""
+"Ajoutez ses villages, ou ses arrondissements. Plusieurs sont possibles, même dans des communes "
+"différentes ; la commune qui en compte le plus donne le superviseur."
+
+#: templates/auth/field_agent_list.html
+msgid "Add their commune. Add a second one for an interim; the first one stays their commune."
+msgstr "Ajoutez sa commune. Ajoutez-en une seconde pour un intérim ; la première reste sa commune."
+
+#: templates/auth/field_agent_list.html
+#, python-format
+msgid "Add their %(level)s."
+msgstr "Ajoutez son %(level)s."
+
+#: templates/auth/field_agent_list.html
+msgid "Add their units to see the supervisor."
+msgstr "Ajoutez ses unités pour voir le superviseur."

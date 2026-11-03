@@ -38,16 +38,11 @@ class FieldAgentListView(LoginRequiredMixin, IsStaffMemberMixin, FormMixin, List
         levels = AdministrativeLevel.objects.all().order_by('order')
         kwargs['administrative_levels'] = levels
         kwargs['level_orders'] = [level.order for level in levels]
-        # The cascade stops at the level the role is attached to (commune, or region for a
-        # regional specialist); unset levels leave it open.
+        # Units of any level can be attached (Brice, 3 Nov 2026); the commune level lets the page
+        # show early which commune, and so which supervisor, the units give.
         config = ProgrammeConfig.get()
         kwargs['levels_configured'] = levels_configured()
-        kwargs['role_levels'] = {
-            role: level.order
-            for role, level in [(Role.FT, config.commune_level), (Role.FC, config.commune_level),
-                                (Role.SC, config.commune_level), (Role.REGIONAL_SPECIALIST, config.region_level)]
-            if level is not None
-        }
+        kwargs['commune_level_order'] = config.commune_level.order if config.commune_level else None
         kwargs['commune_level_name'] = config.commune_level.name if config.commune_level else _('Commune')
         kwargs['region_level_name'] = config.region_level.name if config.region_level else _('Region')
         # A group's default role fills the role; a role pre-selects its groups.

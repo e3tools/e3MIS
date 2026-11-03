@@ -48,8 +48,10 @@ How it maps onto the MIS:
 - **Users:** `CustomUser.role` (ft, fc, sc, regional/national specialist, rdp, admin), `supervisor`,
   `commune`, `region`. Roles drive visit rules; groups still decide which forms a user sees. Saving
   a user with a visiting role sets `is_field_agent`. `authorization.models.User` is an alias.
-  On the MIS field-agents page a user gets a role and **one administrative unit** (cascade that
-  stops at the role's level); `authorization/hierarchy.py` derives commune/region and the
+  On the MIS field-agents page a user gets a role and **administrative units of any level, as many
+  as needed** (3 Nov 2026: an FT/FC has ~10 villages, sometimes in two communes; an SC may add a
+  second commune for an interim). `authorization/hierarchy.py` derives the main commune/region (the
+  one most units lie in; ties: current, else first added) and the
   supervisor (the commune's SC; picked only when there are several; none while the commune has
   no SC, and a new SC takes them over). A group's default role (`GroupRole`) fills an empty role.
   `manage.py backfill_user_scope [--apply]` aligns older users.
