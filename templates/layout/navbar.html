@@ -4,6 +4,12 @@
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
     <!-- Left navbar links -->
     <ul class="navbar-nav">
+        {# Below 992px AdminLTE hides the sidebar, and its own toggle with it: open it from here. #}
+        <li class="nav-item d-lg-none">
+            <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="{% translate 'Menu' %}">
+                <i class="fas fa-bars"></i>
+            </a>
+        </li>
         {% if object_tile %}
             <li class="nav-item white-shaded-nav-item">
                 <a class="nav-link font-weight-bold" href="{{ preview_page }}" 
