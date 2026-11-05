@@ -1,14 +1,14 @@
-"""Bring existing users in line with "role + one administrative unit" (Brice, 29 Oct 2026).
+"""Bring existing users in line with "role + administrative units" (Brice, 29 Oct and 3 Nov 2026).
 
     manage.py backfill_user_scope            # report only
     manage.py backfill_user_scope --apply    # make the changes
 
 - FT, FC, SC with a commune but no unit: the commune becomes their unit (form 1 offers the
   villages of the agent's units, so an agent without a unit would get none).
-- Same roles with one unit but no commune: the commune is worked out from the unit. Regional
-  specialists likewise with their region.
+- Same roles with units but no commune: the commune is worked out from the units (the one most
+  of them lie in). Regional specialists likewise with their region.
 - FT, FC without a supervisor: the SC of their commune when it has exactly one.
-Users it cannot settle (several units, no unit and no commune, a unit outside any commune) are
+Users it cannot settle (no unit and no commune, units outside any commune) are
 listed for an admin to fix on the field-agents page.
 """
 from django.core.management.base import BaseCommand
@@ -41,13 +41,12 @@ class Command(BaseCommand):
                     changes.append(f"{user.email}: unit := {current.name}")
                     if apply:
                         user.administrative_units.add(current)
-                elif len(units) > 1:
-                    problems.append(f"{user.email} ({user.role}): {len(units)} units, choose one")
                 elif current is None:
-                    commune, region = hierarchy.scope_for(user.role, units[0])
+                    commune, region = hierarchy.scope_for(user.role, units)
                     found = commune if field == "commune" else region
                     if found is None:
-                        problems.append(f"{user.email} ({user.role}): unit {units[0].name} is not in a {field}")
+                        names = ", ".join(unit.name for unit in units)
+                        problems.append(f"{user.email} ({user.role}): units {names} are not in a {field}")
                     else:
                         changes.append(f"{user.email}: {field} := {found.name}")
                         if apply:

@@ -7,8 +7,8 @@ from authorization.models import CustomUser, GroupRole, Role
 
 # Roles that use the field app; the others (RdP, admin) are not field agents and are set in the admin.
 FIELD_AGENT_ROLES = [Role.FT, Role.FC, Role.SC, Role.REGIONAL_SPECIALIST, Role.NATIONAL_SPECIALIST]
-# Roles attached to exactly one administrative unit, from which commune or region is derived
-# (authorization/hierarchy.py). A national specialist needs none.
+# Roles attached to administrative units (any level, as many as needed), from which commune or
+# region is derived (authorization/hierarchy.py). A national specialist needs none.
 UNIT_ROLES = [Role.FT, Role.FC, Role.SC, Role.REGIONAL_SPECIALIST]
 
 
@@ -18,9 +18,9 @@ class SupervisorChoiceField(forms.ModelChoiceField):
 
 
 class CreateFieldAgentForm(forms.ModelForm):
-    """A field agent is created with a role and one administrative unit (Brice, 29 Oct 2026): the
-    commune or region, and the supervisor, follow from them. The supervisor is only picked when
-    the commune has several SCs."""
+    """A field agent is created with a role and administrative units of any level (Brice, 29 Oct and
+    3 Nov 2026): the commune or region, and the supervisor, follow from them. The supervisor is only
+    picked when the commune has several SCs."""
 
     password1 = forms.CharField(
         label=_('Password'),
@@ -81,19 +81,21 @@ class CreateFieldAgentForm(forms.ModelForm):
             return cleaned_data
 
         commune = region = supervisor = None
-        units = list(cleaned_data.get('administrative_units') or [])
+        units = self._units_in_posted_order(cleaned_data.get('administrative_units') or [])
         if role in UNIT_ROLES:
-            if len(units) != 1:
+            commune, region = hierarchy.scope_for(
+                role, units, current_commune=self.instance.commune, current_region=self.instance.region
+            )
+            if role == Role.REGIONAL_SPECIALIST and region is None:
                 self.add_error('administrative_units', _(
-                    'Choose one administrative unit: the commune (the département for a regional specialist).'
+                    'Add at least one unit in a département (the département or a unit inside it).'
                 ))
                 return cleaned_data
-            commune, region = hierarchy.scope_for(role, units[0])
-            if role == Role.REGIONAL_SPECIALIST and region is None:
-                self.add_error('administrative_units', _('A regional specialist is attached to a département.'))
-                return cleaned_data
             if role != Role.REGIONAL_SPECIALIST and commune is None:
-                self.add_error('administrative_units', _('Choose a commune, or a unit inside one.'))
+                self.add_error('administrative_units', _(
+                    'Add at least one unit in a commune (the commune, an arrondissement or a village), '
+                    'so their commune and supervisor can be found.'
+                ))
                 return cleaned_data
 
         if role in (Role.FT, Role.FC):
@@ -109,6 +111,12 @@ class CreateFieldAgentForm(forms.ModelForm):
         self.instance.commune = commune
         self.instance.region = region
         return cleaned_data
+
+    def _units_in_posted_order(self, units):
+        """The units in the order they were added on the page: ties for the main commune go to the
+        first one (an SC's own commune before the interim one)."""
+        posted = [str(pk) for pk in self.data.getlist('administrative_units')] if hasattr(self.data, 'getlist') else []
+        return sorted(units, key=lambda unit: posted.index(str(unit.pk)) if str(unit.pk) in posted else len(posted))
 
     def _update_errors(self, errors):
         # Commune and region come from the unit: the model's errors on them belong to the unit

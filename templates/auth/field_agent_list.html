@@ -227,7 +227,7 @@
     {{ group_roles|json_script:"group-roles" }}
     {{ supervisor_communes|json_script:"supervisor-communes" }}
     {{ level_orders|json_script:"level-orders" }}
-    {{ role_levels|json_script:"role-levels" }}
+    {{ commune_level_order|json_script:"commune-level-order" }}
     <script type="text/javascript">
         $(document).ready(function () {
             {% get_current_language as lang %}
@@ -280,11 +280,12 @@
                 $('#au-hidden-inputs').empty();
             }
 
-            // levelOrder is known for a unit picked in the cascade, not for one loaded with the agent.
-            function addToStack(unitId, displayName, levelOrder) {
+            // The commune is known for a unit picked in the cascade (at or below the commune level),
+            // not for one loaded with the agent.
+            function addToStack(unitId, displayName, commune) {
                 unitId = String(unitId);
                 if (stackedUnits[unitId]) return;
-                stackedUnits[unitId] = {name: displayName, order: levelOrder || null};
+                stackedUnits[unitId] = {name: displayName, commune: commune || null};
                 const item = $('<div class="d-flex align-items-center mb-1 border rounded px-2 py-1 au-stack-item" data-unit-id="' + unitId + '">' +
                     '<span class="flex-grow-1 mr-2">' + $('<span>').text(displayName).html() + '</span>' +
                     '<button type="button" class="btn btn-sm btn-link text-danger p-0 au-stack-remove"><i class="fas fa-times"></i></button>' +
@@ -312,20 +313,17 @@
 
             $('#au-stack-add').on('click', function() {
                 let lastValue = '';
-                let lastOrder = null;
                 const displayParts = [];
                 $('.au-select-wrapper:visible .au-cascade-select').each(function() {
                     const val = $(this).val();
                     if (val) {
                         lastValue = val;
-                        lastOrder = $(this).data('level-order');
                         displayParts.push($(this).find('option:selected').text());
                     }
                 });
                 if (!lastValue) return;
-                // Roles attached to one unit: the new choice replaces the previous one.
-                if (singleUnit()) clearStack();
-                addToStack(lastValue, displayParts.join(' > '), lastOrder);
+                // Any level, as many units as needed (Brice, 3 Nov 2026).
+                addToStack(lastValue, displayParts.join(' > '), cascadeCommune());
             });
 
             function resetCascadingSelects() {
@@ -362,13 +360,16 @@
 
             // Level orders need not start at 1 nor be consecutive: follow the configured levels.
             const levelOrders = JSON.parse(document.getElementById('level-orders').textContent);
-            const roleLevels = JSON.parse(document.getElementById('role-levels').textContent);
+            const communeLevelOrder = JSON.parse(document.getElementById('commune-level-order').textContent);
             function nextOrder(order) {
                 const index = levelOrders.indexOf(Number(order));
                 return index === -1 ? undefined : levelOrders[index + 1];
             }
-            function maxOrder() {
-                return roleLevels[$('#id_role').val()] || null;
+            // The commune picked in the cascade (its select at the commune level), if any.
+            function cascadeCommune() {
+                if (communeLevelOrder === null) return '';
+                const select = $('.au-select-wrapper:visible .au-cascade-select[data-level-order="' + communeLevelOrder + '"]');
+                return select.length ? String(select.val() || '') : '';
             }
 
             function loadRootUnits(callback) {
@@ -411,8 +412,8 @@
                 const selectedValue = $(this).val();
                 hideSelectsAfterOrder(currentOrder);
                 const next = nextOrder(currentOrder);
-                // The cascade stops at the role's level (the commune for an SC, FT or FC).
-                if (selectedValue && next !== undefined && (maxOrder() === null || next <= maxOrder())) {
+                // The cascade goes down to any level: the person creating the user decides.
+                if (selectedValue && next !== undefined) {
                     loadChildren(selectedValue, next);
                 }
                 updateSupervisor();
@@ -509,19 +510,20 @@
                 $('#fieldAgentModal').modal('show');
             });
 
-            // Role: show the fields the role uses, attach the agent to one unit (commune, or
-            // département for a regional specialist), show who the supervisor will be, and keep
-            // role and groups in step through the groups' default roles.
+            // Role: show the fields the role uses, attach the agent to their units (any level, as
+            // many as needed), show who the supervisor will be, and keep role and groups in step
+            // through the groups' default roles.
             {% translate "Edit Field Agent" as edit_title %}{% translate "Create Field Agent" as create_title %}
             const editTitle = '{{ edit_title|escapejs }}';
             const createTitle = '{{ create_title|escapejs }}';
-            {% blocktranslate asvar commune_hint with level=commune_level_name %}Choose the {{ level }} (one unit).{% endblocktranslate %}
-            {% blocktranslate asvar region_hint with level=region_level_name %}Choose the {{ level }} (one unit).{% endblocktranslate %}
+            {% translate "Add their villages, or arrondissements. Several are allowed, also in different communes; the commune with most of them gives the supervisor." as facilitator_hint %}
+            {% translate "Add their commune. Add a second one for an interim; the first one stays their commune." as sc_hint %}
+            {% blocktranslate asvar region_hint with level=region_level_name %}Add their {{ level }}.{% endblocktranslate %}
             {% translate "No SC in this commune yet: their check-ins to review go to the RdP until one is created." as no_sc_text %}
-            {% translate "Choose the commune to see the supervisor." as pick_commune_text %}
+            {% translate "Add their units to see the supervisor." as pick_commune_text %}
             {% translate "This commune has several SCs: choose the supervisor." as several_sc_text %}
             const roleHints = {
-                ft: '{{ commune_hint|escapejs }}', fc: '{{ commune_hint|escapejs }}', sc: '{{ commune_hint|escapejs }}',
+                ft: '{{ facilitator_hint|escapejs }}', fc: '{{ facilitator_hint|escapejs }}', sc: '{{ sc_hint|escapejs }}',
                 regional_specialist: '{{ region_hint|escapejs }}'
             };
             const noScText = '{{ no_sc_text|escapejs }}';
@@ -533,7 +535,7 @@
             const supervisorOptions = $('#id_supervisor option').clone();
             let instanceCommune = '';
 
-            function singleUnit() {
+            function needsUnit() {
                 return Object.prototype.hasOwnProperty.call(roleHints, $('#id_role').val() || 'ft');
             }
 
@@ -544,7 +546,7 @@
                 $('.role-field').each(function () {
                     $(this).toggle(String($(this).data('roles')).split(' ').indexOf(role) !== -1);
                 });
-                if (singleUnit()) {
+                if (needsUnit()) {
                     $('#au-attach-toggle').hide();
                     $('#au-attach-checkbox').prop('checked', true);
                     $('#au-fields-wrapper').show();
@@ -555,24 +557,28 @@
                     $('#au-attach-toggle').show();
                     $('#au-role-hint').hide();
                 }
-                // A cascade deeper than the new role's level starts again.
-                if (maxOrder() !== null) {
-                    hideSelectsAfterOrder(maxOrder());
-                }
                 updateSupervisor();
             }
 
-            // The commune the agent will be attached to: the cascade's choice, else the unit kept
-            // from before (the server works it out anyway; this only shows the supervisor early).
+            // The commune the agent will be attached to: the one most of their units lie in, as the
+            // server works it out (ties: the current commune, else the first unit). Units loaded
+            // with the agent count as their current commune. This only shows the supervisor early.
             function chosenCommune() {
-                let picked = '';
-                $('.au-select-wrapper:visible .au-cascade-select').each(function () {
-                    if ($(this).val()) picked = String($(this).val());
+                const communes = Object.keys(stackedUnits).map(function (id) {
+                    return stackedUnits[id].commune || instanceCommune;
                 });
-                if (picked) return picked;
-                const ids = Object.keys(stackedUnits);
-                if (ids.length !== 1) return '';
-                return stackedUnits[ids[0]].order ? ids[0] : instanceCommune;
+                const pending = cascadeCommune();
+                if (pending) communes.push(pending);
+                const counts = {};
+                let best = 0;
+                communes.forEach(function (c) {
+                    if (!c) return;
+                    counts[c] = (counts[c] || 0) + 1;
+                    best = Math.max(best, counts[c]);
+                });
+                const tied = communes.filter(function (c) { return c && counts[c] === best; });
+                if (!tied.length) return '';
+                return tied.indexOf(instanceCommune) !== -1 ? instanceCommune : tied[0];
             }
 
             function updateSupervisor() {
