@@ -195,6 +195,8 @@ code serves production (government server) and the internal demo (Vercel + Neon)
 Setup data: create `AdministrativeLevel`s first (`order` is required), then load units with
 `manage.py sync_administrative_levels <excel>`. `create_administrative_levels_users` creates one
 agent per unit and **prints passwords** — do not run it where output is logged.
+`manage.py seed_test_setup [--sc-password …]` gives a local database the Benin levels, the agent
+groups with their role and the level mapping (sample units only if the tree is empty).
 
 APIs: field monitoring at `/api/v1/` (JWT from `/api/v1/auth/token/`, docs `/api/docs/`); MIS
 read-only at `/fr/api/v1/` (JWT from `/fr/api/login/` or `MIS-…` API tokens, docs `/fr/api/v1/swagger/`).
@@ -234,6 +236,20 @@ under a non-interactive shell): write that migration by hand with `preserve_defa
 - `/api/v1/` is read-only for signed-in desktop users or API tokens (`MIS-…`); field agents are
   refused. DRF accepts API token, JWT and session (the MIS pages call their JSON endpoints with the
   session cookie). Never take the user's identity from a request parameter or header.
+- `IsDjangoAdminMixin`: users who can open the Django admin (`is_staff`), for bulk operations.
+
+## Field agent import (`authorization/agent_import/`)
+
+"Import from Excel" on the field-agents page (`is_staff` only; on `mis-monitoring-prod`, Nov 2026).
+`template.py` builds the .xlsx on each download: Agents (one row per agent, role/group/SC lists),
+Assignments (one row per agent and unit, one column per level) and a hidden Lists sheet. The level
+lists cascade with OFFSET/VLOOKUP on the parent's path (names joined by `|`): Excel and LibreOffice,
+not Google Sheets. `reader.py` reads it back (headers in fr or en); `importer.py` runs every agent
+through `CreateFieldAgentForm` inside one transaction, SCs first, so rules stay the page's: the
+check is the same run rolled back. One group per agent, creation only, at most 200 agents
+(~12 s), all or none. The shared password is asked after the check and hashed once for the file.
+Do not add msgids already used by a non-lazy `verbose_name` (e.g. "Administrative units"): the
+translated value lands in the model state and `makemigrations` sees a change.
 
 ## Offline sync fields
 

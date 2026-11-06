@@ -22,6 +22,10 @@
                            data-last-name="" data-email="" data-phone-number="" data-administrative-units="" data-groups="" data-id=""
                            data-role="" data-commune="" data-supervisor="" data-region=""
                         >{% translate 'Create' %} {% translate 'Field agent' %}</a>
+                        {% if request.user.is_staff %}
+                            <a class="btn btn-outline-primary pull-right mr-2" href="{% url 'authorization:field_agent_import' %}"
+                            ><i class="fas fa-file-excel"></i> {% translate 'Import from Excel' %}</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="card-body table-responsive">

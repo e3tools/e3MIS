@@ -340,3 +340,432 @@ msgstr "Ajoutez son %(level)s."
 #: templates/auth/field_agent_list.html
 msgid "Add their units to see the supervisor."
 msgstr "Ajoutez ses unités pour voir le superviseur."
+
+# --- Field agent import (Nov 2026) ---
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(name)s\" is not a known %(level)s."
+msgstr "« %(name)s » n’est pas un(e) %(level)s connu(e)."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(name)s\" is not a %(level)s of %(parent)s."
+msgstr "« %(name)s » n’est pas un(e) %(level)s de %(parent)s."
+
+#: authorization/agent_import/importer.py
+msgid "An account with this email already exists."
+msgstr "Un compte existe déjà avec cet e-mail."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "Also on row %(row)s of this sheet."
+msgstr "Aussi à la ligne %(row)s de cette feuille."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(value)s\" is not a role from the list."
+msgstr "« %(value)s » n’est pas un rôle de la liste."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(value)s\" is not an existing group."
+msgstr "« %(value)s » n’est pas un groupe existant."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "%(email)s: %(message)s"
+msgstr "%(email)s : %(message)s"
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(value)s\" is not an SC."
+msgstr "« %(value)s » n’est pas un SC."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid ""
+"The column \"%(found)s\" should be \"%(expected)s\". Do not rename or move "
+"the columns; download a new template if the levels have changed."
+msgstr ""
+"La colonne « %(found)s » devrait être « %(expected)s ». Ne renommez ni ne "
+"déplacez les colonnes ; téléchargez un nouveau modèle si les niveaux ont "
+"changé."
+
+#: authorization/agent_import/reader.py
+msgid ""
+"This file cannot be read. Upload the .xlsx template, saved from Excel or "
+"LibreOffice."
+msgstr ""
+"Ce fichier ne peut pas être lu. Envoyez le modèle .xlsx, enregistré depuis "
+"Excel ou LibreOffice."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid "The sheet \"%(name)s\" is missing: use the template from this page."
+msgstr ""
+"La feuille « %(name)s » est absente : utilisez le modèle de cette page."
+
+#: authorization/agent_import/reader.py
+msgid "Required."
+msgstr "Obligatoire."
+
+#: authorization/agent_import/reader.py
+msgid "No agent: fill in at least one row."
+msgstr "Aucun agent : remplissez au moins une ligne."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid ""
+"%(count)s agents: a file holds at most %(max)s. Split it into several files."
+msgstr ""
+"%(count)s agents : un fichier en contient au plus %(max)s. Répartissez-les "
+"dans plusieurs fichiers."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid "\"%(email)s\" is not in the Agents sheet."
+msgstr "« %(email)s » n’est pas dans la feuille Agents."
+
+#: authorization/agent_import/reader.py
+msgid "No unit: pick at least the first level."
+msgstr "Aucune unité : choisissez au moins le premier niveau."
+
+#: authorization/agent_import/reader.py
+msgid ""
+"Empty, while a level to its right is filled: pick the units from left to "
+"right."
+msgstr ""
+"Vide, alors qu’un niveau à sa droite est rempli : choisissez les unités de "
+"gauche à droite."
+
+#: authorization/agent_import/sheets.py
+msgid "Agents"
+msgstr "Agents"
+
+#: authorization/agent_import/sheets.py
+msgid "Assignments"
+msgstr "Affectations"
+
+#: authorization/agent_import/sheets.py
+msgid "Instructions"
+msgstr "Instructions"
+
+#: authorization/agent_import/sheets.py
+msgid "First name"
+msgstr "Prénom"
+
+#: authorization/agent_import/sheets.py
+msgid "Last name"
+msgstr "Nom"
+
+#: authorization/agent_import/sheets.py
+msgid "Phone number"
+msgstr "Téléphone"
+
+#: authorization/agent_import/sheets.py
+msgid "Group"
+msgstr "Groupe"
+
+#: authorization/agent_import/sheets.py
+msgid "Agent's email"
+msgstr "E-mail de l'agent"
+
+#: authorization/agent_import/template.py
+msgid "Value not in the list"
+msgstr "Valeur hors de la liste"
+
+#: authorization/agent_import/template.py
+msgid "Pick a value from the drop-down list."
+msgstr "Choisissez une valeur dans la liste déroulante."
+
+#: authorization/agent_import/template.py
+msgid "Only when the commune has several SCs."
+msgstr "Seulement quand la commune a plusieurs SC."
+
+#: authorization/agent_import/template.py
+msgid "An email from the Agents sheet."
+msgstr "Un e-mail de la feuille Agents."
+
+#: authorization/agent_import/template.py
+msgid "Create field agents from this file"
+msgstr "Créer des agents de terrain à partir de ce fichier"
+
+#: authorization/agent_import/template.py
+#, python-format
+msgid ""
+"Generated on %(date)s from the current data (groups, units, supervisors). "
+"Download a new one if they changed."
+msgstr ""
+"Généré le %(date)s à partir des données actuelles (groupes, unités, "
+"superviseurs). Téléchargez-en un nouveau si elles ont changé."
+
+#: authorization/agent_import/template.py
+msgid ""
+"Fill it in with Microsoft Excel or LibreOffice Calc only: Google Sheets and "
+"Numbers do not keep the drop-down lists."
+msgstr ""
+"Remplissez-le uniquement avec Microsoft Excel ou LibreOffice Calc : Google "
+"Sheets et Numbers ne conservent pas les listes déroulantes."
+
+#: authorization/agent_import/template.py
+msgid "Do not rename the sheets or the columns, and do not add columns."
+msgstr ""
+"Ne renommez pas les feuilles ni les colonnes, et n’ajoutez pas de colonnes."
+
+#: authorization/agent_import/template.py
+#, python-format
+msgid "Agents sheet: one row per agent (at most %(max)s)."
+msgstr "Feuille Agents : une ligne par agent (au plus %(max)s)."
+
+#: authorization/agent_import/template.py
+msgid ""
+"First name, last name and email are required (orange columns). The email is "
+"the sign-in name and must not belong to an existing account."
+msgstr ""
+"Le prénom, le nom et l’e-mail sont obligatoires (colonnes orange). L’e-mail "
+"sert d’identifiant de connexion et ne doit pas appartenir à un compte "
+"existant."
+
+#: authorization/agent_import/template.py
+msgid ""
+"Role: pick it from the list. It can stay empty when the group has a default "
+"role."
+msgstr ""
+"Rôle : choisissez-le dans la liste. Il peut rester vide si le groupe a un "
+"rôle par défaut."
+
+#: authorization/agent_import/template.py
+msgid "Group: one group per agent; it decides which forms the agent sees."
+msgstr ""
+"Groupe : un groupe par agent ; il décide des formulaires que l’agent voit."
+
+#: authorization/agent_import/template.py
+msgid ""
+"Supervisor: leave it empty. The SC of the agent's commune is found "
+"automatically; pick one only when that commune has several SCs. An SC "
+"created in this file can be typed by their email."
+msgstr ""
+"Superviseur : laissez-le vide. Le SC de la commune de l’agent est trouvé "
+"automatiquement ; choisissez-en un seulement si cette commune a plusieurs "
+"SC. Un SC créé dans ce fichier peut être saisi par son e-mail."
+
+#: authorization/agent_import/template.py
+msgid "Assignments sheet: one row per agent and administrative unit."
+msgstr ""
+"Feuille Affectations : une ligne par agent et par unité administrative."
+
+#: authorization/agent_import/template.py
+#, python-format
+msgid ""
+"Pick the agent's email, then the units from left to right (%(levels)s); each "
+"list only shows the units inside the one on its left. Stop at the level you "
+"need:"
+msgstr ""
+"Choisissez l’e-mail de l’agent, puis les unités de gauche à droite "
+"(%(levels)s) ; chaque liste ne montre que les unités contenues dans celle de "
+"gauche. Arrêtez-vous au niveau voulu :"
+
+#: authorization/agent_import/template.py
+msgid "- community facilitator: one row per village;"
+msgstr "- facilitateur communautaire : une ligne par village ;"
+
+#: authorization/agent_import/template.py
+msgid "- technical facilitator and communal supervisor: their commune;"
+msgstr "- facilitateur technique et superviseur communal : sa commune ;"
+
+#: authorization/agent_import/template.py
+msgid "- regional specialist: their department; national specialist: no row."
+msgstr ""
+"- spécialiste régional : son département ; spécialiste national : aucune "
+"ligne."
+
+#: authorization/agent_import/template.py
+msgid ""
+"The commune with most of an agent's units is their commune, and gives their "
+"supervisor."
+msgstr ""
+"La commune qui contient le plus d’unités de l’agent devient sa commune, et "
+"donne son superviseur."
+
+#: authorization/agent_import/template.py
+msgid ""
+"Upload the file on the import page. Nothing is created until every row is "
+"correct: the page lists the errors with their sheet, row and column. Then it "
+"asks for one password, used by all the new accounts."
+msgstr ""
+"Envoyez le fichier sur la page d’import. Rien n’est créé tant que toutes les "
+"lignes ne sont pas correctes : la page liste les erreurs avec leur feuille, "
+"leur ligne et leur colonne. Elle demande ensuite un mot de passe, utilisé "
+"par tous les nouveaux comptes."
+
+#: authorization/infrastructure/forms/field_agent_import_form.py
+msgid "Completed template (.xlsx)"
+msgstr "Modèle rempli (.xlsx)"
+
+#: authorization/infrastructure/forms/field_agent_import_form.py
+msgid "Upload the .xlsx template, saved from Excel or LibreOffice."
+msgstr "Envoyez le modèle .xlsx, enregistré depuis Excel ou LibreOffice."
+
+#: authorization/infrastructure/forms/field_agent_import_form.py
+msgid "The file is larger than 5 MB."
+msgstr "Le fichier dépasse 5 Mo."
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "Password confirmation"
+msgstr "Confirmation du mot de passe"
+
+#: authorization/infrastructure/forms/create_field_agent_form.py
+msgid "The two password fields didn't match."
+msgstr "Les deux mots de passe ne correspondent pas."
+
+#: authorization/infrastructure/views/field_agent_import.py
+msgid "Import field agents"
+msgstr "Importer des agents de terrain"
+
+#: authorization/infrastructure/views/field_agent_import_confirm.py
+msgid "Upload the file again: the checked file was not found."
+msgstr "Envoyez à nouveau le fichier : le fichier vérifié est introuvable."
+
+#: authorization/infrastructure/views/field_agent_import_confirm.py
+#, python-format
+msgid "%(count)s field agent created."
+msgid_plural "%(count)s field agents created."
+msgstr[0] "%(count)s agent de terrain créé."
+msgstr[1] "%(count)s agents de terrain créés."
+
+#: authorization/infrastructure/views/field_agent_import_confirm.py
+#, python-format
+msgid ""
+"%(count)s facilitator has no supervisor yet: their commune has no SC. The SC "
+"created later on this page takes them over."
+msgid_plural ""
+"%(count)s facilitators have no supervisor yet: their commune has no SC. The "
+"SC created later on this page takes them over."
+msgstr[0] ""
+"%(count)s facilitateur n’a pas encore de superviseur : sa commune n’a pas de "
+"SC. Le SC créé plus tard sur cette page le reprendra."
+msgstr[1] ""
+"%(count)s facilitateurs n’ont pas encore de superviseur : leur commune n’a "
+"pas de SC. Le SC créé plus tard sur cette page les reprendra."
+
+#: templates/auth/field_agent_import.html
+msgid "Field agents"
+msgstr "Agents de terrain"
+
+#: templates/auth/field_agent_import.html
+msgid "The import stays closed until then."
+msgstr "L’import reste fermé d’ici là."
+
+#: templates/auth/field_agent_import.html
+#, python-format
+msgid "%(counter)s error: nothing was created"
+msgid_plural "%(counter)s errors: nothing was created"
+msgstr[0] "%(counter)s erreur : rien n’a été créé"
+msgstr[1] "%(counter)s erreurs : rien n’a été créé"
+
+#: templates/auth/field_agent_import.html
+msgid ""
+"The data changed between the check and the creation (a group, a unit or an "
+"account). Correct the file and upload it again."
+msgstr ""
+"Les données ont changé entre la vérification et la création (un groupe, une "
+"unité ou un compte). Corrigez le fichier et envoyez-le à nouveau."
+
+#: templates/auth/field_agent_import.html
+msgid "Correct these cells in your file, then upload it again."
+msgstr "Corrigez ces cellules dans votre fichier, puis envoyez-le à nouveau."
+
+#: templates/auth/field_agent_import.html
+msgid "Sheet"
+msgstr "Feuille"
+
+#: templates/auth/field_agent_import.html
+msgid "Row"
+msgstr "Ligne"
+
+#: templates/auth/field_agent_import.html
+msgid "Column"
+msgstr "Colonne"
+
+#: templates/auth/field_agent_import.html
+msgid "Error"
+msgstr "Erreur"
+
+#: templates/auth/field_agent_import.html
+#, python-format
+msgid "%(counter)s agent ready to be created"
+msgid_plural "%(counter)s agents ready to be created"
+msgstr[0] "%(counter)s agent prêt à être créé"
+msgstr[1] "%(counter)s agents prêts à être créés"
+
+#: templates/auth/field_agent_import.html
+msgid ""
+"The file is correct. Check the commune and supervisor worked out for each "
+"agent, then choose the password."
+msgstr ""
+"Le fichier est correct. Vérifiez la commune et le superviseur trouvés pour "
+"chaque agent, puis choisissez le mot de passe."
+
+#: templates/auth/field_agent_import.html
+msgid "Units"
+msgstr "Unités"
+
+#: templates/auth/field_agent_import.html
+msgid "None yet (no SC in the commune)"
+msgstr "Aucun pour l’instant (pas de SC dans la commune)"
+
+#: templates/auth/field_agent_import.html
+msgid "Every account created signs in with this password."
+msgstr "Tous les comptes créés se connecteront avec ce mot de passe."
+
+#: templates/auth/field_agent_import.html
+#, python-format
+msgid "Create %(counter)s agent"
+msgid_plural "Create %(counter)s agents"
+msgstr[0] "Créer %(counter)s agent"
+msgstr[1] "Créer %(counter)s agents"
+
+#: templates/auth/field_agent_import.html
+msgid "Cancel"
+msgstr "Annuler"
+
+#: templates/auth/field_agent_import.html
+msgid "1. Download the template"
+msgstr "1. Télécharger le modèle"
+
+#: templates/auth/field_agent_import.html
+#, python-format
+msgid ""
+"It is built from the current groups, administrative units and supervisors, "
+"with drop-down lists. Fill it in with Excel or LibreOffice (not Google "
+"Sheets): at most %(max_agents)s agents per file. The Instructions sheet "
+"explains each column."
+msgstr ""
+"Il est construit à partir des groupes, unités administratives et "
+"superviseurs actuels, avec des listes déroulantes. Remplissez-le avec Excel "
+"ou LibreOffice (pas Google Sheets) : au plus %(max_agents)s agents par "
+"fichier. La feuille Instructions explique chaque colonne."
+
+#: templates/auth/field_agent_import.html
+msgid "Download the template"
+msgstr "Télécharger le modèle"
+
+#: templates/auth/field_agent_import.html
+msgid "2. Upload the completed file"
+msgstr "2. Envoyer le fichier rempli"
+
+#: templates/auth/field_agent_import.html
+msgid ""
+"Every row is checked; nothing is created until the whole file is correct and "
+"you have chosen the password."
+msgstr ""
+"Chaque ligne est vérifiée ; rien n’est créé tant que tout le fichier n’est "
+"pas correct et que vous n’avez pas choisi le mot de passe."
+
+#: templates/auth/field_agent_import.html
+msgid "Check the file"
+msgstr "Vérifier le fichier"
+
+#: templates/auth/field_agent_list.html
+msgid "Import from Excel"
+msgstr "Importer depuis Excel"

@@ -8,6 +8,9 @@ from rest_framework_simplejwt.views import (
 from authorization.infrastructure.forms.email_authentication_form import EmailAuthenticationForm
 from authorization.infrastructure.views.field_agent_list import FieldAgentListView
 from authorization.infrastructure.views.field_agent_delete import FieldAgentDeleteView
+from authorization.infrastructure.views.field_agent_import import FieldAgentImportView
+from authorization.infrastructure.views.field_agent_import_confirm import FieldAgentImportConfirmView
+from authorization.infrastructure.views.field_agent_import_template import FieldAgentImportTemplateView
 from authorization.infrastructure.views.group_list import GroupListView
 from authorization.infrastructure.views.group_delete import GroupDeleteView
 from authorization.infrastructure.views.app_settings import AppSettingsView
@@ -21,6 +24,10 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('field-agents/', FieldAgentListView.as_view(), name='field_agent_list'),
     path('field-agents/<int:pk>/delete/', FieldAgentDeleteView.as_view(), name='field_agent_delete'),
+    path('field-agents/import/', FieldAgentImportView.as_view(), name='field_agent_import'),
+    path('field-agents/import/confirm/', FieldAgentImportConfirmView.as_view(), name='field_agent_import_confirm'),
+    path('field-agents/import/template/', FieldAgentImportTemplateView.as_view(),
+         name='field_agent_import_template'),
     path('groups/', GroupListView.as_view(), name='group_list'),
     path('groups/<int:pk>/delete/', GroupDeleteView.as_view(), name='group_delete'),
     path('settings/', AppSettingsView.as_view(), name='app_settings'),

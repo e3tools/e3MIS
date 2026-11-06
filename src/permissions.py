@@ -30,3 +30,12 @@ class IsStaffMemberMixin(UserPassesTestMixin):
             return self.request.user.is_authenticated and not self.request.user.is_field_agent and self.request.user.groups.filter(
                 name__in=self.groups_required).exists()
         return self.request.user.is_authenticated and not self.request.user.is_field_agent
+
+
+class IsDjangoAdminMixin(UserPassesTestMixin):
+    """Users who can open the Django admin (is_staff), for bulk operations such as the agent import.
+    Not the same as IsStaffMemberMixin, which lets in every desktop user."""
+
+    def test_func(self):
+        user = self.request.user
+        return user.is_authenticated and user.is_active and user.is_staff

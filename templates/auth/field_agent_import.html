@@ -1,0 +1,121 @@
+{% extends 'layout/base.html' %}
+{% load i18n bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <p><a href="{% url 'authorization:field_agent_list' %}"><i class="fas fa-arrow-left"></i> {% translate 'Field agents' %}</a></p>
+
+            {% if not levels_configured %}
+                <div class="alert alert-warning">
+                    {% translate 'The administrative levels playing the region, commune and village roles are not set, so they are guessed from the tree. Set them in the administration (Programme configuration) so communes and supervisors are right.' %}
+                    {% translate 'The import stays closed until then.' %}
+                </div>
+            {% endif %}
+
+            {% if errors %}
+                <div class="card card-danger card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            {% blocktranslate count counter=errors|length %}{{ counter }} error: nothing was created{% plural %}{{ counter }} errors: nothing was created{% endblocktranslate %}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {% if changed %}
+                            <p>{% translate 'The data changed between the check and the creation (a group, a unit or an account). Correct the file and upload it again.' %}</p>
+                        {% else %}
+                            <p>{% translate 'Correct these cells in your file, then upload it again.' %}</p>
+                        {% endif %}
+                        <table class="table table-sm table-striped" id="import-errors">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Sheet' %}</th>
+                                <th>{% translate 'Row' %}</th>
+                                <th>{% translate 'Column' %}</th>
+                                <th>{% translate 'Error' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for error in errors %}
+                                <tr>
+                                    <td>{{ error.sheet }}</td>
+                                    <td>{{ error.row|default_if_none:"" }}</td>
+                                    <td>{{ error.column }}</td>
+                                    <td>{{ error.message }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if results %}
+                <div class="card card-success card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            {% blocktranslate count counter=results|length %}{{ counter }} agent ready to be created{% plural %}{{ counter }} agents ready to be created{% endblocktranslate %}
+                        </h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <p>{% translate 'The file is correct. Check the commune and supervisor worked out for each agent, then choose the password.' %}</p>
+                        <table class="table table-sm table-striped" id="import-preview">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Name' %}</th>
+                                <th>{% translate 'Email' %}</th>
+                                <th>{% translate 'Role' %}</th>
+                                <th>{% translate 'Group' %}</th>
+                                <th>{% translate 'Units' %}</th>
+                                <th>{% translate 'Commune' %}</th>
+                                <th>{% translate 'Supervisor' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for result in results %}
+                                <tr>
+                                    <td>{{ result.name }}</td>
+                                    <td>{{ result.email }}</td>
+                                    <td>{{ result.role }}</td>
+                                    <td>{{ result.group }}</td>
+                                    <td>{{ result.units|join:", " }}</td>
+                                    <td>{{ result.commune }}</td>
+                                    <td>{% if result.supervisor %}{{ result.supervisor }}{% elif result.role_code == 'ft' or result.role_code == 'fc' %}<span class="text-muted">{% translate 'None yet (no SC in the commune)' %}</span>{% endif %}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        <form method="post" action="{% url 'authorization:field_agent_import_confirm' %}" class="mt-4">
+                            {% csrf_token %}
+                            <p>{% translate 'Every account created signs in with this password.' %}</p>
+                            <div class="row">
+                                <div class="col-md-6 col-sm-12">{% bootstrap_field password_form.password1 %}</div>
+                                <div class="col-md-6 col-sm-12">{% bootstrap_field password_form.password2 %}</div>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                {% blocktranslate count counter=results|length %}Create {{ counter }} agent{% plural %}Create {{ counter }} agents{% endblocktranslate %}
+                            </button>
+                            <a href="{% url 'authorization:field_agent_import' %}" class="btn btn-default">{% translate 'Cancel' %}</a>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5>{% translate '1. Download the template' %}</h5>
+                        <p>{% blocktranslate %}It is built from the current groups, administrative units and supervisors, with drop-down lists. Fill it in with Excel or LibreOffice (not Google Sheets): at most {{ max_agents }} agents per file. The Instructions sheet explains each column.{% endblocktranslate %}</p>
+                        <p><a class="btn btn-outline-primary" href="{% url 'authorization:field_agent_import_template' %}"><i class="fas fa-file-excel"></i> {% translate 'Download the template' %}</a></p>
+
+                        <h5 class="mt-4">{% translate '2. Upload the completed file' %}</h5>
+                        <p>{% translate 'Every row is checked; nothing is created until the whole file is correct and you have chosen the password.' %}</p>
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% bootstrap_field file_form.file %}
+                            <button type="submit" class="btn btn-primary" {% if not levels_configured %}disabled{% endif %}>{% translate 'Check the file' %}</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
