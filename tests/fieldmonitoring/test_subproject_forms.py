@@ -64,6 +64,8 @@ def identification(village, **overrides):
         "site_physique": True,
         "position": f"{BASE_LAT:.6f} {BASE_LNG:.6f} 8.00",
         "maitrise_ouvrage": "MOC",
+        "screening_es": True,
+        "categorie_es": "SMES",
         "entreprise": "BTP Sud",
         "montant": 25_000_000,
         "date_demarrage": "2026-09-01",
@@ -83,7 +85,7 @@ def inspection(**overrides):
         "entreprise_presente": False,
         "responsable_hse": True,
         "pharmacie": True,
-        "signalisation": False,
+        "signalisation": "Non",
         "travaux_hauteur": False,
         "dechets": "Satisfaisante",
         "incident": False,
@@ -197,9 +199,9 @@ def test_subsector_is_required_only_for_the_chosen_sector(forms, agent, village,
     assert "sous_secteur_s01" not in TrackableObjectInstance.objects.get(pk=ok["id"]).jsonForm
 
 
-def test_no_physical_site_still_needs_a_position_but_not_the_contract(forms, agent, village, client_for):
+def test_no_physical_site_still_needs_a_position_but_not_the_photos(forms, agent, village, client_for):
     answers = identification(village, site_physique=False)
-    for name in ("entreprise", "montant", "date_demarrage", "date_fin_prevue", "photo_initiale_1", "photo_initiale_2"):
+    for name in ("photo_initiale_1", "photo_initiale_2"):
         del answers[name]
     [ok] = push(client_for, agent, new_record(forms, answers))
     assert ok["status"] == "created"
@@ -370,12 +372,53 @@ def test_planned_end_must_not_be_before_start(forms, agent, village, client_for)
     assert ok["status"] == "created"
 
 
-def test_end_date_rule_skipped_without_physical_site(forms, agent, village, client_for):
+@pytest.mark.parametrize("name", ["entreprise", "montant", "date_demarrage", "date_fin_prevue"])
+def test_contract_questions_apply_without_physical_site(forms, agent, village, client_for, name):
+    # Brice, 5 Nov 2026: 1.16–1.19 are asked for sub-projects without a physical site too.
     answers = identification(village, site_physique=False)
-    for name in ("entreprise", "montant", "date_demarrage", "date_fin_prevue", "photo_initiale_1", "photo_initiale_2"):
-        del answers[name]
-    [ok] = push(client_for, agent, new_record(forms, answers))
-    assert ok["status"] == "created"
+    for photo in ("photo_initiale_1", "photo_initiale_2"):
+        del answers[photo]
+    del answers[name]
+    [result] = push(client_for, agent, new_record(forms, answers))
+    assert result["status"] == "invalid" and name in result["errors"], result
+
+
+def test_end_date_rule_applies_without_physical_site(forms, agent, village, client_for):
+    answers = identification(village, site_physique=False, date_demarrage="2026-09-01", date_fin_prevue="2026-08-31")
+    [result] = push(client_for, agent, new_record(forms, answers))
+    assert result["status"] == "invalid" and "date_fin_prevue" in result["errors"]
+
+
+# --- 1.14–1.15 E&S screening (Brice, 5 Nov 2026) --------------------------------------------------
+
+
+def test_es_category_is_asked_only_after_a_screening(forms, agent, village, client_for):
+    no_category = identification(village)
+    del no_category["categorie_es"]
+    [result] = push(client_for, agent, new_record(forms, no_category))
+    assert result["status"] == "invalid" and "categorie_es" in result["errors"]
+    not_screened = identification(village, screening_es=False)
+    del not_screened["categorie_es"]
+    [ok] = push(client_for, agent, new_record(forms, not_screened))
+    assert ok["status"] == "created", ok
+
+
+@pytest.mark.parametrize("category", spec.ES_CATEGORIES)
+def test_es_categories_from_the_spreadsheet(forms, agent, village, client_for, category):
+    [ok] = push(client_for, agent, new_record(forms, identification(village, categorie_es=category)))
+    assert ok["status"] == "created", ok
+
+
+def test_es_screening_is_required(forms, agent, village, client_for):
+    answers = identification(village)
+    del answers["screening_es"], answers["categorie_es"]
+    [result] = push(client_for, agent, new_record(forms, answers))
+    assert result["status"] == "invalid" and "screening_es" in result["errors"]
+
+
+def test_signage_accepts_not_applicable(subproject, forms, agent, client_for):
+    [ok] = push(client_for, agent, new_response(forms["f2"], subproject.pk, inspection(signalisation="NA")))
+    assert ok["status"] == "created", ok
 
 
 def test_sync_gives_village_zone_and_radius(forms, agent, village, client_for):
