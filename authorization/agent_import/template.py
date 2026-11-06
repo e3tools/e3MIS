@@ -28,6 +28,7 @@ from authorization.agent_import.sheets import (
 )
 from authorization.infrastructure.forms.create_field_agent_form import FIELD_AGENT_ROLES
 from authorization.models import CustomUser, Role
+from utils.xlsx_layout import fit_columns, wrap_column
 
 PATH_SEPARATOR = "|"
 HEADER_FONT = Font(bold=True)
@@ -76,8 +77,8 @@ def build_template():
     lists.sheet_state = "hidden"
 
     levels = list(AdministrativeLevel.objects.order_by("order"))
-    ranges = _fill_lists(lists)
-    _fill_agents(agents, ranges)
+    ranges, values = _fill_lists(lists)
+    _fill_agents(agents, ranges, values)
     _fill_assignments(assignments, levels, ranges)
     _fill_instructions(instructions, levels)
 
@@ -99,12 +100,14 @@ def _fill_lists(sheet):
     sheet["A1"], sheet["B1"], sheet["C1"], sheet["D1"] = "roles", "groups", "supervisors", "roots"
     scs = CustomUser.objects.filter(role=Role.SC, is_active=True).order_by("full_name", "email")
     paths, children = unit_paths()
-    ranges = {
-        "roles": _column(sheet, ROLES_COL, [role.label for role in FIELD_AGENT_ROLES]),
-        "groups": _column(sheet, GROUPS_COL, list(Group.objects.order_by("name").values_list("name", flat=True))),
-        "supervisors": _column(sheet, SUPERVISORS_COL, [supervisor_label(sc) for sc in scs]),
-        "roots": _column(sheet, ROOTS_COL, sorted(children.get(None, []), key=str.casefold)),
+    values = {
+        "roles": [role.label for role in FIELD_AGENT_ROLES],
+        "groups": list(Group.objects.order_by("name").values_list("name", flat=True)),
+        "supervisors": [supervisor_label(sc) for sc in scs],
+        "roots": sorted(children.get(None, []), key=str.casefold),
     }
+    letters = {"roles": ROLES_COL, "groups": GROUPS_COL, "supervisors": SUPERVISORS_COL, "roots": ROOTS_COL}
+    ranges = {key: _column(sheet, letters[key], items) for key, items in values.items()}
 
     # Children by parent path, and where each parent's block starts.
     sheet[f"{PARENT_COL}1"], sheet[f"{CHILD_COL}1"] = "parent", "child"
@@ -123,7 +126,7 @@ def _fill_lists(sheet):
             sheet[f"{PARENT_COL}{row}"] = key
             sheet[f"{CHILD_COL}{row}"] = name
             row += 1
-    return ranges
+    return ranges, values
 
 
 def _header(sheet, headers, required=()):
@@ -131,6 +134,7 @@ def _header(sheet, headers, required=()):
         cell = sheet.cell(row=1, column=col, value=header)
         cell.font = HEADER_FONT
         cell.fill = REQUIRED_FILL if col in required else HEADER_FILL
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
         sheet.column_dimensions[get_column_letter(col)].width = max(18, len(header) + 4)
     sheet.freeze_panes = "A2"
 
@@ -145,7 +149,7 @@ def _list_validation(sheet, formula, cells, prompt=None):
     validation.add(cells)
 
 
-def _fill_agents(sheet, ranges):
+def _fill_agents(sheet, ranges, values):
     headers = [str(header) for _key, header, _required in AGENT_COLUMNS]
     required = {col for col, (_key, _header, req) in enumerate(AGENT_COLUMNS, start=1) if req}
     _header(sheet, headers, required)
@@ -160,13 +164,23 @@ def _fill_agents(sheet, ranges):
         if source and ranges[source]:
             prompt = _("Only when the commune has several SCs.") if key == "supervisor" else None
             _list_validation(sheet, ranges[source], f"{letter}2:{letter}{last}", prompt)
+    # Wide enough for the longest choice of each list, so a picked value shows in full.
+    lists = {"role": values["roles"], "group": values["groups"], "supervisor": values["supervisors"]}
+    fit_columns(sheet, {
+        col: [header, *lists.get(key, [])]
+        for col, (key, header, _required) in enumerate(AGENT_COLUMNS, start=1) if key in lists
+    }, minimum=18)
     sheet.column_dimensions["C"].width = 32
-    sheet.column_dimensions["E"].width = 30
-    sheet.column_dimensions["G"].width = 40
 
 
 def _fill_assignments(sheet, levels, ranges):
     _header(sheet, [str(AGENT_EMAIL_HEADER)] + [level.name for level in levels], required={1})
+    names = {}
+    for level_id, name in AdministrativeUnit.objects.values_list("level_id", "name"):
+        names.setdefault(level_id, []).append(name)
+    fit_columns(sheet, {
+        col: [level.name, *names.get(level.id, [])] for col, level in enumerate(levels, start=2)
+    }, minimum=18)
     sheet.column_dimensions["A"].width = 32
     last = ASSIGNMENT_ROWS + 1
     _list_validation(
@@ -175,7 +189,6 @@ def _fill_assignments(sheet, levels, ranges):
     )
     for index, _level in enumerate(levels):
         letter = get_column_letter(index + 2)
-        sheet.column_dimensions[letter].width = 24
         if index == 0:
             if ranges["roots"]:
                 _list_validation(sheet, ranges["roots"], f"{letter}2:{letter}{last}")
@@ -223,7 +236,6 @@ def _fill_instructions(sheet, levels):
     ]
     for row, (text, bold) in enumerate(lines, start=1):
         cell = sheet.cell(row=row, column=1, value=text)
-        cell.alignment = Alignment(wrap_text=True, vertical="top")
         if bold:
             cell.font = HEADER_FONT
-    sheet.column_dimensions["A"].width = 120
+    wrap_column(sheet, "A", 100)

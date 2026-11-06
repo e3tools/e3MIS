@@ -769,3 +769,223 @@ msgstr "Vérifier le fichier"
 #: templates/auth/field_agent_list.html
 msgid "Import from Excel"
 msgstr "Importer depuis Excel"
+
+# --- Administrative unit import (Nov 2026) ---
+
+msgid "Zone"
+msgstr "Zone"
+
+msgid "Urban"
+msgstr "Urbaine"
+
+msgid "Rural"
+msgstr "Rurale"
+
+msgid "Add administrative units from this file"
+msgstr "Ajouter des unités administratives à partir de ce fichier"
+
+msgid ""
+"Generated on %(date)s with the current units already filled in. Download a "
+"new one if they changed."
+msgstr ""
+"Généré le %(date)s, avec les unités actuelles déjà remplies. Téléchargez-en "
+"un nouveau si elles ont changé."
+
+msgid ""
+"Units sheet: one column per level (%(levels)s), one row per unit at the "
+"bottom of its branch."
+msgstr ""
+"Feuille Unités : une colonne par niveau (%(levels)s), une ligne par unité "
+"au bout de sa branche."
+
+msgid ""
+"To add units, add rows below and write the full path, from the first level "
+"down to the new unit. Units that already exist are recognised (case and "
+"extra spaces do not count) and kept as they are; only the missing ones are "
+"created."
+msgstr ""
+"Pour ajouter des unités, ajoutez des lignes en dessous et écrivez le chemin "
+"complet, du premier niveau jusqu’à la nouvelle unité. Les unités qui "
+"existent déjà sont reconnues (majuscules et espaces en trop ne comptent pas) "
+"et restent telles quelles ; seules les manquantes sont créées."
+
+msgid ""
+"A row can stop before the last level, for a unit with nothing under it yet. "
+"Fill the columns from left to right, without gaps."
+msgstr ""
+"Une ligne peut s’arrêter avant le dernier niveau, pour une unité qui n’a "
+"encore rien en dessous. Remplissez les colonnes de gauche à droite, sans "
+"trou."
+
+msgid ""
+"The import only adds: it never renames or deletes a unit. Deleting the rows "
+"of existing units changes nothing; rename or delete units on the "
+"administrative units page."
+msgstr ""
+"L’import ne fait qu’ajouter : il ne renomme ni ne supprime jamais une unité. "
+"Supprimer les lignes d’unités existantes ne change rien ; renommez ou "
+"supprimez les unités sur la page des unités administratives."
+
+msgid "Zone column (optional): Urban or Rural, picked from the list."
+msgstr "Colonne Zone (facultative) : Urbaine ou Rurale, à choisir dans la liste."
+
+msgid ""
+"It sets the check-in radius of the worksites in the village (urban: smaller "
+"radius, rural: larger; set in the programme configuration). Only for units "
+"of the %(level)s level, on the row of that unit."
+msgstr ""
+"Elle fixe le rayon de pointage des chantiers du village (urbaine : rayon "
+"plus petit, rurale : plus grand ; réglés dans la configuration du "
+"programme). Uniquement pour les unités du niveau %(level)s, sur la ligne de "
+"cette unité."
+
+msgid ""
+"A zone that differs from the current one replaces it, and the radius of the "
+"village's worksites whose position is not confirmed yet follows. An empty "
+"cell leaves the zone as it is."
+msgstr ""
+"Une zone différente de l’actuelle la remplace, et le rayon des chantiers du "
+"village dont la position n’est pas encore confirmée suit. Une cellule vide "
+"laisse la zone telle quelle."
+
+msgid ""
+"Upload the file on the import page, at most %(max)s rows. Nothing is created "
+"until every row is correct: the page lists the errors with their row and "
+"column, then shows what will be created before you confirm."
+msgstr ""
+"Envoyez le fichier sur la page d’import, au plus %(max)s lignes. Rien n’est "
+"créé tant que chaque ligne n’est pas correcte : la page liste les erreurs "
+"avec leur ligne et leur colonne, puis montre ce qui sera créé avant que vous "
+"ne confirmiez."
+
+msgid "No unit: fill in at least one row."
+msgstr "Aucune unité : remplissez au moins une ligne."
+
+msgid "The column after the levels should be \"%(expected)s\" or nothing."
+msgstr "La colonne après les niveaux doit être « %(expected)s » ou rien."
+
+msgid ""
+"Empty, while a level to its right is filled: write the full path from the "
+"first level."
+msgstr ""
+"Vide, alors qu’un niveau à sa droite est rempli : écrivez le chemin complet "
+"depuis le premier niveau."
+
+msgid "More than %(max)s rows: split the file into several files."
+msgstr "Plus de %(max)s lignes : découpez le fichier en plusieurs fichiers."
+
+msgid "\"%(value)s\" is not a zone: pick %(urban)s or %(rural)s."
+msgstr "« %(value)s » n’est pas une zone : choisissez %(urban)s ou %(rural)s."
+
+msgid ""
+"A zone is only for a unit of the %(level)s level: leave it empty on this row."
+msgstr ""
+"Une zone ne concerne qu’une unité du niveau %(level)s : laissez-la vide sur "
+"cette ligne."
+
+msgid "Another row gives this unit a different zone (row %(row)s)."
+msgstr "Une autre ligne donne une zone différente à cette unité (ligne %(row)s)."
+
+msgid "Too long: at most %(max)s characters."
+msgstr "Trop long : au plus %(max)s caractères."
+
+msgid ""
+"Several units are named \"%(name)s\" here (only case or spaces differ): "
+"merge them on the administrative units page first."
+msgstr ""
+"Plusieurs unités s’appellent « %(name)s » ici (seules les majuscules ou les "
+"espaces diffèrent) : fusionnez-les d’abord sur la page des unités "
+"administratives."
+
+msgid "Import administrative units"
+msgstr "Importer des unités administratives"
+
+msgid "%(count)s administrative unit created."
+msgid_plural "%(count)s administrative units created."
+msgstr[0] "%(count)s unité administrative créée."
+msgstr[1] "%(count)s unités administratives créées."
+
+msgid "Zone set for %(count)s village."
+msgid_plural "Zone set for %(count)s villages."
+msgstr[0] "Zone enregistrée pour %(count)s village."
+msgstr[1] "Zone enregistrée pour %(count)s villages."
+
+msgid "The radius of %(count)s worksite follows its new zone."
+msgid_plural "The radius of %(count)s worksites follows their new zone."
+msgstr[0] "Le rayon de %(count)s chantier suit sa nouvelle zone."
+msgstr[1] "Le rayon de %(count)s chantiers suit leur nouvelle zone."
+
+msgid "Root Administrative Units"
+msgstr "Unités administratives racines"
+
+msgid "Create the administrative levels first, on the levels page."
+msgstr "Créez d’abord les niveaux administratifs, sur la page des niveaux."
+
+msgid ""
+"The units changed between the check and the creation. Correct the file and "
+"upload it again."
+msgstr ""
+"Les unités ont changé entre la vérification et la création. Corrigez le "
+"fichier et envoyez-le à nouveau."
+
+msgid ""
+"The file is correct. Existing units are kept as they are; check the new ones "
+"before confirming."
+msgstr ""
+"Le fichier est correct. Les unités existantes restent telles quelles ; "
+"vérifiez les nouvelles avant de confirmer."
+
+msgid "Level"
+msgstr "Niveau"
+
+msgid "New"
+msgstr "Nouvelles"
+
+msgid "Already there"
+msgstr "Déjà présentes"
+
+msgid "New units"
+msgstr "Nouvelles unités"
+
+msgid "Confirm the import"
+msgstr "Confirmer l’import"
+
+msgid ""
+"Every row is checked; nothing is created until the whole file is correct and "
+"you have confirmed. Existing units are never renamed or deleted."
+msgstr ""
+"Chaque ligne est vérifiée ; rien n’est créé tant que tout le fichier n’est "
+"pas correct et que vous n’avez pas confirmé. Les unités existantes ne sont "
+"jamais renommées ni supprimées."
+
+msgid "%(counter)s unit to create"
+msgid_plural "%(counter)s units to create"
+msgstr[0] "%(counter)s unité à créer"
+msgstr[1] "%(counter)s unités à créer"
+
+msgid "Zone set or changed for %(counter)s village."
+msgid_plural "Zone set or changed for %(counter)s villages."
+msgstr[0] "Zone enregistrée ou modifiée pour %(counter)s village."
+msgstr[1] "Zone enregistrée ou modifiée pour %(counter)s villages."
+
+msgid "The radius of %(counter)s worksite without a confirmed position follows."
+msgid_plural ""
+"The radius of %(counter)s worksites without a confirmed position follows."
+msgstr[0] "Le rayon de %(counter)s chantier sans position confirmée suit."
+msgstr[1] "Le rayon de %(counter)s chantiers sans position confirmée suit."
+
+msgid "… and %(counter)s more."
+msgid_plural "… and %(counter)s more."
+msgstr[0] "… et %(counter)s autre."
+msgstr[1] "… et %(counter)s autres."
+
+msgid ""
+"It holds the current units, one row per unit at the bottom of its branch. "
+"Add the new units as rows below, with Excel or LibreOffice (not Google "
+"Sheets): at most %(max_rows)s rows per file. The Instructions sheet explains "
+"each column, including the optional zone."
+msgstr ""
+"Il contient les unités actuelles, une ligne par unité au bout de sa branche. "
+"Ajoutez les nouvelles unités en lignes en dessous, avec Excel ou LibreOffice "
+"(pas Google Sheets) : au plus %(max_rows)s lignes par fichier. La feuille "
+"Instructions explique chaque colonne, y compris la zone facultative."

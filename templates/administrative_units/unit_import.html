@@ -1,0 +1,115 @@
+{% extends 'layout/base.html' %}
+{% load i18n bootstrap4 %}
+
+{% block content %}
+    <div class="row">
+        <div class="col-12">
+            <p><a href="{% url 'administrativelevels:administrative_unit_root' %}"><i class="fas fa-arrow-left"></i> {% translate 'Root Administrative Units' %}</a></p>
+
+            {% if not has_levels %}
+                <div class="alert alert-warning">{% translate 'Create the administrative levels first, on the levels page.' %}</div>
+            {% endif %}
+
+            {% if errors %}
+                <div class="card card-danger card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            {% blocktranslate count counter=errors|length %}{{ counter }} error: nothing was created{% plural %}{{ counter }} errors: nothing was created{% endblocktranslate %}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {% if changed %}
+                            <p>{% translate 'The units changed between the check and the creation. Correct the file and upload it again.' %}</p>
+                        {% else %}
+                            <p>{% translate 'Correct these cells in your file, then upload it again.' %}</p>
+                        {% endif %}
+                        <table class="table table-sm table-striped" id="import-errors">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Row' %}</th>
+                                <th>{% translate 'Column' %}</th>
+                                <th>{% translate 'Error' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for error in errors %}
+                                <tr>
+                                    <td>{{ error.row|default_if_none:"" }}</td>
+                                    <td>{{ error.column }}</td>
+                                    <td>{{ error.message }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if summary %}
+                <div class="card card-success card-outline">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            {% blocktranslate count counter=new_total %}{{ counter }} unit to create{% plural %}{{ counter }} units to create{% endblocktranslate %}
+                        </h3>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <p>{% translate 'The file is correct. Existing units are kept as they are; check the new ones before confirming.' %}</p>
+                        <table class="table table-sm" id="import-levels" style="max-width: 40rem">
+                            <thead>
+                            <tr>
+                                <th>{% translate 'Level' %}</th>
+                                <th>{% translate 'New' %}</th>
+                                <th>{% translate 'Already there' %}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for level in summary.levels %}
+                                <tr>
+                                    <td>{{ level.name }}</td>
+                                    <td>{{ level.new }}</td>
+                                    <td>{{ level.existing }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        {% if summary.zones %}
+                            <p>{% blocktranslate count counter=summary.zones %}Zone set or changed for {{ counter }} village.{% plural %}Zone set or changed for {{ counter }} villages.{% endblocktranslate %}
+                                {% if summary.radii %}{% blocktranslate count counter=summary.radii %}The radius of {{ counter }} worksite without a confirmed position follows.{% plural %}The radius of {{ counter }} worksites without a confirmed position follows.{% endblocktranslate %}{% endif %}
+                            </p>
+                        {% endif %}
+                        {% if new_units %}
+                            <h5 class="mt-3">{% translate 'New units' %}</h5>
+                            <ul id="import-new-units">
+                                {% for path in new_units %}<li>{{ path }}</li>{% endfor %}
+                            </ul>
+                            {% if more_units %}
+                                <p class="text-muted">{% blocktranslate count counter=more_units %}… and {{ counter }} more.{% plural %}… and {{ counter }} more.{% endblocktranslate %}</p>
+                            {% endif %}
+                        {% endif %}
+                        <form method="post" action="{% url 'administrativelevels:administrative_unit_import_confirm' %}" class="mt-4">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success" {% if not new_total and not summary.zones %}disabled{% endif %}>{% translate 'Confirm the import' %}</button>
+                            <a href="{% url 'administrativelevels:administrative_unit_import' %}" class="btn btn-default">{% translate 'Cancel' %}</a>
+                        </form>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body">
+                        <h5>{% translate '1. Download the template' %}</h5>
+                        <p>{% blocktranslate %}It holds the current units, one row per unit at the bottom of its branch. Add the new units as rows below, with Excel or LibreOffice (not Google Sheets): at most {{ max_rows }} rows per file. The Instructions sheet explains each column, including the optional zone.{% endblocktranslate %}</p>
+                        <p><a class="btn btn-outline-primary" href="{% url 'administrativelevels:administrative_unit_import_template' %}"><i class="fas fa-file-excel"></i> {% translate 'Download the template' %}</a></p>
+
+                        <h5 class="mt-4">{% translate '2. Upload the completed file' %}</h5>
+                        <p>{% translate 'Every row is checked; nothing is created until the whole file is correct and you have confirmed. Existing units are never renamed or deleted.' %}</p>
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            {% bootstrap_field file_form.file %}
+                            <button type="submit" class="btn btn-primary" {% if not has_levels %}disabled{% endif %}>{% translate 'Check the file' %}</button>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

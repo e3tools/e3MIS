@@ -1,5 +1,6 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from src.permissions import IsStaffMemberMixin
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.db.models import Count
@@ -7,7 +8,7 @@ from administrativelevels.models import AdministrativeLevel
 from administrativelevels.forms import AdministrativeLevelForm
 
 
-class AdministrativeLevelsListView(LoginRequiredMixin, TemplateView):
+class AdministrativeLevelsListView(LoginRequiredMixin, IsStaffMemberMixin, TemplateView):
     template_name = 'administrative_levels/list.html'
 
     def get_context_data(self, **kwargs):

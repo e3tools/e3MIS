@@ -251,6 +251,16 @@ check is the same run rolled back. One group per agent, creation only, at most 2
 Do not add msgids already used by a non-lazy `verbose_name` (e.g. "Administrative units"): the
 translated value lands in the model state and `makemigrations` sees a change.
 
+## Unit import (`administrativelevels/unit_import/`)
+
+"Import from Excel" on the administrative units page (`is_staff` only, Nov 2026), same flow as the
+agent import. The template holds the current tree, one row per unit at the bottom of its branch
+(the layout of `sync_administrative_levels` files, which are accepted too), plus an optional Zone
+column. Add only: names are matched under their parent ignoring case and extra spaces; nothing is
+renamed or deleted. A changed village zone also resets the radius of its worksites that have no
+confirmed position. `utils/xlsx_layout.py` sets row heights for wrapped text (Excel does not resize
+rows written by openpyxl).
+
 ## Offline sync fields
 
 Records, follow-up responses and attachments have `client_uuid` (phone-generated, unique),

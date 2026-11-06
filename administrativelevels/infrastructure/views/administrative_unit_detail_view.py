@@ -1,5 +1,6 @@
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from src.permissions import IsStaffMemberMixin
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.db import IntegrityError
@@ -7,7 +8,7 @@ from administrativelevels.models import AdministrativeUnit, AdministrativeLevel
 from administrativelevels.forms import AdministrativeUnitEditForm, AdministrativeUnitForm
 
 
-class AdministrativeUnitDetailView(LoginRequiredMixin, TemplateView):
+class AdministrativeUnitDetailView(LoginRequiredMixin, IsStaffMemberMixin, TemplateView):
     template_name = 'administrative_units/detail.html'
 
     def get_context_data(self, **kwargs):

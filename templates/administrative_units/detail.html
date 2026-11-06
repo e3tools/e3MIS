@@ -75,6 +75,10 @@
                             <button type="button" class="btn btn-sm btn-success add-root-modal-show">
                                 <i class="fas fa-plus"></i> {% translate 'Add Root Unit' %}
                             </button>
+                            {% if request.user.is_staff %}
+                                <a class="btn btn-sm btn-outline-primary ml-1" href="{% url 'administrativelevels:administrative_unit_import' %}"
+                                ><i class="fas fa-file-excel"></i> {% translate 'Import from Excel' %}</a>
+                            {% endif %}
                         {% elif not is_root_view %}
                             <span class="text-muted">
                                 <i class="fas fa-info-circle"></i> {% translate 'No child levels available' %}
