@@ -101,6 +101,18 @@ def number(label, minimum=0, maximum=None, **extra):
     return {"type": "integer", "validators": validators}, {"label": label, **extra}
 
 
+def decimal(label, minimum=0, maximum=None, **extra):
+    """A number that may have decimals, e.g. an execution rate of 42.5 % (Brice, 5 Nov 2026)."""
+    prop, options = number(label, minimum, maximum, **extra)
+    return {**prop, "type": "number"}, options
+
+
+def at_most(field_spec, other):
+    """Not more than another answer of the form (``max_field``), e.g. women ≤ workers present."""
+    prop, options = field_spec
+    return {**prop, "validators": {**prop.get("validators", {}), "max_field": other}}, options
+
+
 def day(label, validators=None, **extra):
     return {"type": "string", "format": "date", **({"validators": validators} if validators else {})}, {
         "label": label, **extra,
@@ -183,15 +195,16 @@ def inspection():
         ("arret_raison_autre", text("Préciser l'autre raison", **when("arret_raisons", "Autre", "contains")), True),
         ("reprise_date", day("Date probable de reprise des travaux", {"min": "today"},
                              **when("arret_nature", TEMPORARY)), True),  # 2.8
-        ("taux_physique", number("Taux d'exécution physique (%)", maximum=100), True),  # 2.9
-        ("taux_financier", number("Taux d'exécution financier (%)", maximum=100), True),  # 2.10
+        ("taux_physique", decimal("Taux d'exécution physique (%)", maximum=100), True),  # 2.9
+        ("taux_financier", decimal("Taux d'exécution financier (%)", maximum=100), True),  # 2.10
         ("entreprise_presente", yes_no("L'entreprise est-elle présente sur le chantier ?"), True),  # 2.11
         ("conducteur_present", yes_no("Le conducteur des travaux est-il présent ?", **on_site), True),  # 2.12
         ("ouvriers", number("Nombre d'ouvriers présents", **on_site), True),  # 2.13
-        ("ouvriers_locaux", number("dont main-d'œuvre locale", **on_site), True),  # 2.14
-        ("ouvriers_femmes", number("dont femmes", **on_site), True),  # 2.15
-        ("ouvriers_jeunes", number("dont jeunes (moins de 35 ans)", **on_site), True),  # 2.16
-        ("ouvriers_enfants", number("dont enfants (moins de 18 ans)", **on_site), True),  # 2.17
+        # 2.14–2.17 are part of 2.13: none can be more than the workers present (Brice, 5 Nov 2026).
+        ("ouvriers_locaux", at_most(number("dont main-d'œuvre locale", **on_site), "ouvriers"), True),  # 2.14
+        ("ouvriers_femmes", at_most(number("dont femmes", **on_site), "ouvriers"), True),  # 2.15
+        ("ouvriers_jeunes", at_most(number("dont jeunes (moins de 35 ans)", **on_site), "ouvriers"), True),  # 2.16
+        ("ouvriers_enfants", at_most(number("dont enfants (moins de 18 ans)", **on_site), "ouvriers"), True),  # 2.17
         ("heures_respectees", choice("Les heures réglementaires de travail sont-elles respectées ?",
                                      ["Oui", "Non", "Ne sait pas"], **on_site), True),  # 2.18
         ("responsable_hse", yes_no(

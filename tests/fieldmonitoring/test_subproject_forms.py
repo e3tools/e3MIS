@@ -434,3 +434,30 @@ def test_staff_without_units_can_still_set_any_village(forms, village, other_com
     elsewhere = AdministrativeUnit.objects.create(name="Kpota", level=levels["village"], parent=other_commune)
     form = parse_custom_jsonschema(forms["record"].jsonForm, administrative_level_ids=None)()
     assert set(form.fields["village"].queryset) >= {village, elsewhere}
+
+
+# --- Brice, 5 Nov 2026: decimal rates, workers not more than the workers present ------------------
+
+
+def test_execution_rates_accept_decimals(subproject, forms, agent, client_for):
+    answers = inspection(taux_physique=42.5, taux_financier=37.25)
+    [result] = push(client_for, agent, new_response(forms["f2"], subproject.pk, answers))
+    assert result["status"] == "created", result
+    saved = FollowUpEventResponse.objects.get(pk=result["id"]).jsonForm
+    assert (float(saved["taux_physique"]), float(saved["taux_financier"])) == (42.5, 37.25)
+
+
+def test_execution_rate_still_not_above_100(subproject, forms, agent, client_for):
+    [result] = push(client_for, agent, new_response(forms["f2"], subproject.pk, inspection(taux_physique=100.5)))
+    assert result["status"] == "invalid" and "taux_physique" in result["errors"]
+
+
+@pytest.mark.parametrize("field", ["ouvriers_locaux", "ouvriers_femmes", "ouvriers_jeunes", "ouvriers_enfants"])
+def test_workers_breakdown_cannot_exceed_workers_present(subproject, forms, agent, client_for, field):
+    present = {"entreprise_presente": True, "conducteur_present": True, "ouvriers": 10, "ouvriers_locaux": 6,
+               "ouvriers_femmes": 3, "ouvriers_jeunes": 4, "ouvriers_enfants": 0, "heures_respectees": "Oui",
+               "epi": "Tous"}
+    [result] = push(client_for, agent, new_response(forms["f2"], subproject.pk, inspection(**{**present, field: 11})))
+    assert result["status"] == "invalid" and field in result["errors"], result
+    [ok] = push(client_for, agent, new_response(forms["f2"], subproject.pk, inspection(**{**present, field: 10})))
+    assert ok["status"] == "created", ok
