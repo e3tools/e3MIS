@@ -274,5 +274,5 @@ def test_weekly_warning_shows_the_weeks_field_activity(lapsed_team, sc, client_f
     # Field test 15 Oct: the supervisor also wants check-ins, new sites and pending positions.
     generate(date(2026, 9, 28))
     activity = client_for(sc).get("/api/v1/warnings/2026-09-28/").json()["activity"]
-    assert set(activity) == {"checkins", "checkins_verified", "new_sites", "pending_positions"}
+    assert set(activity) == {"checkins", "checkins_verified", "checkins_cancelled", "new_sites", "pending_positions"}
     assert all(isinstance(v, int) and v >= 0 for v in activity.values())

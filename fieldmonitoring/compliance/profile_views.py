@@ -73,9 +73,11 @@ class UserProfileView(APIView):
             verified=Count("id", filter=Q(state=VisitState.VERIFIED)),
             unverified=Count("id", filter=Q(state=VisitState.UNVERIFIED)),
             missed=Count("id", filter=Q(state=VisitState.MISSED)),
+            cancelled=Count("id", filter=Q(state=VisitState.CANCELLED)),
             awaiting_review=Count("id", filter=Q(state=VisitState.UNVERIFIED, resolved_by__isnull=True)),
-            last_visit_at=Max("checked_in_at"),
+            last_visit_at=Max("checked_in_at", filter=~Q(state=VisitState.CANCELLED)),
         )
+        counts["total"] -= counts["cancelled"]  # a visit cancelled at the wrong site is not a visit
         body = {
             "user": {
                 "id": str(user.id),
@@ -125,6 +127,7 @@ class UserWorksitesView(APIView):
         stats = {
             row["worksite_id"]: row
             for row in Visit.objects.filter(user=user)
+            .exclude(state=VisitState.CANCELLED)
             .values("worksite_id")
             .annotate(
                 visits=Count("id"),
@@ -196,7 +199,7 @@ class WorksiteDetailView(APIView):
                 for a in in_force
             ],
             "visits": {
-                "total": visits.count(),
+                "total": visits.exclude(state=VisitState.CANCELLED).count(),
                 "verified_last_4_weeks": visits.filter(state=VisitState.VERIFIED, checked_in_at__gte=since).count(),
                 "awaiting_review": visits.filter(state=VisitState.UNVERIFIED, resolved_by__isnull=True).count(),
                 "last_verified_at": last_verified,

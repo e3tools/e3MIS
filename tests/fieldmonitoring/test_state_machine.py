@@ -9,7 +9,7 @@ from fieldmonitoring.visits.models import VisitState as S
 from fieldmonitoring.visits.state_machine import AUTOMATED_EVENTS, Event as E, InvalidTransition, transition
 
 ACTOR = object()
-STATES = [None, S.IN_PROGRESS, S.VERIFIED, S.UNVERIFIED, S.MISSED]
+STATES = [None, S.IN_PROGRESS, S.VERIFIED, S.UNVERIFIED, S.MISSED, S.CANCELLED]
 
 # (from, event, guards) -> (to, reason); anything not listed must raise.
 TABLE = {
@@ -31,6 +31,10 @@ TABLE = {
     (S.UNVERIFIED, E.RESOLVE_VERIFIED, ()): (S.VERIFIED, None),
     (S.UNVERIFIED, E.RESOLVE_MISSED, ()): (S.MISSED, None),
     (S.VERIFIED, E.PHOTO_ATTACHED, ()): (S.VERIFIED, None),
+    # Wrong site (Brice, 5 Nov 2026): the agent cancels before check-out.
+    (S.IN_PROGRESS, E.CANCEL, ()): (S.CANCELLED, None),
+    (S.UNVERIFIED, E.CANCEL, ()): (S.CANCELLED, None),
+    (S.CANCELLED, E.PHOTO_ATTACHED, ()): (S.CANCELLED, None),
 }
 
 
@@ -38,7 +42,7 @@ def run(state, event, guards=()):
     return transition(
         state,
         event,
-        actor=ACTOR if event in (E.RESOLVE_VERIFIED, E.RESOLVE_MISSED) else None,
+        actor=ACTOR if event in (E.RESOLVE_VERIFIED, E.RESOLVE_MISSED, E.CANCEL) else None,
         reason=R.LOCATION_FAILED,
         has_photo="photo" in guards,
         checked_out="out" in guards,
@@ -72,6 +76,17 @@ def test_story_3_1_unverified_reason_set_only_when_unverified():
 def test_story_3_1_human_events_require_an_actor(event):
     with pytest.raises(InvalidTransition):
         transition(S.UNVERIFIED, event, actor=None)
+
+
+def test_cancel_requires_the_agent_as_actor():
+    with pytest.raises(InvalidTransition):
+        transition(S.IN_PROGRESS, E.CANCEL, actor=None)
+
+
+@pytest.mark.parametrize("state", [S.IN_PROGRESS, S.UNVERIFIED])
+def test_cancel_after_check_out_is_rejected(state):
+    with pytest.raises(InvalidTransition):
+        transition(state, E.CANCEL, actor=ACTOR, checked_out=True)
 
 
 def test_story_3_1_no_automated_sequence_reaches_missed():

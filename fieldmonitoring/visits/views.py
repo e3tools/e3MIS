@@ -17,6 +17,7 @@ from fieldmonitoring.core import clock
 from . import services
 from .models import Photo, Visit, VisitState
 from .serializers import (
+    CancelSerializer,
     CheckInSerializer,
     CheckOutSerializer,
     ReasonSerializer,
@@ -109,6 +110,14 @@ class PhotoView(APIView):
         return response
 
 
+def _record_waiting(user, record_uuid) -> bool:
+    """The agent's form 1 is not on the server yet, or is there but has not made its site yet."""
+    from trackableobjects.models import TrackableObjectInstance
+
+    instance = TrackableObjectInstance.objects.filter(client_uuid=record_uuid).first()
+    return instance is None or (instance.created_by_id == user.id and not instance.worksites.exists())
+
+
 class CheckInView(APIView):
     permission_classes = [RecordsVisits]
 
@@ -117,7 +126,17 @@ class CheckInView(APIView):
         data = CheckInSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         v = data.validated_data
-        worksite = get_object_or_404(worksite_scope(request.user), pk=v.pop("worksite_id"))
+        worksite_id, record_uuid = v.pop("worksite_id", None), v.pop("record_client_uuid", None)
+        if worksite_id:
+            worksite = get_object_or_404(worksite_scope(request.user), pk=worksite_id)
+        else:
+            worksite = worksite_scope(request.user).filter(trackable_object_instance__client_uuid=record_uuid).first()
+            if worksite is None:
+                # Form 1 has not reached the server yet (it travels separately): the phone keeps the
+                # check-in in its queue and sends it again after the form.
+                if _record_waiting(request.user, record_uuid):
+                    return Response({"code": "site_not_ready"}, status=status.HTTP_409_CONFLICT)
+                raise Http404
         try:
             visit, created = services.check_in(
                 request.user, services.CheckIn(worksite=worksite, **v)
@@ -155,6 +174,24 @@ class CheckOutView(APIView):
         data.is_valid(raise_exception=True)
         try:
             visit = services.check_out(visit, **data.validated_data)
+        except services.VisitError as exc:
+            return error(exc)
+        visit = Visit.objects.select_related(*VISIT_RELATED).get(pk=visit.pk)
+        return Response(VisitSerializer(visit).data)
+
+
+class CancelView(APIView):
+    """The agent cancels a visit started at the wrong site, before check-out, with a reason."""
+
+    permission_classes = [RecordsVisits]
+
+    @extend_schema(request=CancelSerializer, responses=VisitSerializer)
+    def post(self, request, visit_id):
+        visit = own_visit(request, visit_id)
+        data = CancelSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            visit = services.cancel_visit(visit, note=data.validated_data["note"])
         except services.VisitError as exc:
             return error(exc)
         visit = Visit.objects.select_related(*VISIT_RELATED).get(pk=visit.pk)

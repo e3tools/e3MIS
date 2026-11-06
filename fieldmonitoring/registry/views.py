@@ -50,14 +50,15 @@ def _with_staleness(worksites, latest, today):
 
 
 def _with_my_last_visit(worksites, user, today):
-    """Attach the user's own latest visit (any state) and today's visit count per worksite."""
-    from fieldmonitoring.visits.models import Visit
+    """Attach the user's own latest visit (any state but cancelled) and today's visit count per worksite."""
+    from fieldmonitoring.visits.models import Visit, VisitState
 
     ids = [w.id for w in worksites]
     start, end = clock.local_day_bounds(today)
     latest, today_counts = {}, {}
     for worksite_id, at, state in (
         Visit.objects.filter(user=user, worksite_id__in=ids)
+        .exclude(state=VisitState.CANCELLED)  # a visit cancelled at the wrong site does not count
         .order_by("worksite_id", "-checked_in_at")
         .values_list("worksite_id", "checked_in_at", "state")
     ):
