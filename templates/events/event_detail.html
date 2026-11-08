@@ -1,0 +1,107 @@
+{% extends 'layout/base.html' %}
+{% load i18n bootstrap4 %}
+
+{% block content %}
+    <p><a href="{% url 'events:list' %}"><i class="fas fa-arrow-left"></i> {% translate 'Events' %}</a></p>
+    <div class="row">
+        <div class="col-lg-8 col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ event.title }} {% include 'events/_status.html' %}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        {% if event.status == 'open' %}
+                            <input type="hidden" name="action" value="close">
+                            <button type="submit" class="btn btn-warning"><i class="fas fa-lock"></i> {% translate 'Close the list' %}</button>
+                        {% else %}
+                            <input type="hidden" name="action" value="open">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-lock-open"></i> {% translate 'Open the list' %}</button>
+                            {% if other_open %}<small class="text-muted ml-2">{% blocktranslate with other=other_open.title %}"{{ other }}" will be closed: one list is open at a time.{% endblocktranslate %}</small>{% endif %}
+                        {% endif %}
+                    </form>
+                    {% if event.status == 'open' and not signing_day %}
+                        <p class="text-muted small mt-2 mb-0">{% translate 'Open, but signatures are only accepted on the days of the event.' %}</p>
+                    {% endif %}
+
+                    <h5 class="mt-4">{% translate 'Public page (behind the QR code)' %}</h5>
+                    <p class="mb-1"><a href="{{ public_url }}" target="_blank" rel="noopener" id="public-url">{{ public_url }}</a></p>
+                    <p class="small text-muted">{% translate 'Anyone with this address can sign while the list is open and see the attendees (number, shortened name, organisation). Nothing can be downloaded from it.' %}</p>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'events:file' event.pk 'qr' %}"><i class="fas fa-qrcode"></i> {% translate 'QR code (PNG)' %}</a>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'events:poster' event.pk %}" target="_blank"><i class="fas fa-print"></i> {% translate 'Poster to print' %}</a>
+
+                    <h5 class="mt-4">{% translate 'Signatures' %}</h5>
+                    <table class="table table-sm mb-2" style="max-width: 30rem">
+                        {% for day, count in days %}
+                            <tr>
+                                <td>{{ day|date:"DATE_FORMAT" }}</td>
+                                <td>{{ count }}</td>
+                                <td>{% if count %}<a href="{% url 'events:file' event.pk 'pdf' %}?day={{ day|date:'Y-m-d' }}"><i class="fas fa-file-pdf"></i> PDF</a>{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                    <a class="btn btn-primary btn-sm" href="{% url 'events:file' event.pk 'pdf' %}"><i class="fas fa-file-pdf"></i> {% translate 'Signed list (PDF, with signatures)' %}</a>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'events:file' event.pk 'xlsx' %}"><i class="fas fa-file-excel"></i> {% translate 'Data (Excel, without signatures)' %}</a>
+                    <a class="btn btn-outline-secondary btn-sm" href="{% url 'events:file' event.pk 'blank' %}"><i class="fas fa-file-alt"></i> {% translate 'Blank list to print (PDF)' %}</a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Attendees' %}</h3></div>
+                <div class="card-body table-responsive p-0">
+                    <table class="table table-sm table-striped mb-0" id="attendances">
+                        <thead>
+                        <tr>
+                            <th>{% translate 'Day' %}</th><th>{% translate 'No.' %}</th><th>{% translate 'Full name' %}</th>
+                            <th>{% translate 'Organisation' %}</th><th>{% translate 'Position / title' %}</th>
+                            <th>{% translate 'Origin' %}</th><th>{% translate 'Email' %}</th><th>{% translate 'Phone' %}</th>
+                            <th>{% translate 'Signature' %}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for a in attendances %}
+                            <tr>
+                                <td>{{ a.day|date:"SHORT_DATE_FORMAT" }}</td><td>{{ a.number }}</td><td>{{ a.full_name }}</td>
+                                <td>{{ a.organisation }}</td><td>{{ a.position }}</td><td>{{ a.city }}, {{ a.country }}</td>
+                                <td>{{ a.email }}</td><td>{{ a.phone }}</td>
+                                <td><img src="{% url 'events:signature' a.pk %}" alt="" style="height: 32px" loading="lazy"></td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="9" class="text-muted">{% translate 'Nobody has signed yet.' %}</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-12">
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Edit' %}</h3></div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="edit">
+                        {% bootstrap_form form %}
+                        <button type="submit" class="btn btn-primary">{% translate 'Save' %}</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header"><h3 class="card-title">{% translate 'Poster' %}</h3></div>
+                <div class="card-body">
+                    {% if event.banner %}<img src="{% url 'events:file' event.pk 'banner' %}" alt="" class="img-fluid mb-2 border">{% endif %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="poster">
+                        {% bootstrap_field poster_form.banner %}
+                        {% if event.banner %}{% bootstrap_field poster_form.remove_banner %}{% endif %}
+                        {% bootstrap_field poster_form.poster_color %}
+                        <button type="submit" class="btn btn-primary">{% translate 'Save' %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

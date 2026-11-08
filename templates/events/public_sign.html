@@ -1,0 +1,105 @@
+{% extends 'events/public_base.html' %}
+{% load i18n bootstrap4 %}
+
+{% block content %}
+    {% if not signing_day %}
+        {% include 'events/_closed.html' %}
+    {% else %}
+        {% if too_many %}
+            <div class="alert alert-warning">{% translate 'Too many signatures from this phone. Try again later or ask the organisers.' %}</div>
+        {% endif %}
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">{% translate 'Attendance list' %}</h2>
+                <p class="text-muted small">{% translate 'Fill in the form and sign with your finger. One signature per person and per day.' %}</p>
+                <form method="post" id="sign-form" novalidate>
+                    {% csrf_token %}
+                    {% bootstrap_field form.full_name %}
+                    {% bootstrap_field form.organisation %}
+                    {% bootstrap_field form.position %}
+                    <div class="form-row">
+                        <div class="col-sm-6">{% bootstrap_field form.country %}</div>
+                        <div class="col-sm-6">{% bootstrap_field form.city %}</div>
+                    </div>
+                    {% bootstrap_field form.email %}
+                    {% bootstrap_field form.phone %}
+                    <p class="small text-muted mt-n2">{% translate 'Email or phone: at least one. It lets you check later that you have signed.' %}</p>
+                    <div class="hp" aria-hidden="true">{{ form.website }}</div>
+                    {{ form.signature }}
+
+                    <div class="form-group">
+                        <label for="signature-pad">{% translate 'Signature' %}</label>
+                        <div class="border rounded bg-white {% if form.signature.errors %}border-danger{% endif %}">
+                            <canvas id="signature-pad" style="width: 100%; height: 180px; touch-action: none; display: block"></canvas>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">{% translate 'Sign with your finger in the box.' %}</small>
+                            <button type="button" class="btn btn-sm btn-link p-0" id="signature-clear">{% translate 'Clear' %}</button>
+                        </div>
+                        {% for error in form.signature.errors %}<div class="text-danger small" id="signature-error">{{ error }}</div>{% endfor %}
+                        <div class="text-danger small d-none" id="signature-missing">{% translate 'Sign in the box.' %}</div>
+                    </div>
+
+                    <p class="small text-muted">{% translate 'Your information is used only for the attendance list of this event. The list shown to the public gives only the number, a shortened name and the organisation.' %}</p>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="sign-submit">{% translate 'Sign the list' %}</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {% if signing_day %}
+    <script>
+        (function () {
+            var canvas = document.getElementById('signature-pad');
+            var ctx = canvas.getContext('2d');
+            var drawn = false, drawing = false, last = null;
+
+            function resize() {
+                // Sharp lines on high-density screens; the drawing restarts when the size changes.
+                var ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111';
+                drawn = false;
+            }
+            function point(e) {
+                var r = canvas.getBoundingClientRect();
+                return {x: e.clientX - r.left, y: e.clientY - r.top};
+            }
+            canvas.addEventListener('pointerdown', function (e) {
+                drawing = true; last = point(e); canvas.setPointerCapture(e.pointerId);
+                ctx.beginPath(); ctx.arc(last.x, last.y, 1, 0, Math.PI * 2); ctx.fillStyle = '#111'; ctx.fill();
+                drawn = true; e.preventDefault();
+            });
+            canvas.addEventListener('pointermove', function (e) {
+                if (!drawing) return;
+                var p = point(e);
+                ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+                last = p; e.preventDefault();
+            });
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (name) {
+                canvas.addEventListener(name, function () { drawing = false; });
+            });
+            document.getElementById('signature-clear').addEventListener('click', function () {
+                ctx.clearRect(0, 0, canvas.width, canvas.height); drawn = false;
+            });
+            document.getElementById('sign-form').addEventListener('submit', function (e) {
+                if (!drawn) {
+                    e.preventDefault();
+                    document.getElementById('signature-missing').classList.remove('d-none');
+                    canvas.scrollIntoView({block: 'center'});
+                    return;
+                }
+                document.getElementById('{{ form.signature.id_for_label }}').value = canvas.toDataURL('image/png');
+                document.getElementById('sign-submit').disabled = true;
+            });
+            var width = 0;
+            window.addEventListener('resize', function () { if (canvas.offsetWidth !== width) { width = canvas.offsetWidth; resize(); } });
+            width = canvas.offsetWidth; resize();
+        })();
+    </script>
+    {% endif %}
+{% endblock %}

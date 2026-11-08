@@ -1,0 +1,31 @@
+{% extends 'events/public_base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-body">
+            {% if days|length > 1 %}
+                <div class="btn-group btn-group-sm mb-3 flex-wrap">
+                    {% for d in days %}
+                        <a class="btn {% if d == day %}btn-primary{% else %}btn-outline-primary{% endif %}" href="?day={{ d|date:'Y-m-d' }}">{{ d|date:"DATE_FORMAT" }}</a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            <h2 class="h5">
+                {% blocktranslate with day=day|date:"DATE_FORMAT" count counter=rows|length %}{{ day }}: {{ counter }} attendee{% plural %}{{ day }}: {{ counter }} attendees{% endblocktranslate %}
+            </h2>
+            {% if rows %}
+                <table class="table table-sm table-striped mb-0" id="attendees">
+                    <thead><tr><th>{% translate 'No.' %}</th><th>{% translate 'Name' %}</th><th>{% translate 'Organisation' %}</th></tr></thead>
+                    <tbody>
+                    {% for number, name, organisation in rows %}
+                        <tr><td>{{ number }}</td><td>{{ name }}</td><td>{{ organisation }}</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted mb-0">{% translate 'Nobody has signed yet.' %}</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

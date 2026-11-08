@@ -989,3 +989,275 @@ msgstr ""
 "Ajoutez les nouvelles unités en lignes en dessous, avec Excel ou LibreOffice "
 "(pas Google Sheets) : au plus %(max_rows)s lignes par fichier. La feuille "
 "Instructions explique chaque colonne, y compris la zone facultative."
+
+# --- Events: attendance lists (Nov 2026) ---
+
+msgid "Title"
+msgstr "Intitulé"
+
+msgid "First day"
+msgstr "Premier jour"
+
+msgid "Last day"
+msgstr "Dernier jour"
+
+msgid "Draft"
+msgstr "Brouillon"
+
+msgid "Open"
+msgstr "Ouverte"
+
+msgid "Closed"
+msgstr "Close"
+
+msgid "Sign in the box."
+msgstr "Signez dans le cadre."
+
+msgid "The signature could not be read: sign again."
+msgstr "La signature n’a pas pu être lue : signez à nouveau."
+
+msgid "No."
+msgstr "N°"
+
+msgid "Full name"
+msgstr "Nom et prénom"
+
+msgid "Organisation represented"
+msgstr "Structure représentée"
+
+msgid "Position / title"
+msgstr "Fonction / qualité"
+
+msgid "Origin (city, country)"
+msgstr "Provenance (ville, pays)"
+
+msgid "Phone"
+msgstr "Téléphone"
+
+msgid "Signature"
+msgstr "Signature"
+
+msgid "Attendance list"
+msgstr "Liste de présence"
+
+msgid "Day"
+msgstr "Jour"
+
+msgid "Country of origin"
+msgstr "Pays de provenance"
+
+msgid "City of origin"
+msgstr "Ville de provenance"
+
+msgid "Signed at"
+msgstr "Heure"
+
+msgid "Nobody has signed yet."
+msgstr "Personne n’a encore émargé."
+
+msgid "Date:"
+msgstr "Date :"
+
+msgid "Logo band (image at the top of the poster)"
+msgstr "Bande de logos (image en haut de l’affiche)"
+
+msgid "Remove the logo band"
+msgstr "Retirer la bande de logos"
+
+msgid "Background colour"
+msgstr "Couleur de fond"
+
+msgid "The last day cannot be before the first day."
+msgstr "Le dernier jour ne peut pas précéder le premier."
+
+msgid "The image is larger than 2 MB."
+msgstr "L’image dépasse 2 Mo."
+
+msgid "Upload a PNG or JPEG image."
+msgstr "Envoyez une image PNG ou JPEG."
+
+msgid "Pick a colour."
+msgstr "Choisissez une couleur."
+
+msgid "Enter a valid phone number."
+msgstr "Saisissez un numéro de téléphone valide."
+
+msgid "Give an email or a phone number (at least one)."
+msgstr "Indiquez un e-mail ou un numéro de téléphone (au moins un)."
+
+msgid "Event saved."
+msgstr "Évènement enregistré."
+
+msgid "The attendance list is open."
+msgstr "La liste de présence est ouverte."
+
+msgid "The event that was open before is now closed."
+msgstr "L’évènement qui était ouvert est maintenant clos."
+
+msgid ""
+"The attendance list is closed: the public page no longer accepts signatures."
+msgstr ""
+"La liste de présence est close : la page publique n’accepte plus de "
+"signatures."
+
+msgid "Poster saved."
+msgstr "Affiche enregistrée."
+
+msgid "Events"
+msgstr "Évènements"
+
+msgid "Event created. Open it when the attendance list should be available."
+msgstr ""
+"Évènement créé. Ouvrez-le quand la liste de présence doit être disponible."
+
+msgid "The attendance list of this event is closed."
+msgstr "La liste de présence de cet évènement est close."
+
+msgid ""
+"The attendance list can be signed on the days of the event only (from "
+"%(start)s to %(end)s)."
+msgstr ""
+"La liste de présence ne peut être signée que les jours de l’évènement (du "
+"%(start)s au %(end)s)."
+
+msgid "Close the list"
+msgstr "Clore la liste"
+
+msgid "Open the list"
+msgstr "Ouvrir la liste"
+
+msgid "Open, but signatures are only accepted on the days of the event."
+msgstr ""
+"Ouverte, mais les signatures ne sont acceptées que les jours de l’évènement."
+
+msgid "Public page (behind the QR code)"
+msgstr "Page publique (derrière le code QR)"
+
+msgid ""
+"Anyone with this address can sign while the list is open and see the "
+"attendees (number, shortened name, organisation). Nothing can be downloaded "
+"from it."
+msgstr ""
+"Toute personne qui a cette adresse peut émarger tant que la liste est "
+"ouverte et voir les participants (numéro, nom abrégé, structure). Rien ne "
+"peut y être téléchargé."
+
+msgid "QR code (PNG)"
+msgstr "Code QR (PNG)"
+
+msgid "Poster to print"
+msgstr "Affiche à imprimer"
+
+msgid "Signatures"
+msgstr "Signatures"
+
+msgid "Signed list (PDF, with signatures)"
+msgstr "Liste signée (PDF, avec signatures)"
+
+msgid "Data (Excel, without signatures)"
+msgstr "Données (Excel, sans signatures)"
+
+msgid "Blank list to print (PDF)"
+msgstr "Liste vierge à imprimer (PDF)"
+
+msgid "Attendees"
+msgstr "Participants"
+
+msgid "Organisation"
+msgstr "Structure"
+
+msgid "Origin"
+msgstr "Provenance"
+
+msgid "Edit"
+msgstr "Modifier"
+
+msgid "Poster"
+msgstr "Affiche"
+
+msgid "\"%(other)s\" will be closed: one list is open at a time."
+msgstr "« %(other)s » sera clos : une seule liste est ouverte à la fois."
+
+msgid "Dates"
+msgstr "Dates"
+
+msgid "No event yet."
+msgstr "Aucun évènement pour l’instant."
+
+msgid "New event"
+msgstr "Nouvel évènement"
+
+msgid "Print or save as PDF"
+msgstr "Imprimer ou enregistrer en PDF"
+
+msgid "%(day)s: %(counter)s attendee"
+msgid_plural "%(day)s: %(counter)s attendees"
+msgstr[0] "%(day)s : %(counter)s participant"
+msgstr[1] "%(day)s : %(counter)s participants"
+
+msgid "Sign"
+msgstr "Émarger"
+
+msgid "Have I signed?"
+msgstr "Ai-je émargé ?"
+
+msgid "The email or phone number you gave when signing"
+msgstr "L’e-mail ou le numéro de téléphone donné en émargeant"
+
+msgid "Check"
+msgstr "Vérifier"
+
+msgid "Yes, you have signed:"
+msgstr "Oui, vous avez émargé :"
+
+msgid "No signature found for this email or phone."
+msgstr "Aucune signature trouvée pour cet e-mail ou ce téléphone."
+
+msgid "No. %(number)s"
+msgstr "N° %(number)s"
+
+msgid ""
+"Too many signatures from this phone. Try again later or ask the organisers."
+msgstr ""
+"Trop de signatures depuis ce téléphone. Réessayez plus tard ou adressez-vous "
+"aux organisateurs."
+
+msgid ""
+"Fill in the form and sign with your finger. One signature per person and per "
+"day."
+msgstr ""
+"Remplissez le formulaire et signez avec le doigt. Une signature par personne "
+"et par jour."
+
+msgid ""
+"Email or phone: at least one. It lets you check later that you have signed."
+msgstr ""
+"E-mail ou téléphone : au moins un. Il permet de vérifier ensuite que vous "
+"avez émargé."
+
+msgid "Sign with your finger in the box."
+msgstr "Signez avec le doigt dans le cadre."
+
+msgid "Clear"
+msgstr "Effacer"
+
+msgid ""
+"Your information is used only for the attendance list of this event. The "
+"list shown to the public gives only the number, a shortened name and the "
+"organisation."
+msgstr ""
+"Vos informations servent uniquement à la liste de présence de cet "
+"évènement. La liste visible par le public n’affiche que le numéro, un nom "
+"abrégé et la structure."
+
+msgid "Sign the list"
+msgstr "Émarger"
+
+msgid "Thank you, you have signed."
+msgstr "Merci, vous avez émargé."
+
+msgid "You had already signed today."
+msgstr "Vous aviez déjà émargé aujourd’hui."
+
+msgid "See the attendees"
+msgstr "Voir les participants"

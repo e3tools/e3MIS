@@ -1,0 +1,47 @@
+{% load i18n %}<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{{ event.title }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 0; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; font-family: "DejaVu Sans", Arial, sans-serif; color: #111; }
+        body { background: #ddd; }
+        .sheet {
+            width: 210mm; height: 297mm; margin: 10mm auto; background: {{ event.poster_color }};
+            display: flex; flex-direction: column; align-items: center; overflow: hidden;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        .banner { width: 100%; max-height: 60mm; object-fit: contain; background: #fff; }
+        .content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12mm 18mm; text-align: center; }
+        h1 { font-size: 26pt; margin: 0 0 4mm; }
+        .dates { font-size: 14pt; margin-bottom: 10mm; }
+        .call { font-size: 20pt; font-weight: bold; margin-bottom: 8mm; }
+        .call span { display: block; font-size: 14pt; font-weight: normal; font-style: italic; }
+        .qr { background: #fff; padding: 8mm; border-radius: 4mm; }
+        .qr svg { width: 110mm; height: 110mm; display: block; }
+        .url { margin-top: 6mm; font-size: 10pt; word-break: break-all; }
+        .toolbar { text-align: center; margin: 10mm 0 0; font-family: Arial, sans-serif; }
+        .toolbar button { font-size: 12pt; padding: 6px 18px; }
+        @media print {
+            body { background: none; }
+            .sheet { margin: 0; }
+            .toolbar { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="toolbar"><button onclick="window.print()">{% translate 'Print or save as PDF' %}</button></div>
+<div class="sheet">
+    {% if event.banner %}<img class="banner" src="{% url 'events:file' event.pk 'banner' %}" alt="">{% endif %}
+    <div class="content">
+        <h1>{{ event.title }}</h1>
+        <div class="dates">{% if event.start_date == event.end_date %}{{ event.start_date|date:"DATE_FORMAT" }}{% else %}{{ event.start_date|date:"DATE_FORMAT" }} – {{ event.end_date|date:"DATE_FORMAT" }}{% endif %}</div>
+        <div class="call">Scannez pour émarger<span>Scan to sign the attendance list</span></div>
+        <div class="qr">{{ qr_svg|safe }}</div>
+        <div class="url">{{ public_url }}</div>
+    </div>
+</div>
+</body>
+</html>

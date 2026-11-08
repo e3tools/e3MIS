@@ -261,6 +261,16 @@ renamed or deleted. A changed village zone also resets the radius of its worksit
 confirmed position. `utils/xlsx_layout.py` sets row heights for wrapped text (Excel does not resize
 rows written by openpyxl).
 
+## Event attendance lists (`events/`)
+
+Added Nov 2026 for the refugee symposium (10-11 Nov). Django admin users (`is_staff`) create an
+event under Events, open or close its list (one open at a time), download the QR code, print a poster
+(logo band, background colour) and export the list: PDF with the signatures (fpdf2, DejaVu font),
+Excel without, and a blank PDF for paper signing. The public pages `/<lang>/e/<token>/` need no
+sign-in: sign (finger signature as a PNG, stored in the database), "have I signed?" by email or phone,
+and the attendees (number, shortened name, organisation only). One signature per email or phone per
+day; the day is the programme's date (`ProgrammeConfig.tz`), not the phone's.
+
 ## Offline sync fields
 
 Records, follow-up responses and attachments have `client_uuid` (phone-generated, unique),

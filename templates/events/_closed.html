@@ -1,0 +1,8 @@
+{% load i18n %}
+<div class="alert alert-info">
+    {% if event.status == 'closed' %}
+        {% translate 'The attendance list of this event is closed.' %}
+    {% else %}
+        {% blocktranslate with start=event.start_date|date:"DATE_FORMAT" end=event.end_date|date:"DATE_FORMAT" %}The attendance list can be signed on the days of the event only (from {{ start }} to {{ end }}).{% endblocktranslate %}
+    {% endif %}
+</div>

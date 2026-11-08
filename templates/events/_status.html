@@ -1,0 +1,1 @@
+{% if event.status == 'open' %}<span class="badge badge-success">{{ event.get_status_display }}</span>{% elif event.status == 'closed' %}<span class="badge badge-secondary">{{ event.get_status_display }}</span>{% else %}<span class="badge badge-light">{{ event.get_status_display }}</span>{% endif %}

@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'fieldmonitoring.review',
     'fieldmonitoring.compliance',
     'fieldmonitoring.warning',
+    'events',
 ]
 
 

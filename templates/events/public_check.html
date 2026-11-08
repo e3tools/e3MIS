@@ -1,0 +1,31 @@
+{% extends 'events/public_base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-body">
+            <h2 class="h5">{% translate 'Have I signed?' %}</h2>
+            <form method="get" class="mb-3">
+                <label for="contact">{% translate 'The email or phone number you gave when signing' %}</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="contact" name="contact" value="{{ contact|default:'' }}" required autocomplete="email">
+                    <div class="input-group-append"><button class="btn btn-primary" type="submit">{% translate 'Check' %}</button></div>
+                </div>
+            </form>
+            {% if contact %}
+                {% if found %}
+                    <div class="alert alert-success mb-0">
+                        <p class="mb-1">{% translate 'Yes, you have signed:' %}</p>
+                        <ul class="mb-0">
+                            {% for attendance in found %}
+                                <li>{{ attendance.day|date:"DATE_FORMAT" }} — {% blocktranslate with number=attendance.number %}No. {{ number }}{% endblocktranslate %}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning mb-0">{% translate 'No signature found for this email or phone.' %}</div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

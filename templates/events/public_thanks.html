@@ -1,0 +1,19 @@
+{% extends 'events/public_base.html' %}
+{% load i18n %}
+
+{% block content %}
+    <div class="card text-center">
+        <div class="card-body py-5">
+            {% if created %}
+                <i class="fas fa-check-circle text-success" style="font-size: 3rem"></i>
+                <h2 class="h4 mt-3">{% translate 'Thank you, you have signed.' %}</h2>
+            {% else %}
+                <i class="fas fa-info-circle text-info" style="font-size: 3rem"></i>
+                <h2 class="h4 mt-3">{% translate 'You had already signed today.' %}</h2>
+            {% endif %}
+            <p class="lead mb-1">{% blocktranslate with number=attendance.number %}No. {{ number }}{% endblocktranslate %}</p>
+            <p class="text-muted">{{ attendance.day|date:"DATE_FORMAT" }}</p>
+            <a class="btn btn-outline-primary mt-3" href="{% url 'events:attendees' event.token %}">{% translate 'See the attendees' %}</a>
+        </div>
+    </div>
+{% endblock %}

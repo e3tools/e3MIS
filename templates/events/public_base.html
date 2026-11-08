@@ -1,0 +1,45 @@
+{% load static i18n %}<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{{ event.title }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'AdminLTE/plugins/fontawesome-free/css/all.min.css' %}">
+    <style>
+        body { background: #f4f6f9; }
+        .event-header { background: #fff; border-bottom: 1px solid #dee2e6; }
+        .lang-switch a { min-width: 6rem; }
+        .event-nav .nav-link { padding: .5rem .6rem; }
+        .hp { position: absolute; left: -10000px; height: 0; overflow: hidden; }
+    </style>
+</head>
+<body>
+<header class="event-header mb-3">
+    <div class="container py-3" style="max-width: 720px">
+        <div class="lang-switch d-flex justify-content-end mb-2">
+            {% for code, label, url, current in language_links %}
+                <a href="{{ url }}" class="btn btn-sm {% if current %}btn-primary{% else %}btn-outline-primary{% endif %} ml-1" lang="{{ code }}">{{ label }}</a>
+            {% endfor %}
+        </div>
+        <h1 class="h4 mb-1">{{ event.title }}</h1>
+        <div class="text-muted small">
+            {% if event.start_date == event.end_date %}{{ event.start_date|date:"DATE_FORMAT" }}{% else %}{{ event.start_date|date:"DATE_FORMAT" }} – {{ event.end_date|date:"DATE_FORMAT" }}{% endif %}
+        </div>
+        <ul class="nav nav-pills event-nav mt-3">
+            {% with request.resolver_match.url_name as page %}
+                <li class="nav-item"><a class="nav-link {% if page == 'sign' or page == 'thanks' %}active{% endif %}" href="{% url 'events:sign' event.token %}"><i class="fas fa-signature"></i> {% translate 'Sign' %}</a></li>
+                <li class="nav-item"><a class="nav-link {% if page == 'check' %}active{% endif %}" href="{% url 'events:check' event.token %}"><i class="fas fa-search"></i> {% translate 'Have I signed?' %}</a></li>
+                <li class="nav-item"><a class="nav-link {% if page == 'attendees' %}active{% endif %}" href="{% url 'events:attendees' event.token %}"><i class="fas fa-list-ol"></i> {% translate 'Attendees' %}</a></li>
+            {% endwith %}
+        </ul>
+    </div>
+</header>
+<main class="container pb-5" style="max-width: 720px">
+    {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

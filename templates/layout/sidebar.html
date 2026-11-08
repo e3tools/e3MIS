@@ -140,6 +140,13 @@
                         </ul>
                     </li>
                     <li class="nav-item">
+                        <a href="{% url 'events:list' %}"
+                           class="nav-link {% if request.resolver_match.app_name == 'events' %}active{% endif %}">
+                            <i class="nav-icon fas fa-calendar-check"></i>
+                            <p>{% translate "Events" %}</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{% url 'authorization:app_settings' %}"
                            class="nav-link {% if url_name == 'app_settings' %}active{% endif %}">
                             <i class="nav-icon fas fa-cog"></i>
