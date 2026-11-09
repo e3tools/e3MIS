@@ -92,3 +92,5 @@ collected_static/
 # local notes with production details, never committed
 pro-env.txt
 mail-recommandations.txt
+DEPLOY_SERVER.md
+guide_evenements.pdf
