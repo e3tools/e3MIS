@@ -85,8 +85,11 @@ def _activity(warning, viewer) -> dict:
     if viewer.role == Role.SC:
         visits = visits.filter(user__supervisor=viewer)
         sites = sites.filter(created_by__supervisor=viewer)
+    cancelled = visits.filter(state=VisitState.CANCELLED).count()
     return {
-        "checkins": visits.count(),
+        # Visits cancelled by the agent (wrong site) are not check-ins; they are shown apart.
+        "checkins": visits.count() - cancelled,
+        "checkins_cancelled": cancelled,
         "checkins_verified": visits.filter(state=VisitState.VERIFIED).count(),
         "new_sites": sites.count(),
         "pending_positions": pending_position_sites(viewer).count(),

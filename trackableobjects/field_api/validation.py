@@ -11,6 +11,10 @@ browser POST:
 - The "use my location" button is a widget, not an answer, and is ignored.
 - ``validators.min_field`` (field app extension): a date or number must not be before/below
   another answer of the same form, e.g. the planned end of works after their start (COSO 1.17).
+- ``validators.min_value`` / ``max_value`` of numbers: the MIS form only sets them on the browser
+  input, so they are checked here for the app (e.g. an execution rate of at most 100 %).
+- ``validators.max_field``: a number must not be above another answer, e.g. the women among the
+  workers present not more than the workers present (COSO 2.15, Brice 5 Nov 2026).
 """
 from django import forms
 
@@ -119,20 +123,40 @@ def validate_answers(schema, answers, *, user, parent_data=None):
     return (None, errors) if errors else (clean, {})
 
 
+def _compare(value, other) -> int:
+    """-1, 0 or 1. Numbers as numbers; ISO dates compare as text."""
+    try:
+        a, b = float(value), float(other)
+    except (TypeError, ValueError):
+        a, b = str(value), str(other)
+    return (a > b) - (a < b)
+
+
 def _cross_field_errors(schema, clean, errors) -> dict:
     found = {}
     options = field_options(schema)
     for page in pages(schema):
         for name, prop in page.get("page", {}).get("properties", {}).items():
-            other = (prop.get("validators") or {}).get("min_field")
-            if not other or name in errors or clean.get(name) in (None, "") or clean.get(other) in (None, ""):
-                continue
-            value, floor = clean[name], clean[other]
-            try:
-                too_low = float(value) < float(floor)
-            except (TypeError, ValueError):
-                too_low = str(value) < str(floor)  # ISO dates compare as text
-            if too_low:
-                label = options.get(other, {}).get("label") or other
-                found[name] = [f"Must not be before “{label}”."]
+            validators = prop.get("validators") or {}
+            # The MIS form only puts min/max on the browser input; check them here for the app.
+            if prop.get("type") in ("number", "integer") and name not in errors and clean.get(name) not in (None, ""):
+                for key, wrong, message in (
+                    ("min_value", -1, "Must be at least {limit}."),
+                    ("max_value", 1, "Must be at most {limit}."),
+                ):
+                    limit = validators.get(key)
+                    if limit not in (None, "") and name not in found and _compare(clean[name], limit) == wrong:
+                        found[name] = [message.format(limit=limit)]
+            for key, wrong, message in (
+                ("min_field", -1, "Must not be before “{label}”."),
+                ("max_field", 1, "Must not be more than “{label}”."),
+            ):
+                other = validators.get(key)
+                if not other or name in errors or name in found:
+                    continue
+                if clean.get(name) in (None, "") or clean.get(other) in (None, ""):
+                    continue
+                if _compare(clean[name], clean[other]) == wrong:
+                    label = options.get(other, {}).get("label") or other
+                    found[name] = [message.format(label=label)]
     return found

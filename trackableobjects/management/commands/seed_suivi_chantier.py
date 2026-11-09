@@ -1,6 +1,8 @@
 """The four worksite follow-up forms specified by the COSO team (Brice, 7 Oct 2026).
 
-Source: ``BJ-GoG-COSO-Formulaires_Application_Suivi_Chantier_07102026.xlsx``. Field labels keep the
+Source: ``BJ-GoG-COSO-Formulaires_Application_Suivi_Chantier_07102026.xlsx``, updated by
+``…_05112026.xlsx`` (F1 E&S questions 1.14–1.15, so the later F1 numbers moved by two; F2 decimal
+rates, worker limits, 2.22 "NA"). Field labels keep the
 spreadsheet wording; question numbers are in the comments.
 
 - F1 Identification is the *record* (trackable object "Sous-projet"): filled once, at the first
@@ -15,7 +17,7 @@ spreadsheet wording; question numbers are in the comments.
         └──F2 arrêt définitif──▶ terminated (no forms; a supervisor can reopen)
 
 Check-in data (2.1, 3.1, 4.1) comes from the visit the form is linked to (visit_forms.py); the
-village's zone (1.9) is shown by the app under the village. 1.17 ≥ 1.16 uses the ``min_field``
+village's zone (1.9) is shown by the app under the village. 1.19 ≥ 1.18 uses the ``min_field``
 validator (field_api/validation.py). Not covered yet: warnings on a lower rate than last time
 (2.9, 2.10) and on children on site (2.17), waiting for who should be alerted and how.
 
@@ -101,6 +103,18 @@ def number(label, minimum=0, maximum=None, **extra):
     return {"type": "integer", "validators": validators}, {"label": label, **extra}
 
 
+def decimal(label, minimum=0, maximum=None, **extra):
+    """A number that may have decimals, e.g. an execution rate of 42.5 % (Brice, 5 Nov 2026)."""
+    prop, options = number(label, minimum, maximum, **extra)
+    return {**prop, "type": "number"}, options
+
+
+def at_most(field_spec, other):
+    """Not more than another answer of the form (``max_field``), e.g. women ≤ workers present."""
+    prop, options = field_spec
+    return {**prop, "validators": {**prop.get("validators", {}), "max_field": other}}, options
+
+
 def day(label, validators=None, **extra):
     return {"type": "string", "format": "date", **({"validators": validators} if validators else {})}, {
         "label": label, **extra,
@@ -146,16 +160,21 @@ def identification(village_order):
             "help": "Sans site physique : prenez la position d'un lieu public du village.",
         }), True),
         ("maitrise_ouvrage", choice("Mode de maîtrise d'ouvrage", ["MOC", "MODC"]), True),  # 1.13
-        ("entreprise", text("Entreprise titulaire", **yes("site_physique")), True),  # 1.14
-        ("montant", number("Montant du marché (FCFA)", minimum=1, **yes("site_physique")), True),  # 1.15
-        ("date_demarrage", day("Date de l'ordre de service de démarrage", **yes("site_physique")), True),  # 1.16
-        ("date_fin_prevue", day("Date prévue de fin des travaux", {"min_field": "date_demarrage"},
-                                **yes("site_physique")), True),  # 1.17 ≥ 1.16
-        ("photo_initiale_1", photo("Photo de l'état initial du site (1)", **yes("site_physique")), True),  # 1.18
+        # 1.14–1.15: environmental and social safeguards (Brice, 5 Nov 2026).
+        ("screening_es", yes_no("Le sous-projet a-t-il fait objet d'un screening E&S ?"), True),  # 1.14
+        ("categorie_es", choice("Catégorie E&S du sous-projet", ES_CATEGORIES, **yes("screening_es")), True),  # 1.15
+        # 1.16–1.19 apply to every sub-project, with or without a physical site (Brice, 5 Nov 2026).
+        ("entreprise", text("Entreprise titulaire"), True),  # 1.16
+        ("montant", number("Montant du marché (FCFA)", minimum=1), True),  # 1.17
+        ("date_demarrage", day("Date de l'ordre de service de démarrage"), True),  # 1.18
+        ("date_fin_prevue", day("Date prévue de fin des travaux", {"min_field": "date_demarrage"}), True),  # 1.19 ≥ 1.18
+        ("photo_initiale_1", photo("Photo de l'état initial du site (1)", **yes("site_physique")), True),  # 1.20
         ("photo_initiale_2", photo("Photo de l'état initial du site (2)", **yes("site_physique")), True),
     ]
     return build(rows)
 
+
+ES_CATEGORIES = ["SMES", "Prescription E&S", "EIES simp", "EIES app"]
 
 PHASES = [
     "Installation de chantier", "Terrassement-fondations", "Gros œuvre", "Second œuvre-finitions",
@@ -183,22 +202,24 @@ def inspection():
         ("arret_raison_autre", text("Préciser l'autre raison", **when("arret_raisons", "Autre", "contains")), True),
         ("reprise_date", day("Date probable de reprise des travaux", {"min": "today"},
                              **when("arret_nature", TEMPORARY)), True),  # 2.8
-        ("taux_physique", number("Taux d'exécution physique (%)", maximum=100), True),  # 2.9
-        ("taux_financier", number("Taux d'exécution financier (%)", maximum=100), True),  # 2.10
+        ("taux_physique", decimal("Taux d'exécution physique (%)", maximum=100), True),  # 2.9
+        ("taux_financier", decimal("Taux d'exécution financier (%)", maximum=100), True),  # 2.10
         ("entreprise_presente", yes_no("L'entreprise est-elle présente sur le chantier ?"), True),  # 2.11
         ("conducteur_present", yes_no("Le conducteur des travaux est-il présent ?", **on_site), True),  # 2.12
         ("ouvriers", number("Nombre d'ouvriers présents", **on_site), True),  # 2.13
-        ("ouvriers_locaux", number("dont main-d'œuvre locale", **on_site), True),  # 2.14
-        ("ouvriers_femmes", number("dont femmes", **on_site), True),  # 2.15
-        ("ouvriers_jeunes", number("dont jeunes (moins de 35 ans)", **on_site), True),  # 2.16
-        ("ouvriers_enfants", number("dont enfants (moins de 18 ans)", **on_site), True),  # 2.17
+        # 2.14–2.17 are part of 2.13: none can be more than the workers present (Brice, 5 Nov 2026).
+        ("ouvriers_locaux", at_most(number("dont main-d'œuvre locale", **on_site), "ouvriers"), True),  # 2.14
+        ("ouvriers_femmes", at_most(number("dont femmes", **on_site), "ouvriers"), True),  # 2.15
+        ("ouvriers_jeunes", at_most(number("dont jeunes (moins de 35 ans)", **on_site), "ouvriers"), True),  # 2.16
+        ("ouvriers_enfants", at_most(number("dont enfants (moins de 18 ans)", **on_site), "ouvriers"), True),  # 2.17
         ("heures_respectees", choice("Les heures réglementaires de travail sont-elles respectées ?",
                                      ["Oui", "Non", "Ne sait pas"], **on_site), True),  # 2.18
         ("responsable_hse", yes_no(
             "Le chantier dispose-t-il d'un responsable HSE ou d'une personne qui en fait office ?"), True),  # 2.19
         ("epi", choice("Port des EPI par les ouvriers", ["Tous", "Une partie", "Aucun"], **on_site), True),  # 2.20
         ("pharmacie", yes_no("Une boîte à pharmacie est-elle présente sur le chantier ?"), True),  # 2.21
-        ("signalisation", yes_no("Des panneaux de signalisation temporaire sont-ils installés ?"), True),  # 2.22
+        ("signalisation", choice("Des panneaux de signalisation temporaire sont-ils installés ?",
+                                 ["Oui", "Non", "NA"]), True),  # 2.22, NA added on 5 Nov 2026
         ("travaux_hauteur", yes_no("Des travaux en hauteur sont-ils réalisés ?"), True),  # 2.23
         ("antichute", multi("Dispositifs antichute utilisés", [
             "Ligne de vie", "Harnais de sécurité", "Nacelle", "Échafaudage avec garde-corps", "Aucun",

@@ -357,6 +357,27 @@ def check_out(
     return apply(visit, Event.CHECK_OUT, time_unproven=unproven, form_missing=form_missing)
 
 
+@transaction.atomic
+def cancel_visit(visit: Visit, *, note: str) -> Visit:
+    """The agent started the visit at the wrong site (Brice, 5 Nov 2026). Allowed before check-out and
+    before any review decision; the reason is required. The visit is kept, shown to supervisors, and
+    a position captured at this check-in is withdrawn so nobody confirms the wrong place."""
+    visit = Visit.objects.select_for_update().get(pk=visit.pk)
+    if visit.state == VisitState.CANCELLED:
+        return visit  # a retry from the queue
+    if visit.checked_out_at is not None or visit.auto_closed or visit.resolved_by_id is not None:
+        raise VisitError("visit_closed")
+    if visit.state not in (VisitState.IN_PROGRESS, VisitState.UNVERIFIED):
+        raise VisitError("visit_closed")
+    note = (note or "").strip()
+    if not note:
+        raise VisitError("reason_required")
+    visit.cancelled_at = clock.now()
+    visit.cancel_note = note
+    ProvisionalCoordinate.objects.filter(visit=visit, status="pending").update(status="rejected")
+    return apply(visit, Event.CANCEL, actor=visit.user, note=note)
+
+
 def submit_reason(visit: Visit, *, code: str, note: str | None) -> Visit:
     if not visit.awaiting_review:
         raise VisitError("not_awaiting_review")

@@ -43,6 +43,7 @@ urlpatterns = [
     path("visits/<uuid:visit_id>/status/", visits.VisitStatusView.as_view()),
     path("visits/<uuid:visit_id>/check-out/", visits.CheckOutView.as_view()),
     path("visits/<uuid:visit_id>/reason/", visits.ReasonView.as_view()),
+    path("visits/<uuid:visit_id>/cancel/", visits.CancelView.as_view()),
     # Review
     path("review/queue/", review.ReviewQueueView.as_view()),
     path("review/<uuid:visit_id>/", review.ResolveView.as_view()),

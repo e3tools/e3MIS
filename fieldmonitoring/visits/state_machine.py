@@ -26,10 +26,12 @@ class Event(StrEnum):
     AUTO_CLOSE = "auto_close"
     RESOLVE_VERIFIED = "resolve_verified"
     RESOLVE_MISSED = "resolve_missed"
+    CANCEL = "cancel"
 
 
 HUMAN_EVENTS = frozenset({Event.RESOLVE_VERIFIED, Event.RESOLVE_MISSED})
-AUTOMATED_EVENTS = frozenset(Event) - HUMAN_EVENTS
+AGENT_EVENTS = frozenset({Event.CANCEL})
+AUTOMATED_EVENTS = frozenset(Event) - HUMAN_EVENTS - AGENT_EVENTS
 
 
 class InvalidTransition(Exception):
@@ -55,7 +57,7 @@ def transition(
     form_missing: bool = False,
 ) -> Outcome:
     """Pure transition function: (state, event, guards) -> next state and unverified reason."""
-    if event in HUMAN_EVENTS and actor is None:
+    if (event in HUMAN_EVENTS or event in AGENT_EVENTS) and actor is None:
         raise InvalidTransition(f"{event} requires a human actor")
 
     match (state, event):
@@ -99,6 +101,16 @@ def transition(
 
         case (S.VERIFIED, Event.PHOTO_ATTACHED):
             return Outcome(S.VERIFIED, None)
+
+        # Wrong site: the agent cancels before checking out. A failed check-in (unverified) can be
+        # cancelled too, as long as no reviewer has decided it yet (only unresolved visits get here).
+        case (S.IN_PROGRESS | S.UNVERIFIED, Event.CANCEL):
+            if checked_out:
+                raise InvalidTransition("a checked-out visit cannot be cancelled")
+            return Outcome(S.CANCELLED, None)
+        case (S.CANCELLED, Event.PHOTO_ATTACHED):
+            # The queued arrival photo may still arrive; it stays as evidence.
+            return Outcome(S.CANCELLED, None)
 
     raise InvalidTransition(f"no transition from {state} on {event}")
 

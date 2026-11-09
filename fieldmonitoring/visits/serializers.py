@@ -24,7 +24,10 @@ class CheckInSerializer(serializers.Serializer):
     """No timestamp field: checked_in_at is set by the server (non-negotiable 2).
     Unknown fields, including any client-supplied checked_in_at, are ignored."""
 
-    worksite_id = serializers.UUIDField()
+    worksite_id = serializers.UUIDField(required=False, allow_null=True)
+    # A site the phone has just identified with form 1 and may have recorded offline (Brice, 5 Nov
+    # 2026): the record's client uuid stands for the worksite the server creates from it.
+    record_client_uuid = serializers.UUIDField(required=False, allow_null=True)
     lat = serializers.FloatField(required=False, allow_null=True, min_value=-90, max_value=90)
     lng = serializers.FloatField(required=False, allow_null=True, min_value=-180, max_value=180)
     accuracy_m = serializers.FloatField(required=False, allow_null=True, min_value=0)
@@ -34,6 +37,11 @@ class CheckInSerializer(serializers.Serializer):
     # Metadata only (Story 2.7): when the client captured a queued submission.
     client_captured_at = serializers.DateTimeField(required=False, allow_null=True)
     clock = ClockEvidenceSerializer(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        if not attrs.get("worksite_id") and not attrs.get("record_client_uuid"):
+            raise serializers.ValidationError({"worksite_id": "This field is required."})
+        return attrs
 
 
 class CheckOutSerializer(serializers.Serializer):
@@ -69,6 +77,10 @@ class VisitStatusSerializer(serializers.ModelSerializer):
         description = (attrs.get("issue_description") or "").strip()
         attrs["issue_description"] = description if attrs["issue_reported"] and description else None
         return attrs
+
+
+class CancelSerializer(serializers.Serializer):
+    note = serializers.CharField(max_length=2000)
 
 
 class ReasonSerializer(serializers.Serializer):
@@ -135,7 +147,7 @@ class VisitSerializer(serializers.ModelSerializer):
             "field_reason_at", "awaiting_review", "needs_reason", "resolved_by", "resolved_at",
             "resolution_note", "client_captured_at", "queued_submission", "short_visit",
             "checkin_received_at", "checkout_received_at", "checkin_time_source", "checkout_time_source",
-            "forms",
+            "forms", "cancelled_at", "cancel_note",
         )
 
     def get_checkin(self, obj) -> dict:

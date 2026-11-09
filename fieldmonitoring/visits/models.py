@@ -15,6 +15,9 @@ class VisitState(models.TextChoices):
     VERIFIED = "verified", "Verified"
     UNVERIFIED = "unverified", "Unverified"
     MISSED = "missed", "Missed"
+    # Started at the wrong site and cancelled by the agent before check-out, with a reason (Brice,
+    # 5 Nov 2026). Kept and shown to supervisors; not counted as a visit and not sent to review.
+    CANCELLED = "cancelled", "Cancelled by the agent"
 
 
 class UnverifiedReason(models.TextChoices):
@@ -104,6 +107,9 @@ class Visit(UUIDModel):
     )
     resolved_at = models.DateTimeField(null=True, blank=True)
     resolution_note = models.TextField(null=True, blank=True)
+    # Set when the agent cancels a visit started by mistake (server time, the agent's reason).
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancel_note = models.TextField(null=True, blank=True)
     # Metadata from a queued submission (Story 2.7). Never used for any rule.
     client_captured_at = models.DateTimeField(null=True, blank=True)
     checkin_idempotency_key = models.CharField(max_length=64)
