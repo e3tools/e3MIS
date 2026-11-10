@@ -3,6 +3,7 @@
 Cette branche = `prod_config` + `develop` (suivi terrain, API de l'app mobile, Django 5.2, PostGIS).
 Fichiers de référence pour la VM : `deploy/docker-compose.yaml`, `deploy/nginx/nginx.conf`,
 `deploy/env.example`.
+Tableau de bord de supervision (`/supervision/`) : voir `DEPLOY_SUPERVISION.md`.
 
 ---
 
