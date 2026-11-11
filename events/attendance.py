@@ -9,6 +9,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max, Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 from PIL import Image, UnidentifiedImageError
 
 from events.models import Attendance, Event
@@ -95,13 +96,33 @@ def sign(event, data, signature, language=""):
             with transaction.atomic():
                 attendance = Attendance.objects.create(
                     event=event, day=day, number=last + 1, signature=signature, language=language,
-                    full_name=data["full_name"], organisation=data["organisation"], position=data["position"],
+                    full_name=data["full_name"], gender=data["gender"],
+                    organisation=data["organisation"], position=data["position"],
                     country=data["country"], city=data["city"], email=data["email"].lower(),
                     phone=data["phone"], phone_key=phone_key(data["phone"]),
                 )
         except IntegrityError:
             return already_signed(event, day, data["email"], data["phone"]), False
     return attendance, True
+
+
+def gender_counts(genders):
+    """Counts of gender codes: {"F": 2, "H": 1, "N": 1, "total": 4}. An empty gender (signed before the field existed)
+    counts as not specified."""
+    counts = {"F": 0, "H": 0, "N": 0}
+    for gender in genders:
+        counts[gender if gender in ("F", "H") else "N"] += 1
+    counts["total"] = sum(counts.values())
+    return counts
+
+
+def gender_summary(counts):
+    """"4 participants (Women: 2, Men: 1, not specified: 1)"; the last part only when not zero."""
+    text = ngettext("%(n)d participant", "%(n)d participants", counts["total"]) % {"n": counts["total"]}
+    parts = [_("Women: %(n)d") % {"n": counts["F"]}, _("Men: %(n)d") % {"n": counts["H"]}]
+    if counts["N"]:
+        parts.append(_("not specified: %(n)d") % {"n": counts["N"]})
+    return f"{text} ({', '.join(parts)})"
 
 
 def find(event, contact):

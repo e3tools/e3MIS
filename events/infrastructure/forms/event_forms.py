@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from PIL import Image, UnidentifiedImageError
 
 from events.attendance import signature_png
-from events.models import Event
+from events.models import Attendance, Event
 
 BANNER_MAX_BYTES = 2 * 1024 * 1024
 
@@ -62,6 +62,7 @@ class EventPosterForm(forms.Form):
 
 class AttendanceForm(forms.Form):
     full_name = forms.CharField(label=_("Full name"), max_length=200)
+    gender = forms.ChoiceField(label=_("Gender"), choices=Attendance.Gender.choices, widget=forms.RadioSelect)
     organisation = forms.CharField(label=_("Organisation represented"), max_length=200)
     position = forms.CharField(label=_("Position / title"), max_length=200)
     country = forms.CharField(label=_("Country of origin"), max_length=100)

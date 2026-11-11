@@ -15,6 +15,7 @@
                 <form method="post" id="sign-form" novalidate>
                     {% csrf_token %}
                     {% bootstrap_field form.full_name %}
+                    {% bootstrap_field form.gender %}
                     {% bootstrap_field form.organisation %}
                     {% bootstrap_field form.position %}
                     <div class="form-row">

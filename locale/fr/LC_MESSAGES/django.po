@@ -1261,3 +1261,48 @@ msgstr "Vous aviez déjà émargé aujourd’hui."
 
 msgid "See the attendees"
 msgstr "Voir les participants"
+
+msgid "Gender"
+msgstr "Genre"
+
+msgid "Female"
+msgstr "Femme"
+
+msgid "Male"
+msgstr "Homme"
+
+msgid "Prefer not to say"
+msgstr "Ne souhaite pas répondre"
+
+msgid "Total"
+msgstr "Total"
+
+msgid "Women"
+msgstr "Femmes"
+
+msgid "Men"
+msgstr "Hommes"
+
+msgid "Not specified"
+msgstr "Non précisé"
+
+#, python-format
+msgid "%(n)d participant"
+msgid_plural "%(n)d participants"
+msgstr[0] "%(n)d participant"
+msgstr[1] "%(n)d participants"
+
+#, python-format
+msgid "Women: %(n)d"
+msgstr "Femmes : %(n)d"
+
+#, python-format
+msgid "Men: %(n)d"
+msgstr "Hommes : %(n)d"
+
+#, python-format
+msgid "not specified: %(n)d"
+msgstr "non précisé : %(n)d"
+
+msgid "Gender: F = female, H = male, – = prefer not to say"
+msgstr "Genre : F = femme, H = homme, – = ne souhaite pas répondre"

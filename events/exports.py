@@ -11,12 +11,15 @@ from fpdf.fonts import FontFace
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+from events.attendance import gender_counts, gender_summary
 from utils.xlsx_layout import fit_columns
 
 FONT_DIR = "/usr/share/fonts/truetype/dejavu"
 HEADER_FILL = (221, 235, 247)
-# Relative column widths: N°, name, organisation, position, origin, email, phone, signature.
-COLUMN_WIDTHS = (7, 34, 32, 26, 26, 34, 28, 38)
+# Relative column widths: N°, name, gender, organisation, position, origin, email, phone, signature.
+COLUMN_WIDTHS = (7, 32, 10, 30, 25, 25, 32, 26, 38)
+# The narrow PDF column; empty (signed before the field existed) is shown like "prefer not to say".
+GENDER_SHORT = {"F": "F", "H": "H"}
 BLANK_ROW_HEIGHT = 12
 BLANK_ROWS_PER_PAGE = 12
 
@@ -33,7 +36,7 @@ def qr_png(url):
 
 def _headers():
     return [
-        _("No."), _("Full name"), _("Organisation represented"), _("Position / title"), _("Origin (city, country)"),
+        _("No."), _("Full name"), _("Gender"), _("Organisation represented"), _("Position / title"), _("Origin (city, country)"),
         _("Email"), _("Phone"), _("Signature"),
     ]
 
@@ -60,11 +63,13 @@ class _Pdf(FPDF):
         self.set_font(self.family, size=7)
         self.cell(0, 5, self.text_of(f"{self.title} · {self.page_no()}/{{nb}}"), align="R")
 
-    def heading(self, event, day):
+    def heading(self, event, day, summary=""):
         self.set_font(self.family, "B", 13)
         self.multi_cell(0, 7, self.text_of(event.title), new_x="LMARGIN", new_y="NEXT")
         self.set_font(self.family, size=10)
         line = _("Attendance list") + " · " + formats.date_format(day, "DATE_FORMAT") if day else _("Attendance list")
+        if summary:
+            line += " · " + summary
         self.cell(0, 6, self.text_of(line), new_x="LMARGIN", new_y="NEXT")
         self.ln(2)
 
@@ -90,16 +95,20 @@ def attendance_pdf(event, day=None):
     pdf = _Pdf(event.title)
     days = [day] if day else event.days()
     for current in days:
-        attendances = event.attendances.filter(day=current)
-        if day is None and not attendances.exists():
+        attendances = list(event.attendances.filter(day=current))
+        if day is None and not attendances:
             continue
         pdf.add_page()
-        pdf.heading(event, current)
+        summary = gender_summary(gender_counts(a.gender for a in attendances)) if attendances else ""
+        pdf.heading(event, current, summary)
         pdf.table_of([
-            (a.number, a.full_name, a.organisation, a.position, f"{a.city}, {a.country}", a.email, a.phone,
+            (a.number, a.full_name, GENDER_SHORT.get(a.gender, "–"), a.organisation, a.position, f"{a.city}, {a.country}", a.email, a.phone,
              bytes(a.signature))
             for a in attendances
         ])
+        pdf.set_font(pdf.family, size=7)
+        pdf.cell(0, 5, pdf.text_of(_("Gender: F = female, H = male, – = prefer not to say")),
+                 new_x="LMARGIN", new_y="NEXT")
     if not pdf.page_no():
         pdf.add_page()
         pdf.heading(event, day)
@@ -134,7 +143,7 @@ def attendance_xlsx(event):
     sheet = workbook.active
     sheet.title = _("Attendance list")[:31]
     headers = [
-        _("Day"), _("No."), _("Full name"), _("Organisation represented"), _("Position / title"),
+        _("Day"), _("No."), _("Full name"), _("Gender"), _("Organisation represented"), _("Position / title"),
         _("Country of origin"), _("City of origin"), _("Email"), _("Phone"), _("Signed at"),
     ]
     sheet.append(headers)
@@ -144,9 +153,9 @@ def attendance_xlsx(event):
     from fieldmonitoring.core.models import ProgrammeConfig
 
     tz = ProgrammeConfig.get().tz
-    for a in event.attendances.all():
+    for a in event.attendances.defer("signature"):
         sheet.append([
-            a.day, a.number, a.full_name, a.organisation, a.position, a.country, a.city, a.email, a.phone,
+            a.day, a.number, a.full_name, a.get_gender_display(), a.organisation, a.position, a.country, a.city, a.email, a.phone,
             timezone.localtime(a.created_at, tz).strftime("%H:%M"),
         ])
     for row in sheet.iter_rows(min_row=2, max_col=1):

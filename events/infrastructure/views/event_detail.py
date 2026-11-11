@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic import TemplateView
 
-from events.attendance import is_signing_day
+from events.attendance import gender_counts, is_signing_day
 from events.infrastructure.forms.event_forms import EventForm, EventPosterForm
 from events.models import Event
 from src.permissions import IsDjangoAdminMixin
@@ -35,8 +35,10 @@ class EventDetailView(LoginRequiredMixin, IsDjangoAdminMixin, TemplateView):
         kwargs["event"] = event
         kwargs["public_url"] = public_url(self.request, event)
         kwargs["signing_day"] = is_signing_day(event)
-        counts = dict(event.attendances.values_list("day").annotate(n=Count("id")))
-        kwargs["days"] = [(day, counts.get(day, 0)) for day in event.days()]
+        genders = {}
+        for day, gender, n in event.attendances.values_list("day", "gender").annotate(n=Count("id")):
+            genders.setdefault(day, []).extend([gender] * n)
+        kwargs["days"] = [(day, gender_counts(genders.get(day, []))) for day in event.days()]
         kwargs["attendances"] = event.attendances.defer("signature")
         kwargs["other_open"] = Event.objects.filter(status=Event.Status.OPEN).exclude(pk=event.pk).first()
         return super().get_context_data(**kwargs)

@@ -52,11 +52,19 @@ class Event(models.Model):
 class Attendance(models.Model):
     """One signature on the list, for one day of the event."""
 
+    class Gender(models.TextChoices):
+        FEMALE = "F", _("Female")
+        MALE = "H", _("Male")
+        UNSAID = "N", _("Prefer not to say")
+
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="attendances")
     day = models.DateField()
     # 1, 2, 3… for each day of the event, in signing order.
     number = models.PositiveIntegerField()
     full_name = models.CharField(max_length=200)
+    # Required on the form; empty on the signatures made before it existed (10-11 Nov 2026),
+    # counted like "prefer not to say".
+    gender = models.CharField(_("Gender"), max_length=1, choices=Gender.choices, blank=True)
     organisation = models.CharField(max_length=200)
     position = models.CharField(max_length=200)
     country = models.CharField(max_length=100)

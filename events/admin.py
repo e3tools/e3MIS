@@ -10,6 +10,6 @@ class EventAdmin(admin.ModelAdmin):
 
 @admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
-    list_display = ("event", "day", "number", "full_name", "organisation")
-    list_filter = ("event", "day")
+    list_display = ("event", "day", "number", "full_name", "gender", "organisation")
+    list_filter = ("event", "day", "gender")
     exclude = ("signature",)

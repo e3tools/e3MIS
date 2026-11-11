@@ -11,6 +11,7 @@ from unittest import mock
 
 import pytest
 from django.urls import reverse
+from django.utils import translation
 from openpyxl import load_workbook
 from PIL import Image, ImageDraw
 
@@ -33,12 +34,20 @@ def signature(blank=False):
 
 def form_data(**overrides):
     data = {
-        "full_name": "BIO Awa Mariam", "organisation": "HCR", "position": "Chargée de protection",
+        "full_name": "BIO Awa Mariam", "gender": "F", "organisation": "HCR", "position": "Chargée de protection",
         "country": "Bénin", "city": "Cotonou", "email": "awa@example.test", "phone": "+229 01 97 11 11 11",
         "signature": signature(), "website": "",
     }
     data.update(overrides)
     return data
+
+
+@pytest.fixture(autouse=True)
+def french():
+    """The French pages (the default): reverse() otherwise follows the language a previous request
+    left active, and the exports are written in the page's language."""
+    with translation.override("fr"):
+        yield
 
 
 @pytest.fixture
@@ -133,6 +142,43 @@ def test_public_list_shows_number_short_name_and_organisation_only(client, event
     assert reverse("events:signature", kwargs={"pk": Attendance.objects.get().pk}) not in page
 
 
+def test_gender_is_required_and_never_public(client, event, on_day):
+    for gender in ("", "X"):
+        response = client.post(url("sign", event), form_data(gender=gender))
+        assert "gender" in response.context["form"].errors
+    assert Attendance.objects.count() == 0
+    client.post(url("sign", event), form_data())
+    assert Attendance.objects.get().gender == "F"
+    page = client.get(url("attendees", event)).content.decode()
+    assert "Femme" not in page and "Genre" not in page
+
+
+def test_gender_counts_treat_the_empty_gender_of_older_signatures_as_not_specified(
+        client, staff_client, event, on_day):
+    client.post(url("sign", event), form_data())
+    client.post(url("sign", event), form_data(full_name="KOFFI Jean", gender="H", email="jean@example.test", phone=""))
+    client.post(url("sign", event), form_data(full_name="Z", gender="N", email="z@example.test", phone=""))
+    # Signed before the field existed (symposium of 10-11 Nov 2026).
+    Attendance.objects.create(
+        event=event, day=DAY_ONE, number=4, full_name="ANCIEN Paul", organisation="O", position="P",
+        country="Bénin", city="Parakou", email="old@example.test",
+        signature=attendance_module.signature_png(signature()),
+    )
+    counts = attendance_module.gender_counts(event.attendances.values_list("gender", flat=True))
+    assert counts == {"F": 1, "H": 1, "N": 2, "total": 4}
+    assert attendance_module.gender_summary(counts) == "4 participants (Femmes : 1, Hommes : 1, non précisé : 2)"
+    assert attendance_module.gender_summary({"F": 1, "H": 0, "N": 0, "total": 1}) == (
+        "1 participant (Femmes : 1, Hommes : 0)")
+    page = staff_client.get(reverse("events:detail", kwargs={"pk": event.pk}))
+    assert page.context["days"][0] == (DAY_ONE, counts)
+    assert "<td>Homme</td>" in page.content.decode()
+    pdf = staff_client.get(reverse("events:file", kwargs={"pk": event.pk, "kind": "pdf"}))
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+    xlsx = staff_client.get(reverse("events:file", kwargs={"pk": event.pk, "kind": "xlsx"}))
+    rows = list(load_workbook(BytesIO(xlsx.content)).active.iter_rows(values_only=True))
+    assert [row[3] for row in rows[1:]] == ["Femme", "Homme", "Ne souhaite pas répondre", None]
+
+
 def test_have_i_signed_by_email_or_phone(client, event, on_day):
     client.post(url("sign", event), form_data())
     assert "N° 1" in client.get(url("check", event, contact="AWA@example.test")).content.decode()
@@ -190,7 +236,7 @@ def test_exports_carry_the_list(staff_client, client, event, on_day):
     assert pdf["Content-Type"] == "application/pdf" and pdf.content.startswith(b"%PDF")
     xlsx = staff_client.get(reverse("events:file", kwargs={"pk": event.pk, "kind": "xlsx"}))
     rows = list(load_workbook(BytesIO(xlsx.content)).active.iter_rows(values_only=True))
-    assert rows[1][1:5] == (1, "BIO Awa Mariam", "HCR", "Chargée de protection")
+    assert rows[1][1:6] == (1, "BIO Awa Mariam", "Femme", "HCR", "Chargée de protection")
     blank = staff_client.get(reverse("events:file", kwargs={"pk": event.pk, "kind": "blank"}))
     assert blank.content.startswith(b"%PDF")
     qr = staff_client.get(reverse("events:file", kwargs={"pk": event.pk, "kind": "qr"}))
