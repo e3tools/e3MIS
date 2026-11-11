@@ -81,8 +81,8 @@ Garder le tag précédent (`v2.2.0`) sur Docker Hub : c’est le retour arrière
 > ```
 >
 > Les genres déjà saisis sont perdus (la colonne est supprimée) : exporter la liste en Excel avant.
-> Pour une version suivante, lister ses migrations avec
-> `git diff --name-only <ancien tag>..<nouveau tag> -- '*/migrations/*'`.
+> Pour une version suivante, lister les migrations ajoutées depuis le commit « use image <ancien tag> » :
+> `git log --oneline --diff-filter=A --name-only <ce commit>..HEAD -- '*/migrations/*'`.
 
 > Ne pas utiliser `postgis/postgis:17-*` pour la base : ces images sont sur Debian bullseye (glibc 2.31),
 > alors que les données de prod ont été créées par `postgres:17.0` sur bookworm (glibc 2.36). Postgres
