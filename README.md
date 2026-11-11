@@ -9,11 +9,14 @@ Suivi Terrain field app and supervision dashboard (`fieldmonitoring/`).
   coordinates) and `/api/v1/forms/` (offline-first forms sync for the app).
 
 ```bash
-docker compose up -d db                     # PostGIS on localhost:5434
-.venv/bin/python manage.py migrate
-.venv/bin/python manage.py runserver        # http://localhost:8000
-.venv/bin/pytest                            # needs the db container
+docker compose up -d                        # PostGIS (localhost:5434) + Django (http://localhost:8000)
+docker compose exec web python manage.py migrate
+docker compose exec web pytest -q
 ```
+
+Without Docker for Django (a venv): install GDAL first (`sudo apt install gdal-bin libgdal-dev`;
+GeoDjango loads it at start-up, pip cannot provide it), `cp .env.example .env`, then
+`docker compose up -d db` and `./manage.py runserver` from the activated venv. See `DEPLOYMENT.md` §1.
 
 Demo data: `manage.py seed_demo`, `seed_demo_forms`, `seed_suivi_chantier` (COSO sub-project forms).
 Read `CLAUDE.md` before changing code (architecture, rules, deployments, gotchas); the workspace

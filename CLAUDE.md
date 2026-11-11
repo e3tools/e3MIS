@@ -179,13 +179,23 @@ Every `jsonForm` / `config_schema` **template** has this shape (a dict, not a li
 
 ## Running locally
 
+Docker (the image has GDAL; code mounted, `runserver` reloads):
+
 ```bash
-uv venv -p 3.12 .venv && uv pip install -p .venv -r requirements-dev.txt   # numpy 2.0 has no 3.13 wheels
-cp .env.example .env                  # SECRET_KEY and DEBUG=True are required locally
-docker compose up -d db               # PostGIS on localhost:5434 (5433 is the old field monitoring DB)
-.venv/bin/python manage.py migrate
-.venv/bin/python manage.py createsuperuser          # asks for email
-.venv/bin/python manage.py runserver
+docker compose up -d                  # PostGIS on localhost:5434 (5433 is the old field monitoring DB) + web on :8000
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser   # asks for email
+```
+
+Or a venv (the local one is `venv/`, Python 3.12; numpy 2.0 has no 3.13 wheels). GeoDjango loads the
+system GDAL library at start-up, so without `sudo apt install gdal-bin libgdal-dev` every
+`manage.py` command fails with "Could not find the GDAL library" (pip cannot provide it):
+
+```bash
+python3.12 -m venv venv && venv/bin/pip install -r requirements-dev.txt
+cp .env.example .env                  # SECRET_KEY, DEBUG=True and DATABASE_URL; no edit to settings.py needed
+docker compose up -d db
+source venv/bin/activate && ./manage.py migrate && ./manage.py runserver
 ```
 
 Settings come from the environment (`SECRET_KEY`, `DEBUG`, `DATABASE_URL`, `ALLOWED_HOSTS`,
@@ -218,9 +228,16 @@ read-only at `/fr/api/v1/` (JWT from `/fr/api/login/` or `MIS-…` API tokens, d
 ## Testing
 
 ```bash
-.venv/bin/pytest                      # tests/ — needs the db container
-.venv/bin/python manage.py makemigrations --check --dry-run
+docker compose run --rm web eval pytest -q       # or `pytest` from the venv; needs the db container
+docker compose run --rm web django makemigrations --check --dry-run
 ```
+
+The image's entrypoint is `run.sh` (`django …` = `manage.py …`, `eval …` = any command); `docker
+compose exec web …` (container already up) bypasses it.
+
+Files Django writes from the container (`makemigrations`, `compilemessages`) belong to root: `chown`
+them back. The image has no `msgfmt`; compile translations on the host with
+`msgfmt -o locale/fr/LC_MESSAGES/django.mo locale/fr/LC_MESSAGES/django.po`.
 
 `tests/conftest.py` has the fixtures (desktop user, field agent in a group with a unit, a form, a
 record, a follow-up). Tests cover every page for both roles, the field agent flows, the API and the
@@ -285,7 +302,7 @@ version when filled). Trackable objects and follow-up events have `schema_versio
 - No view sets `TrackableObjectInstance.administrative_units` (admin only).
 - `/api/v1/` sits inside `i18n_patterns`, so paths are `/fr/api/v1/…`.
 - Several packages lack `__init__.py` (work as namespace packages). `identifier.sqlite` is a stray file.
-- The production Docker image (`prod_config`) needs GDAL/GEOS installed for PostGIS.
+- GDAL/GEOS must be on the machine running Django (the `Dockerfile` installs them; a venv does not).
 
 ## Working rules
 

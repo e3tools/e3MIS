@@ -39,8 +39,8 @@ env.read_env()
 # Production (VM): the real values live in the .env next to docker-compose.yaml on the VM and reach
 # the container through `env_file`. Nothing secret is ever written in this file.
 # Local: `docker compose up` (docker-compose.yml) already sets dev values, see DEPLOYMENT.md.
-# Only when running `./manage.py runserver` straight from a venv without a .env, uncomment the
-# "local only" lines below, and comment them again before committing.
+# From a venv: `cp .env.example .env` (and install GDAL, see DEPLOYMENT.md). Without a .env, the
+# "local only" lines below can be uncommented instead; comment them again before committing.
 
 # SECURITY WARNING: keep the secret key used in production secret! Changing it in production
 # invalidates every issued MIS API token (see API_KEY_CONFIG).

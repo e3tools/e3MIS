@@ -33,9 +33,11 @@ Optionnel : un fichier `.env` à la racine peut contenir `MAPBOX_ACCESS_TOKEN=..
 Le code est monté dans le conteneur : `runserver` recharge à chaque sauvegarde, pas besoin de down/up.
 
 Sans Docker (`./manage.py runserver` depuis un venv) : il faut GDAL sur la machine
-(`sudo apt install gdal-bin libgdal-dev`), la base PostGIS du compose (`docker compose up -d db`),
-et décommenter les lignes `# local only` de `src/settings.py` (à recommenter avant commit).
-SQLite n'est plus possible.
+(`sudo apt install gdal-bin libgdal-dev` ; GeoDjango le charge au démarrage, pip ne peut pas
+l'installer, sinon « Could not find the GDAL library »), la base PostGIS du compose
+(`docker compose up -d db`) et un `.env` copié de `.env.example` (`SECRET_KEY`, `DEBUG`,
+`DATABASE_URL`). Plus besoin de décommenter les lignes `# local only` de `src/settings.py`.
+SQLite n'est plus possible (depuis le passage à PostGIS, 30 sept. 2026).
 
 > Ne pas définir `PROGRAMME_TIMEZONE` en local : c'est la valeur par défaut d'un modèle,
 > `makemigrations` croirait à un changement et créerait une fausse migration.
