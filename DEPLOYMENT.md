@@ -69,6 +69,21 @@ docker push cosobenin/smp-db:17-postgis3
 
 Garder le tag précédent (`v2.2.0`) sur Docker Hub : c’est le retour arrière (remettre ce tag dans `deploy/docker-compose.yaml`, puis `docker compose up -d`).
 
+> **Retour arrière après une migration** : l'ancien code ne connaît pas les colonnes ajoutées par la
+> nouvelle version, et une colonne ajoutée sans valeur par défaut en base fait échouer ses insertions.
+> Avant de remettre l'ancien tag, défaire ces migrations **avec l'image actuelle encore en place**,
+> puis changer le tag. De `v2.3.0` vers `v2.2.0` (champ « Genre » des listes de présence) :
+>
+> ```bash
+> docker compose exec django-app python manage.py migrate events 0001   # supprime la colonne gender
+> # puis remettre v2.2.0 pour django-app et scheduler dans docker-compose.yaml
+> docker compose up -d
+> ```
+>
+> Les genres déjà saisis sont perdus (la colonne est supprimée) : exporter la liste en Excel avant.
+> Pour une version suivante, lister ses migrations avec
+> `git diff --name-only <ancien tag>..<nouveau tag> -- '*/migrations/*'`.
+
 > Ne pas utiliser `postgis/postgis:17-*` pour la base : ces images sont sur Debian bullseye (glibc 2.31),
 > alors que les données de prod ont été créées par `postgres:17.0` sur bookworm (glibc 2.36). Postgres
 > affiche alors `collation version mismatch` et les index sur du texte peuvent devenir incohérents.
