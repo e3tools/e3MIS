@@ -60,14 +60,14 @@ SQLite n'est plus possible (depuis le passage à PostGIS, 30 sept. 2026).
 ### 1.4 Construire et publier l'image
 
 ```bash
-docker build -t cosobenin/smp-app:v2.2.0 .
-docker push cosobenin/smp-app:v2.2.0
+docker build -t cosobenin/smp-app:v2.3.0 .
+docker push cosobenin/smp-app:v2.3.0
 # image de la base (Postgres 17 bookworm + PostGIS), seulement si deploy/db/Dockerfile a changé
 docker build -t cosobenin/smp-db:17-postgis3 deploy/db
 docker push cosobenin/smp-db:17-postgis3
 ```
 
-Garder l'ancien tag `v1.4.3` sur Docker Hub : c'est le retour arrière.
+Garder le tag précédent (`v2.2.0`) sur Docker Hub : c’est le retour arrière (remettre ce tag dans `deploy/docker-compose.yaml`, puis `docker compose up -d`).
 
 > Ne pas utiliser `postgis/postgis:17-*` pour la base : ces images sont sur Debian bullseye (glibc 2.31),
 > alors que les données de prod ont été créées par `postgres:17.0` sur bookworm (glibc 2.36). Postgres

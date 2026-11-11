@@ -62,3 +62,8 @@ pro-env.txt
 .env.*
 !.env.example
 guide_evenements.pdf
+DEPLOY_SERVER.md
+TODO_*.md
+# local Excel files (agent lists, filled templates): none is part of the code
+*.xlsx
+*.sqlite
