@@ -36,7 +36,8 @@ def qr_png(url):
 
 def _headers():
     return [
-        _("No."), _("Full name"), _("Gender"), _("Organisation represented"), _("Position / title"), _("Origin (city, country)"),
+        _("No."), _("Full name"), _("Gender"), _("Organisation represented"), _("Position / title"),
+        _("Origin (city, country)"),
         _("Email"), _("Phone"), _("Signature"),
     ]
 
@@ -102,7 +103,8 @@ def attendance_pdf(event, day=None):
         summary = gender_summary(gender_counts(a.gender for a in attendances)) if attendances else ""
         pdf.heading(event, current, summary)
         pdf.table_of([
-            (a.number, a.full_name, GENDER_SHORT.get(a.gender, "–"), a.organisation, a.position, f"{a.city}, {a.country}", a.email, a.phone,
+            (a.number, a.full_name, GENDER_SHORT.get(a.gender, "–"), a.organisation, a.position,
+             f"{a.city}, {a.country}", a.email, a.phone,
              bytes(a.signature))
             for a in attendances
         ])
@@ -155,7 +157,8 @@ def attendance_xlsx(event):
     tz = ProgrammeConfig.get().tz
     for a in event.attendances.defer("signature"):
         sheet.append([
-            a.day, a.number, a.full_name, a.get_gender_display(), a.organisation, a.position, a.country, a.city, a.email, a.phone,
+            a.day, a.number, a.full_name, a.get_gender_display(), a.organisation, a.position, a.country, a.city,
+            a.email, a.phone,
             timezone.localtime(a.created_at, tz).strftime("%H:%M"),
         ])
     for row in sheet.iter_rows(min_row=2, max_col=1):
