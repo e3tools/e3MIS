@@ -358,11 +358,6 @@ msgstr "Un compte existe déjà avec cet e-mail."
 
 #: authorization/agent_import/importer.py
 #, python-format
-msgid "Also on row %(row)s of this sheet."
-msgstr "Aussi à la ligne %(row)s de cette feuille."
-
-#: authorization/agent_import/importer.py
-#, python-format
 msgid "\"%(value)s\" is not a role from the list."
 msgstr "« %(value)s » n’est pas un rôle de la liste."
 
@@ -370,11 +365,6 @@ msgstr "« %(value)s » n’est pas un rôle de la liste."
 #, python-format
 msgid "\"%(value)s\" is not an existing group."
 msgstr "« %(value)s » n’est pas un groupe existant."
-
-#: authorization/agent_import/importer.py
-#, python-format
-msgid "%(email)s: %(message)s"
-msgstr "%(email)s : %(message)s"
 
 #: authorization/agent_import/importer.py
 #, python-format
@@ -422,15 +412,6 @@ msgstr ""
 "dans plusieurs fichiers."
 
 #: authorization/agent_import/reader.py
-#, python-format
-msgid "\"%(email)s\" is not in the Agents sheet."
-msgstr "« %(email)s » n’est pas dans la feuille Agents."
-
-#: authorization/agent_import/reader.py
-msgid "No unit: pick at least the first level."
-msgstr "Aucune unité : choisissez au moins le premier niveau."
-
-#: authorization/agent_import/reader.py
 msgid ""
 "Empty, while a level to its right is filled: pick the units from left to "
 "right."
@@ -466,10 +447,6 @@ msgstr "Téléphone"
 msgid "Group"
 msgstr "Groupe"
 
-#: authorization/agent_import/sheets.py
-msgid "Agent's email"
-msgstr "E-mail de l'agent"
-
 #: authorization/agent_import/template.py
 msgid "Value not in the list"
 msgstr "Valeur hors de la liste"
@@ -481,10 +458,6 @@ msgstr "Choisissez une valeur dans la liste déroulante."
 #: authorization/agent_import/template.py
 msgid "Only when the commune has several SCs."
 msgstr "Seulement quand la commune a plusieurs SC."
-
-#: authorization/agent_import/template.py
-msgid "An email from the Agents sheet."
-msgstr "Un e-mail de la feuille Agents."
 
 #: authorization/agent_import/template.py
 msgid "Create field agents from this file"
@@ -511,11 +484,6 @@ msgstr ""
 msgid "Do not rename the sheets or the columns, and do not add columns."
 msgstr ""
 "Ne renommez pas les feuilles ni les colonnes, et n’ajoutez pas de colonnes."
-
-#: authorization/agent_import/template.py
-#, python-format
-msgid "Agents sheet: one row per agent (at most %(max)s)."
-msgstr "Feuille Agents : une ligne par agent (au plus %(max)s)."
 
 #: authorization/agent_import/template.py
 msgid ""
@@ -550,22 +518,6 @@ msgstr ""
 "SC. Un SC créé dans ce fichier peut être saisi par son e-mail."
 
 #: authorization/agent_import/template.py
-msgid "Assignments sheet: one row per agent and administrative unit."
-msgstr ""
-"Feuille Affectations : une ligne par agent et par unité administrative."
-
-#: authorization/agent_import/template.py
-#, python-format
-msgid ""
-"Pick the agent's email, then the units from left to right (%(levels)s); each "
-"list only shows the units inside the one on its left. Stop at the level you "
-"need:"
-msgstr ""
-"Choisissez l’e-mail de l’agent, puis les unités de gauche à droite "
-"(%(levels)s) ; chaque liste ne montre que les unités contenues dans celle de "
-"gauche. Arrêtez-vous au niveau voulu :"
-
-#: authorization/agent_import/template.py
 msgid "- community facilitator: one row per village;"
 msgstr "- facilitateur communautaire : une ligne par village ;"
 
@@ -574,29 +526,12 @@ msgid "- technical facilitator and communal supervisor: their commune;"
 msgstr "- facilitateur technique et superviseur communal : sa commune ;"
 
 #: authorization/agent_import/template.py
-msgid "- regional specialist: their department; national specialist: no row."
-msgstr ""
-"- spécialiste régional : son département ; spécialiste national : aucune "
-"ligne."
-
-#: authorization/agent_import/template.py
 msgid ""
 "The commune with most of an agent's units is their commune, and gives their "
 "supervisor."
 msgstr ""
 "La commune qui contient le plus d’unités de l’agent devient sa commune, et "
 "donne son superviseur."
-
-#: authorization/agent_import/template.py
-msgid ""
-"Upload the file on the import page. Nothing is created until every row is "
-"correct: the page lists the errors with their sheet, row and column. Then it "
-"asks for one password, used by all the new accounts."
-msgstr ""
-"Envoyez le fichier sur la page d’import. Rien n’est créé tant que toutes les "
-"lignes ne sont pas correctes : la page liste les erreurs avec leur feuille, "
-"leur ligne et leur colonne. Elle demande ensuite un mot de passe, utilisé "
-"par tous les nouveaux comptes."
 
 #: authorization/infrastructure/forms/field_agent_import_form.py
 msgid "Completed template (.xlsx)"
@@ -1306,3 +1241,104 @@ msgstr "non précisé : %(n)d"
 
 msgid "Gender: F = female, H = male, – = prefer not to say"
 msgstr "Genre : F = femme, H = homme, – = ne souhaite pas répondre"
+
+#: authorization/agent_import/reader.py
+msgid "This is the former template, with a separate Assignments sheet. Download the new template from this page: each agent and their units now go on the Agents sheet."
+msgstr "C’est l’ancien modèle, avec une feuille Affectations à part. Téléchargez le nouveau modèle depuis cette page : chaque agent et ses unités vont maintenant sur la feuille Agents."
+
+#: authorization/agent_import/reader.py
+msgid "No agent above this row: fill in the agent's first name, last name and email on their first row."
+msgstr "Aucun agent au-dessus de cette ligne : renseignez le prénom, le nom et l’e-mail de l’agent sur sa première ligne."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid "The row above is empty, so this row cannot be given to the agent of row %(row)s. Remove the empty row, or fill in the agent if it is another one."
+msgstr "La ligne au-dessus est vide : cette ligne ne peut pas être attribuée à l’agent de la ligne %(row)s. Supprimez la ligne vide, ou renseignez l’agent s’il s’agit d’un autre."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid "Differs from row %(row)s, the first row of this agent (\"%(value)s\"). On the rows of their other units, leave the agent cells empty or repeat the same values; another agent needs their own email."
+msgstr "Diffère de la ligne %(row)s, la première ligne de cet agent (« %(value)s »). Sur les lignes de ses autres unités, laissez les cellules de l’agent vides ou répétez les mêmes valeurs ; un autre agent a besoin de son propre e-mail."
+
+#: authorization/agent_import/reader.py
+#, python-format
+msgid "Empty on row %(row)s, the first row of this agent: fill in the agent's details on their first row."
+msgstr "Vide à la ligne %(row)s, la première ligne de cet agent : renseignez l’agent sur sa première ligne."
+
+#: authorization/agent_import/reader.py
+msgid "Required. On the rows of an agent's other units, leave all the agent cells empty."
+msgstr "Obligatoire. Sur les lignes des autres unités d’un agent, laissez toutes les cellules de l’agent vides."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "This agent already starts on row %(row)s: put all their units in one block under that row (agent cells left empty), or give this other agent their own email."
+msgstr "Cet agent commence déjà à la ligne %(row)s : mettez toutes ses unités dans un seul bloc sous cette ligne (cellules de l’agent vides), ou donnez à cet autre agent son propre e-mail."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "Same unit as row %(row)s: this agent has it once."
+msgstr "Même unité qu’à la ligne %(row)s : cet agent ne l’a qu’une fois."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(name)s\" is inside %(other)s, already given on row %(row)s: keep only one of the two rows."
+msgstr "« %(name)s » est dans %(other)s, déjà donné(e) à la ligne %(row)s : gardez une seule des deux lignes."
+
+#: authorization/agent_import/importer.py
+#, python-format
+msgid "\"%(name)s\" contains %(other)s, already given on row %(row)s: keep only one of the two rows."
+msgstr "« %(name)s » contient %(other)s, déjà donné(e) à la ligne %(row)s : gardez une seule des deux lignes."
+
+#: authorization/agent_import/template.py
+#, python-format
+msgid "Agents sheet: one row per agent and administrative unit (at most %(max)s agents)."
+msgstr "Feuille Agents : une ligne par agent et par unité administrative (%(max)s agents au plus)."
+
+#: authorization/agent_import/template.py
+msgid "The agent's details go on their first row only. On the rows of their other units, leave the agent cells (first name to supervisor) empty: they turn grey. A new agent starts at the next row with details. Keep each agent's rows together, without empty rows, and do not sort the sheet."
+msgstr "Les informations de l’agent vont sur sa première ligne seulement. Sur les lignes de ses autres unités, laissez les cellules de l’agent (du prénom au superviseur) vides : elles deviennent grises. Un nouvel agent commence à la ligne suivante qui a des informations. Gardez les lignes d’un agent ensemble, sans ligne vide, et ne triez pas la feuille."
+
+#: authorization/agent_import/template.py
+msgid "To save typing, select the level cells of the row above and press Ctrl+D (copy down), then change only the last level."
+msgstr "Pour gagner du temps, sélectionnez les cellules des niveaux de la ligne du dessus et faites Ctrl+D (recopier vers le bas), puis changez seulement le dernier niveau."
+
+#: authorization/agent_import/template.py
+#, python-format
+msgid "Units: pick them from left to right (%(levels)s); each list only shows the units inside the one on its left. Stop at the level you need:"
+msgstr "Unités : choisissez-les de gauche à droite (%(levels)s) ; chaque liste ne montre que les unités contenues dans celle de gauche. Arrêtez-vous au niveau voulu :"
+
+#: authorization/agent_import/template.py
+msgid "- regional specialist: their department; national specialist: no unit."
+msgstr "- spécialiste régional : son département ; spécialiste national : aucune unité."
+
+#: authorization/agent_import/template.py
+msgid "Upload the file on the import page. Nothing is created until every row is correct: the page lists the errors with their row and column. Then it asks for one password, used by all the new accounts."
+msgstr "Envoyez le fichier sur la page d’import. Rien n’est créé tant que toutes les lignes ne sont pas correctes : la page liste les erreurs avec leur ligne et leur colonne. Elle demande ensuite un mot de passe, utilisé par tous les nouveaux comptes."
+
+#: authorization/agent_import/template.py
+msgid "Example"
+msgstr "Exemple"
+
+#: authorization/agent_import/template.py
+msgid "Comment"
+msgstr "Commentaire"
+
+#: authorization/agent_import/template.py
+msgid "First row of the agent: their details and their first unit."
+msgstr "Première ligne de l’agent : ses informations et sa première unité."
+
+#: authorization/agent_import/template.py
+msgid "Another unit of the same agent: leave the agent cells empty."
+msgstr "Une autre unité du même agent : laissez les cellules de l’agent vides."
+
+#: authorization/agent_import/template.py
+msgid "Another unit elsewhere (another arrondissement or commune): pick its levels again from the left."
+msgstr "Une unité ailleurs (autre arrondissement ou commune) : choisissez à nouveau ses niveaux depuis la gauche."
+
+#: authorization/agent_import/template.py
+msgid "A new agent starts at the next row with details. A communal supervisor stops at the commune."
+msgstr "Un nouvel agent commence à la ligne suivante qui a des informations. Un superviseur communal s’arrête à la commune."
+
+#: authorization/agent_import/template.py
+msgid "A national specialist has no unit: one row, levels empty."
+msgstr "Un spécialiste national n’a pas d’unité : une ligne, niveaux vides."

@@ -1,8 +1,9 @@
 """The Excel template, built from the database on each download (new groups, units and SCs appear
 at once).
 
-Sheets: Instructions, Agents (one row per agent), Assignments (one row per agent and unit, levels
-picked left to right) and the hidden Lists sheet behind the drop-down lists.
+Sheets: Instructions (with a worked example), Agents (one row per agent and unit: the agent's
+details on their first row, empty on the rows of their other units; levels picked left to right)
+and the hidden Lists sheet behind the drop-down lists.
 
 Each level's list holds the children of the units picked to its left. Unit names are only unique
 under their parent (and some carry accents or apostrophes, which rules out named ranges), so Lists
@@ -12,28 +13,35 @@ OFFSET/VLOOKUP. This works in Excel and LibreOffice, not in Google Sheets (no fo
 source).
 """
 from io import BytesIO
+from math import ceil
 
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.formatting.rule import FormulaRule
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
 from authorization.agent_import.sheets import (
-    AGENT_COLUMNS, AGENT_EMAIL_HEADER, AGENTS_SHEET, ASSIGNMENT_ROWS, ASSIGNMENTS_SHEET, INSTRUCTIONS_SHEET,
-    LISTS_SHEET, MAX_AGENTS,
+    AGENT_COLUMNS, AGENTS_SHEET, INSTRUCTIONS_SHEET, LISTS_SHEET, MAX_AGENTS, MAX_ROWS,
 )
 from authorization.infrastructure.forms.create_field_agent_form import FIELD_AGENT_ROLES
 from authorization.models import CustomUser, Role
-from utils.xlsx_layout import fit_columns, wrap_column
+from fieldmonitoring.core.models import ProgrammeConfig
+from utils.xlsx_layout import LINE_HEIGHT, fit_columns
 
 PATH_SEPARATOR = "|"
 HEADER_FONT = Font(bold=True)
 HEADER_FILL = PatternFill("solid", fgColor="DDEBF7")
 REQUIRED_FILL = PatternFill("solid", fgColor="FCE4D6")
+# Agent cells left empty on the rows of an agent's other units; a line above each new agent.
+FOLLOW_FILL = PatternFill("solid", fgColor="F2F2F2", bgColor="F2F2F2")
+NEW_AGENT_BORDER = Border(top=Side(style="medium", color="808080"))
+# Width of the Instructions text, in Excel's width unit (about one character).
+TEXT_WIDTH = 100
 
 # Columns of the Lists sheet.
 ROLES_COL, GROUPS_COL, SUPERVISORS_COL, ROOTS_COL = "A", "B", "C", "D"
@@ -72,14 +80,12 @@ def build_template():
     instructions = workbook.active
     instructions.title = str(INSTRUCTIONS_SHEET)
     agents = workbook.create_sheet(str(AGENTS_SHEET))
-    assignments = workbook.create_sheet(str(ASSIGNMENTS_SHEET))
     lists = workbook.create_sheet(LISTS_SHEET)
     lists.sheet_state = "hidden"
 
     levels = list(AdministrativeLevel.objects.order_by("order"))
     ranges, values = _fill_lists(lists)
-    _fill_agents(agents, ranges, values)
-    _fill_assignments(assignments, levels, ranges)
+    _fill_agents(agents, levels, ranges, values)
     _fill_instructions(instructions, levels)
 
     out = BytesIO()
@@ -149,11 +155,12 @@ def _list_validation(sheet, formula, cells, prompt=None):
     validation.add(cells)
 
 
-def _fill_agents(sheet, ranges, values):
-    headers = [str(header) for _key, header, _required in AGENT_COLUMNS]
+def _fill_agents(sheet, levels, ranges, values):
+    """Agent columns, then one column per level (the cascade), on the same row."""
+    headers = [str(header) for _key, header, _required in AGENT_COLUMNS] + [level.name for level in levels]
     required = {col for col, (_key, _header, req) in enumerate(AGENT_COLUMNS, start=1) if req}
     _header(sheet, headers, required)
-    last = MAX_AGENTS + 1
+    last = MAX_ROWS + 1
     for col, (key, _header_text, _required) in enumerate(AGENT_COLUMNS, start=1):
         letter = get_column_letter(col)
         if key in ("email", "phone_number"):
@@ -164,43 +171,95 @@ def _fill_agents(sheet, ranges, values):
         if source and ranges[source]:
             prompt = _("Only when the commune has several SCs.") if key == "supervisor" else None
             _list_validation(sheet, ranges[source], f"{letter}2:{letter}{last}", prompt)
-    # Wide enough for the longest choice of each list, so a picked value shows in full.
-    lists = {"role": values["roles"], "group": values["groups"], "supervisor": values["supervisors"]}
-    fit_columns(sheet, {
-        col: [header, *lists.get(key, [])]
-        for col, (key, header, _required) in enumerate(AGENT_COLUMNS, start=1) if key in lists
-    }, minimum=18)
-    sheet.column_dimensions["C"].width = 32
 
-
-def _fill_assignments(sheet, levels, ranges):
-    _header(sheet, [str(AGENT_EMAIL_HEADER)] + [level.name for level in levels], required={1})
-    names = {}
-    for level_id, name in AdministrativeUnit.objects.values_list("level_id", "name"):
-        names.setdefault(level_id, []).append(name)
-    fit_columns(sheet, {
-        col: [level.name, *names.get(level.id, [])] for col, level in enumerate(levels, start=2)
-    }, minimum=18)
-    sheet.column_dimensions["A"].width = 32
-    last = ASSIGNMENT_ROWS + 1
-    _list_validation(
-        sheet, f"'{AGENTS_SHEET}'!$C$2:$C${MAX_AGENTS + 1}", f"A2:A{last}",
-        _("An email from the Agents sheet."),
-    )
+    first_level = len(AGENT_COLUMNS) + 1
     for index, _level in enumerate(levels):
-        letter = get_column_letter(index + 2)
+        letter = get_column_letter(first_level + index)
         if index == 0:
             if ranges["roots"]:
                 _list_validation(sheet, ranges["roots"], f"{letter}2:{letter}{last}")
             continue
-        # The path of the units to the left, e.g. $B2&"|"&$C2 (relative row: Excel moves it down).
-        key = f'&"{PATH_SEPARATOR}"&'.join(f"${get_column_letter(col)}2" for col in range(2, index + 2))
+        # The path of the units to the left, e.g. $H2&"|"&$I2 (relative row: Excel moves it down).
+        key = f'&"{PATH_SEPARATOR}"&'.join(
+            f"${get_column_letter(col)}2" for col in range(first_level, first_level + index)
+        )
         index_range = f"{LISTS_SHEET}!${INDEX_KEY_COL}:${INDEX_COUNT_COL}"
         formula = (
             f"OFFSET({LISTS_SHEET}!${CHILD_COL}$1,VLOOKUP({key},{index_range},2,0)-1,0,"
             f"VLOOKUP({key},{index_range},3,0),1)"
         )
         _list_validation(sheet, formula, f"{letter}2:{letter}{last}")
+
+    # Show the blocks: agent cells greyed on the rows of their other units, a line above each agent.
+    agent_cells = f"$A2:${get_column_letter(len(AGENT_COLUMNS))}2"
+    last_letter = get_column_letter(len(headers))
+    if levels:
+        unit_cells = f"${get_column_letter(first_level)}2:${last_letter}2"
+        sheet.conditional_formatting.add(
+            f"A2:{get_column_letter(len(AGENT_COLUMNS))}{last}",
+            FormulaRule(formula=[f"AND(COUNTA({agent_cells})=0,COUNTA({unit_cells})>0)"], fill=FOLLOW_FILL),
+        )
+    sheet.conditional_formatting.add(
+        f"A3:{last_letter}{last}", FormulaRule(formula=[f"COUNTA({agent_cells.replace('2', '3')})>0"],
+                                               border=NEW_AGENT_BORDER),
+    )
+
+    # Wide enough for the longest choice of each list, so a picked value shows in full.
+    lists = {"role": values["roles"], "group": values["groups"], "supervisor": values["supervisors"]}
+    widths = {
+        col: [header, *lists.get(key, [])]
+        for col, (key, header, _required) in enumerate(AGENT_COLUMNS, start=1) if key in lists
+    }
+    names = {}
+    for level_id, name in AdministrativeUnit.objects.values_list("level_id", "name"):
+        names.setdefault(level_id, []).append(name)
+    widths.update({col: [level.name, *names.get(level.id, [])] for col, level in enumerate(levels, start=first_level)})
+    fit_columns(sheet, widths, minimum=18)
+    sheet.column_dimensions["C"].width = 32
+
+
+def _example(levels):
+    """Rows of the worked example: (agent cells, unit path, comment). Real units when the tree has
+    them, so the example matches the lists; made-up names otherwise."""
+    paths, _children = unit_paths()
+    depth = len(levels)
+    leaves = sorted(
+        (path for path in paths.values() if len(path) == depth), key=lambda path: [name.casefold() for name in path]
+    )
+    by_parent = {}
+    for path in leaves:
+        by_parent.setdefault(tuple(path[:-1]), []).append(path)
+    group = next((group for group in by_parent.values() if len(group) >= 2), None)
+    if depth >= 2 and group:
+        first, second = group[0], group[1]
+        third = next((path for path in leaves if path[:-1] != first[:-1] and path[:-2] == first[:-2]), None)
+    else:
+        made_up = [f"{level.name} A" for level in levels]
+        first = made_up
+        second = made_up[:-1] + [f"{levels[-1].name} B"] if levels else []
+        third = None
+    config = ProgrammeConfig.get()
+    commune_depth = next(
+        (i + 1 for i, level in enumerate(levels) if level.pk == config.commune_level_id), min(2, depth)
+    )
+
+    awa = ["Awa", "BIO", "awa.bio@example.org", "0197000001", Role.FC.label, "", ""]
+    koffi = ["Koffi", "SARE", "koffi.sare@example.org", "", Role.SC.label, "", ""]
+    ina = ["Ina", "DOSSOU", "ina.dossou@example.org", "", Role.NATIONAL_SPECIALIST.label, "", ""]
+    empty = [""] * len(AGENT_COLUMNS)
+    rows = [
+        (awa, first, _("First row of the agent: their details and their first unit.")),
+        (empty, second, _("Another unit of the same agent: leave the agent cells empty.")),
+    ]
+    if third:
+        rows.append((empty, third, _("Another unit elsewhere (another arrondissement or commune): pick its levels "
+                                     "again from the left.")))
+    rows += [
+        (koffi, first[:commune_depth], _("A new agent starts at the next row with details. A communal supervisor "
+                                         "stops at the commune.")),
+        (ina, [], _("A national specialist has no unit: one row, levels empty.")),
+    ]
+    return rows
 
 
 def _fill_instructions(sheet, levels):
@@ -214,28 +273,72 @@ def _fill_instructions(sheet, levels):
            "the drop-down lists."), True),
         (_("Do not rename the sheets or the columns, and do not add columns."), False),
         ("", False),
-        (_("Agents sheet: one row per agent (at most %(max)s).") % {"max": MAX_AGENTS}, True),
+        (_("Agents sheet: one row per agent and administrative unit (at most %(max)s agents).") % {"max": MAX_AGENTS},
+         True),
+        (_("The agent's details go on their first row only. On the rows of their other units, leave the agent "
+           "cells (first name to supervisor) empty: they turn grey. A new agent starts at the next row with "
+           "details. Keep each agent's rows together, without empty rows, and do not sort the sheet."), False),
+        (_("To save typing, select the level cells of the row above and press Ctrl+D (copy down), then change "
+           "only the last level."), False),
         (_("First name, last name and email are required (orange columns). The email is the sign-in name and "
            "must not belong to an existing account."), False),
         (_("Role: pick it from the list. It can stay empty when the group has a default role."), False),
         (_("Group: one group per agent; it decides which forms the agent sees."), False),
         (_("Supervisor: leave it empty. The SC of the agent's commune is found automatically; pick one only "
            "when that commune has several SCs. An SC created in this file can be typed by their email."), False),
-        ("", False),
-        (_("Assignments sheet: one row per agent and administrative unit."), True),
-        (_("Pick the agent's email, then the units from left to right (%(levels)s); each list only shows "
-           "the units inside the one on its left. Stop at the level you need:") % {"levels": level_names}, False),
+        (_("Units: pick them from left to right (%(levels)s); each list only shows the units inside the one on "
+           "its left. Stop at the level you need:") % {"levels": level_names}, False),
         (_("- community facilitator: one row per village;"), False),
         (_("- technical facilitator and communal supervisor: their commune;"), False),
-        (_("- regional specialist: their department; national specialist: no row."), False),
+        (_("- regional specialist: their department; national specialist: no unit."), False),
         (_("The commune with most of an agent's units is their commune, and gives their supervisor."), False),
         ("", False),
         (_("Upload the file on the import page. Nothing is created until every row is correct: the page lists "
-           "the errors with their sheet, row and column. Then it asks for one password, used by all the new "
+           "the errors with their row and column. Then it asks for one password, used by all the new "
            "accounts."), False),
+        ("", False),
+        (_("Example"), True),
     ]
-    for row, (text, bold) in enumerate(lines, start=1):
-        cell = sheet.cell(row=row, column=1, value=text)
+    headers = [str(header) for _key, header, _required in AGENT_COLUMNS] + [level.name for level in levels]
+    example = _example(levels)
+    comment_col = len(headers) + 1
+    widths = {col: [header] for col, header in enumerate(headers, start=1)}
+    for details, path, _comment in example:
+        for col, value in enumerate(details + path, start=1):
+            widths[col].append(value)
+    fit_columns(sheet, widths, minimum=10, maximum=30)
+    sheet.column_dimensions[get_column_letter(comment_col)].width = 60
+    # The text spans the first columns of the example, about 100 characters wide (merged cells), wrapped.
+    text_cols, text_width = 0, 0
+    while text_cols < comment_col and text_width < TEXT_WIDTH:
+        text_cols += 1
+        text_width += sheet.column_dimensions[get_column_letter(text_cols)].width
+    last_letter = get_column_letter(text_cols)
+    for row, (line, bold) in enumerate(lines, start=1):
+        cell = sheet.cell(row=row, column=1, value=line)
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
         if bold:
             cell.font = HEADER_FONT
-    wrap_column(sheet, "A", 100)
+        sheet.merge_cells(f"A{row}:{last_letter}{row}")
+        # A character is a little narrower than the width unit on average: this errs towards room.
+        sheet.row_dimensions[row].height = LINE_HEIGHT * max(1, ceil(len(line) * 1.1 / text_width))
+
+    top = len(lines) + 1
+    for col, header in enumerate(headers + [_("Comment")], start=1):
+        cell = sheet.cell(row=top, column=col, value=header)
+        cell.font = HEADER_FONT
+        cell.fill = REQUIRED_FILL if col in (1, 2, 3) else HEADER_FILL
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+    for offset, (details, path, comment) in enumerate(example, start=1):
+        row = top + offset
+        follows = not any(details)
+        for col in range(1, comment_col + 1):
+            value = (details + path + [""] * len(levels))[col - 1] if col < comment_col else comment
+            cell = sheet.cell(row=row, column=col, value=value or None)
+            cell.alignment = Alignment(wrap_text=True, vertical="top")
+            if follows and col <= len(AGENT_COLUMNS):
+                cell.fill = FOLLOW_FILL
+            if not follows and offset > 1:
+                cell.border = NEW_AGENT_BORDER
+        sheet.cell(row=row, column=comment_col).font = Font(italic=True)
+        sheet.row_dimensions[row].height = LINE_HEIGHT * max(1, ceil(len(comment) / 60))

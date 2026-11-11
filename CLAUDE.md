@@ -258,10 +258,16 @@ under a non-interactive shell): write that migration by hand with `preserve_defa
 ## Field agent import (`authorization/agent_import/`)
 
 "Import from Excel" on the field-agents page (`is_staff` only; on `mis-monitoring-prod`, Nov 2026).
-`template.py` builds the .xlsx on each download: Agents (one row per agent, role/group/SC lists),
-Assignments (one row per agent and unit, one column per level) and a hidden Lists sheet. The level
-lists cascade with OFFSET/VLOOKUP on the parent's path (names joined by `|`): Excel and LibreOffice,
-not Google Sheets. `reader.py` reads it back (headers in fr or en); `importer.py` runs every agent
+`template.py` builds the .xlsx on each download: Instructions (with a worked example from the real
+tree), Agents (one row per agent and unit: role/group/SC lists, then one column per level) and a
+hidden Lists sheet. The agent's details go on their first row; rows below with the agent cells empty
+add units to them (greyed by conditional formatting); a row with details starts a new agent unless it
+repeats the agent above (same email, or no email and equal values; a differing value is an error).
+The two-sheet template of early Nov 2026 is refused. The level lists cascade with OFFSET/VLOOKUP on
+the parent's path (names joined by `|`): Excel and LibreOffice, not Google Sheets. `reader.py` reads
+it back (headers in fr or en, merged cells spread over their rows) and checks the grouping (unit rows
+need their agent right above, no empty row in between); `importer.py` also refuses a unit given twice
+to an agent or inside another of their units, and an agent split into two blocks. It runs every agent
 through `CreateFieldAgentForm` inside one transaction, SCs first, so rules stay the page's: the
 check is the same run rolled back. One group per agent, creation only, at most 200 agents
 (~12 s), all or none. The shared password is asked after the check and hashed once for the file.

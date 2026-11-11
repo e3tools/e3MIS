@@ -15,12 +15,10 @@ from django.http import QueryDict
 from django.utils.translation import gettext as _
 
 from administrativelevels.models import AdministrativeLevel, AdministrativeUnit
-from authorization.agent_import.reader import problem, sort_problems
-from authorization.agent_import.sheets import (
-    AGENT_COLUMNS, AGENT_EMAIL_HEADER, AGENTS_SHEET, ASSIGNMENTS_SHEET, agent_header,
-)
+from authorization.agent_import.reader import problem, role_code, sort_problems, supervisor_email
+from authorization.agent_import.sheets import AGENT_COLUMNS, AGENTS_SHEET, agent_header
 from authorization.agent_import.template import supervisor_label
-from authorization.infrastructure.forms.create_field_agent_form import FIELD_AGENT_ROLES, CreateFieldAgentForm
+from authorization.infrastructure.forms.create_field_agent_form import CreateFieldAgentForm
 from authorization.models import CustomUser, GroupRole, Role
 
 # Form fields shown in the Agents sheet (the others land on the units or the whole file).
@@ -58,6 +56,13 @@ class Units:
         for pk, name, parent_id in AdministrativeUnit.objects.values_list("pk", "name", "parent_id"):
             self.by_parent[(parent_id, name.casefold())] = pk
         self.names = dict(AdministrativeUnit.objects.values_list("pk", "name"))
+        self.parents = {pk: parent_id for (parent_id, _name), pk in self.by_parent.items()}
+
+    def ancestors(self, pk):
+        found = set()
+        while (pk := self.parents.get(pk)) is not None and pk not in found:
+            found.add(pk)
+        return found
 
     def resolve(self, path):
         """``(unit id, None)`` or ``(None, (column, message))``."""
@@ -74,21 +79,6 @@ class Units:
                 return None, (level, message)
             parent = pk
         return parent, None
-
-
-def _role(value):
-    """The role code for a label or code from the file; "" when empty; None when unknown."""
-    if not value:
-        return ""
-    folded = value.casefold()
-    return next((role.value for role in FIELD_AGENT_ROLES if folded in (role.value, role.label.casefold())), None)
-
-
-def _supervisor_email(value):
-    """The email in "Name (email)" as the list shows SCs, or the value itself."""
-    if value.endswith(")") and "(" in value:
-        return value[value.rindex("(") + 1:-1].strip()
-    return value
 
 
 def _check(agents):
@@ -116,10 +106,13 @@ def _check(agents):
             if key in existing:
                 fail(agent_header("email"), _("An account with this email already exists."))
             elif key in seen:
-                fail(agent_header("email"), _("Also on row %(row)s of this sheet.") % {"row": seen[key]})
+                fail(agent_header("email"), _(
+                    "This agent already starts on row %(row)s: put all their units in one block under that "
+                    "row (agent cells left empty), or give this other agent their own email."
+                ) % {"row": seen[key]})
             seen.setdefault(key, row)
 
-        role = _role(agent["role"])
+        role = role_code(agent["role"])
         if role is None:
             fail(agent_header("role"), _('"%(value)s" is not a role from the list.') % {"value": agent["role"]})
         group_id = None
@@ -128,13 +121,24 @@ def _check(agents):
             if group_id is None:
                 fail(agent_header("group"), _('"%(value)s" is not an existing group.') % {"value": agent["group"]})
 
-        unit_ids = []
+        unit_ids, unit_rows = [], {}
         for unit in agent["units"]:
             pk, error = units.resolve(unit["path"])
             if error:
-                fail(error[0], error[1], sheet=str(ASSIGNMENTS_SHEET), row=unit["row"])
-            elif pk not in unit_ids:
-                unit_ids.append(pk)
+                fail(error[0], error[1], row=unit["row"])
+                continue
+            column = units.levels[len(unit["path"]) - 1].name
+            if pk in unit_rows:
+                # Often a row copied down (Ctrl+D) whose village was not changed.
+                fail(column, _("Same unit as row %(row)s: this agent has it once.") % {"row": unit_rows[pk]},
+                     row=unit["row"])
+                continue
+            overlap = _overlap(units, pk, unit_rows)
+            if overlap:
+                fail(column, overlap, row=unit["row"])
+                continue
+            unit_rows[pk] = unit["row"]
+            unit_ids.append(pk)
 
         if agent.get("invalid_units") or any(not agent[key] for key, _header, required in AGENT_COLUMNS if required):
             failed = True  # already reported by the reader
@@ -147,21 +151,31 @@ def _check(agents):
                 "first_name": agent["first_name"], "last_name": agent["last_name"], "email": email,
                 "phone_number": agent["phone_number"], "role": role or "",
                 "groups": [group_id] if group_id else [], "administrative_units": unit_ids,
-                "supervisor": _supervisor_email(agent["supervisor"]),
+                "supervisor": supervisor_email(agent["supervisor"]),
             },
         })
     return prepared, errors
 
 
-def _form_errors(agent, form):
+def _overlap(units, pk, unit_rows):
+    """The error when the agent already has a unit inside this one, or the unit containing it."""
+    above = units.ancestors(pk)
+    for other, row in unit_rows.items():
+        if other in above:
+            return _('"%(name)s" is inside %(other)s, already given on row %(row)s: keep only one of the two '
+                     "rows.") % {"name": units.names[pk], "other": units.names[other], "row": row}
+        if pk in units.ancestors(other):
+            return _('"%(name)s" contains %(other)s, already given on row %(row)s: keep only one of the two '
+                     "rows.") % {"name": units.names[pk], "other": units.names[other], "row": row}
+    return None
+
+
+def _form_errors(agent, form, first_level):
     errors = []
     for field, messages in form.errors.items():
         for message in messages:
             if field == "administrative_units":
-                rows = [unit["row"] for unit in agent["units"]]
-                errors.append(problem(ASSIGNMENTS_SHEET, rows[0] if rows else None, AGENT_EMAIL_HEADER, _(
-                    "%(email)s: %(message)s"
-                ) % {"email": agent["email"], "message": message}))
+                errors.append(problem(AGENTS_SHEET, agent["row"], first_level, message))
             elif field in FORM_COLUMNS:
                 errors.append(problem(AGENTS_SHEET, agent["row"], agent_header(FORM_COLUMNS[field]), message))
             else:
@@ -173,6 +187,7 @@ def run(agents, password=None, commit=False):
     """Checks (``commit=False``) or creates the agents. Returns ``(results, errors)``; nothing is
     saved unless ``commit`` and no error. ``results`` describe each agent as created."""
     prepared, errors = _check(agents)
+    first_level = AdministrativeLevel.objects.order_by("order").values_list("name", flat=True).first() or ""
     # The check needs a password the validators accept; it is never saved.
     raw = password or secrets.token_urlsafe(24)
     password_hash = make_password(password) if commit else make_password(None)
@@ -199,7 +214,7 @@ def run(agents, password=None, commit=False):
                     query["supervisor"] = str(supervisor.pk)
                 form = ImportedAgentForm(data=query, password_hash=password_hash)
                 if not form.is_valid():
-                    errors.extend(_form_errors(agent, form))
+                    errors.extend(_form_errors(agent, form, first_level))
                     continue
                 user = form.save()
                 unit_names = dict(
