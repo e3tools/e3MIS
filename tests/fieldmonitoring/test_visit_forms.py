@@ -97,7 +97,9 @@ def test_identification_at_a_site_added_from_the_field_completes_it(forms, agent
     assert list(Worksite.objects.filter(trackable_object_instance=record)) == [site]  # no second site
     assert site.trackable_object_instance == record and site.name == "Forage de Séguéla"
     assert record.visit == visit
-    assert site.provisional_coordinates.filter(visit=visit).count() == 2  # check-in capture + form 1
+    # Form 1's position is the one to confirm; the check-in's own capture is withdrawn (10 Nov).
+    statuses = sorted(site.provisional_coordinates.filter(visit=visit).values_list("status", flat=True))
+    assert statuses == ["pending", "rejected"]
 
 
 def test_identification_cannot_take_over_someone_elses_site(forms, agent, village, client_for, fc):

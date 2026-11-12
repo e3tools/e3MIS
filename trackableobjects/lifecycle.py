@@ -226,11 +226,19 @@ def create_worksite(instance: TrackableObjectInstance, user, worksite_id=None):
 
 
 def _pending_coordinate(instance, worksite, user):
-    from fieldmonitoring.registry.models import ProvisionalCoordinate
+    from django.utils import timezone
+
+    from fieldmonitoring.registry.models import DecisionStatus, ProvisionalCoordinate
     from fieldmonitoring.visits.services import make_point
 
     if (where := _location(_first_answer(instance, "geolocation"))) and user is not None:
         lat, lng, accuracy = where
+        # One position to confirm per sub-project site: the one given in form 1. A position taken
+        # at a check-in before the form arrived is withdrawn (field test, 10 Nov: two positions
+        # for the same site confused the supervisor).
+        ProvisionalCoordinate.objects.filter(worksite=worksite, status=DecisionStatus.PENDING).update(
+            status=DecisionStatus.REJECTED, decided_at=timezone.now()
+        )
         ProvisionalCoordinate.objects.create(
             worksite=worksite,
             location=make_point(lat, lng),
