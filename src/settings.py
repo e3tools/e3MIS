@@ -96,6 +96,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'fieldmonitoring.core.middleware.ApiNoStoreMiddleware',
 ]
 
 ROOT_URLCONF = 'src.urls'
@@ -151,6 +152,10 @@ SPECTACULAR_SETTINGS = {
 }
 
 CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
+# The apps ask proxies not to answer from a cache (Cache-Control / Pragma request headers).
+from corsheaders.defaults import default_headers  # noqa: E402
+
+CORS_ALLOW_HEADERS = (*default_headers, 'cache-control', 'pragma')
 
 API_KEY_CONFIG = {
     # Changing SECRET_KEY invalidates every issued API token.
