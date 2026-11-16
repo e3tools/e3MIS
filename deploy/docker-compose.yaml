@@ -64,7 +64,7 @@ services:
       - ./data/nginx:/etc/nginx/conf.d
       - static-content:/var/www/app/static
       - media:/var/www/app/media:ro
-      # Supervision dashboard: static build of suivi-terrain-web (see DEPLOY_SERVER.md).
+      # Supervision dashboard: static build of suivi-terrain-web (see DEPLOY_SUPERVISION.md).
       - ./data/supervision:/var/www/supervision:ro
     depends_on:
       - django-app
