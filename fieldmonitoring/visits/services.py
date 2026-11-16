@@ -219,7 +219,10 @@ def _check_in(user, data: CheckIn) -> Visit:
     else:
         apply(visit, Event.CHECK_IN_PASSED)
 
-    if reason == UnverifiedReason.NO_COORDINATE and point is not None:
+    if reason == UnverifiedReason.NO_COORDINATE and _awaits_form_position(worksite):
+        # The supervisor confirms form 1's position; this visit's photo is the evidence shown with it.
+        worksite.provisional_coordinates.filter(status="pending", visit__isnull=True).update(visit=visit)
+    elif reason == UnverifiedReason.NO_COORDINATE and point is not None:
         # BR-9: captured provisionally; an admin must confirm before it becomes the geofence.
         ProvisionalCoordinate.objects.create(
             worksite=worksite,
@@ -243,6 +246,15 @@ def _check_in(user, data: CheckIn) -> Visit:
     if visit.photo_id:
         _raise_photo_flags(visit, visit.photo)
     return visit
+
+
+def _awaits_form_position(worksite) -> bool:
+    """A sub-project site whose position from form 1 is waiting for confirmation: that is the one
+    the supervisor confirms, so a check-in adds no second one (field test, 10 Nov)."""
+    return bool(
+        worksite.trackable_object_instance_id
+        and worksite.provisional_coordinates.filter(status="pending").exists()
+    )
 
 
 def _check_impossible_travel(visit: Visit, config: ProgrammeConfig):
@@ -374,7 +386,11 @@ def cancel_visit(visit: Visit, *, note: str) -> Visit:
         raise VisitError("reason_required")
     visit.cancelled_at = clock.now()
     visit.cancel_note = note
-    ProvisionalCoordinate.objects.filter(visit=visit, status="pending").update(status="rejected")
+    captured = ProvisionalCoordinate.objects.filter(visit=visit, status="pending")
+    if visit.worksite.trackable_object_instance_id:
+        captured.update(visit=None)  # the position comes from form 1, not from this check-in: it stays
+    else:
+        captured.update(status="rejected")
     return apply(visit, Event.CANCEL, actor=visit.user, note=note)
 
 

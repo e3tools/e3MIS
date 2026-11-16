@@ -150,3 +150,47 @@ def test_check_in_by_someone_elses_record_is_not_found(forms, agent, fc, village
 def test_check_in_needs_a_site_or_a_record(ft, capture, client_for):
     payload = {"capture_token": capture(ft), "idempotency_key": "k1", "lat": BASE_LAT, "lng": BASE_LNG}
     assert client_for(ft).post(CHECK_IN, payload, format="json").status_code == 400
+
+
+# --- One position to confirm per sub-project site (Brice, 10 Nov) ---------------------------------
+
+
+def test_check_in_after_form_1_adds_no_second_position(forms, agent, village, capture, client_for):
+    item = record_item(forms, identification(village))
+    push(client_for, agent, item)
+    response = check_in_by_record(client_for, capture, agent, item["client_uuid"])
+    # BR-9 still applies: no confirmed position, so the visit is unverified and goes to a human.
+    assert response.json()["unverified_reason"] == "no_coordinate"
+    [pending] = ProvisionalCoordinate.objects.filter(status="pending")
+    # Form 1's position (accuracy 8 in the form), shown with this visit's photo as evidence.
+    assert pending.accuracy_m == 8 and str(pending.visit_id) == response.json()["id"]
+    # Cancelling the visit does not withdraw the position given in form 1.
+    assert cancel(client_for, agent, response.json()["id"]).status_code == 200
+    pending.refresh_from_db()
+    assert pending.status == "pending" and pending.visit_id is None
+
+
+def test_form_1_position_replaces_the_one_from_an_earlier_check_in(
+    forms, agent, village, unmapped_worksite, check_in, client_for
+):
+    from fieldmonitoring.registry.models import WorksiteAssignment
+
+    WorksiteAssignment.objects.create(user=agent, worksite=unmapped_worksite, assigned_on="2026-01-01")
+    visit_id = check_in(agent, unmapped_worksite).json()["id"]
+    push(client_for, agent, record_item(forms, identification(village), worksite_id=str(unmapped_worksite.pk)))
+    assert ProvisionalCoordinate.objects.get(visit_id=visit_id, accuracy_m=12).status == "rejected"
+    assert ProvisionalCoordinate.objects.filter(worksite=unmapped_worksite, status="pending").count() == 1
+
+
+def test_plain_worksite_keeps_every_check_in_position(sc, ft, unmapped_worksite, check_in):
+    from fieldmonitoring.registry.models import WorksiteAssignment
+
+    WorksiteAssignment.objects.create(user=ft, worksite=unmapped_worksite, assigned_on="2026-01-01")
+    for user in (sc, ft):
+        assert check_in(user, unmapped_worksite).status_code == 201
+    assert ProvisionalCoordinate.objects.filter(worksite=unmapped_worksite, status="pending").count() == 2
+
+
+def test_api_answers_are_never_cached(ft, client_for, client):
+    assert client.get("/api/v1/health/")["Cache-Control"] == "no-store, private"
+    assert client_for(ft).get("/api/v1/me/worksites/")["Cache-Control"] == "no-store, private"
