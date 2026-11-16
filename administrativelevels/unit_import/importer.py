@@ -102,22 +102,50 @@ def run(rows, commit=False):
     }
     errors.sort(key=lambda error: (error["row"] is not None, error["row"] or 0))
     if commit and not errors:
+        # One bulk insert per level: save() fetches every ancestor to build hierarchy_name (8 queries
+        # per village), and a full programme (~6000 units, Nov 2026) then outlasted gunicorn's 30 s.
+        hierarchy = _hierarchy_names()
         with transaction.atomic():
             created = {}
-            for n in nodes:
-                parent = created[n["parent"]] if isinstance(n["parent"], tuple) else n["parent"]
-                unit = AdministrativeUnit(
-                    name=n["name"], level=levels[n["depth"]], parent_id=parent,
-                    zone=zones.get(n["key"], ("",))[0],
-                )
-                unit.save()
-                created[n["key"]] = unit.pk
+            for depth, level in enumerate(levels):
+                batch = [n for n in nodes if n["depth"] == depth]
+                units = []
+                for n in batch:
+                    parent = created[n["parent"]] if isinstance(n["parent"], tuple) else n["parent"]
+                    name = "{} {}".format(level.name, n["name"])
+                    units.append(AdministrativeUnit(
+                        name=n["name"], level=level, parent_id=parent, zone=zones.get(n["key"], ("",))[0],
+                        hierarchy_name=f"{name}, {hierarchy[parent]}" if parent else name,
+                    ))
+                for n, unit in zip(batch, AdministrativeUnit.objects.bulk_create(units, batch_size=1000)):
+                    created[n["key"]] = unit.pk
+                    hierarchy[unit.pk] = unit.hierarchy_name
             for zone in set(zone_changes.values()):
                 AdministrativeUnit.objects.filter(
                     pk__in=[pk for pk, z in zone_changes.items() if z == zone]
                 ).update(zone=zone)
             summary["radii"] = _worksites_to_resize(zone_changes, commit=True)
     return summary, errors
+
+
+def _hierarchy_names():
+    """``{pk: hierarchy_name}`` of every unit, built from the tree as AdministrativeUnit.save() does
+    (not read from the column, which a parent's rename leaves stale)."""
+    level_names = dict(AdministrativeLevel.objects.values_list("pk", "name"))
+    units = {pk: (name, level_id, parent_id) for pk, name, level_id, parent_id in
+             AdministrativeUnit.objects.values_list("pk", "name", "level_id", "parent_id")}
+    names = {}
+
+    def name_of(pk):
+        if pk not in names:
+            name, level_id, parent_id = units[pk]
+            own = "{} {}".format(level_names[level_id], name)
+            names[pk] = f"{own}, {name_of(parent_id)}" if parent_id in units else own
+        return names[pk]
+
+    for pk in units:
+        name_of(pk)
+    return names
 
 
 def _worksites_to_resize(zone_changes, commit):
